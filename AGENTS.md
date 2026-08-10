@@ -47,13 +47,22 @@ Need a change in a shared file? Write what you need in your own file and leave a
 
 ## Design
 
-Read `app/src/constants/theme.ts` first. Every color, size, radius, and shadow comes
-from there — no hardcoded hex values, no magic numbers.
+Read `app/src/constants/theme.ts` first — its header carries the reference lock, and
+every color, size, radius and shadow comes from there. No hardcoded hex values, no
+magic numbers.
 
 The direction: vintage Pyrex is turquoise, pink, orange and gold on milk-white glass,
 and it is loud. Chrome recedes to warm neutrals with a single accent, the way a gallery
 paints its walls off-white. Rarity is the one place loud color is correct, because it
 is a rank collectors read at a glance.
+
+The lock, in one line: an archival type-specimen index. Condensed display face for
+titles, labels and numerals; the system face for anything readable; hairline rules and
+surface tint instead of drop shadows; low radius; the accent used ceremonially, at most
+one solid fill per screen. Shared primitives live in
+`app/src/features/collection/collection-ui.tsx` — `SpecimenTile`, `PriceFigure`,
+`RarityBadge`, `Label`, `Divider`. Use them rather than rebuilding them, especially
+`PriceFigure`, which exists to make a bare price impossible.
 
 Follow each platform's conventions rather than forcing one look on both: 44dp minimum
 tap targets, real safe-area insets, native-feeling navigation. Support light and dark —
@@ -62,7 +71,7 @@ tap targets, real safe-area insets, native-feeling navigation. Support light and
 
 ## Stack
 
-Expo SDK 57, React Native 0.86, expo-router (routes live in `app/src/app/`),
+Expo SDK 56, React Native 0.85.3, expo-router (routes live in `app/src/app/`),
 TypeScript strict. Backend is Hono on Node 26 using the built-in `node:sqlite` — no
 better-sqlite3, no ORM. Vision runs on `claude-opus-5` via `@anthropic-ai/sdk`.
 

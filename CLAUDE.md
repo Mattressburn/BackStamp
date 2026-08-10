@@ -34,6 +34,19 @@ touch disk; auth stores the provider subject ID and nothing else; sync carries s
 counts only, so `condition`/`notes` stay device-local; AI placeholder images are
 generated from a written description, never image-to-image from a user photo.
 
+**The design has a reference lock, and it lives in the header of
+`app/src/constants/theme.ts`.** Read it before changing anything visual. The short
+version: the primary reference is an archival type-specimen index, so hierarchy comes
+from a condensed display face and hairline rules, not from drop shadows and rounded
+cards. Tokens carry roles — the display face never sets body copy, the accent is never
+a background field, rarity colors are only ever rank, and colorway hex is only ever a
+swatch. Moving a token outside its role is the specific failure mode to avoid.
+
+**A colorway swatch is not a photograph.** `app/src/constants/colorways.ts` turns a
+pattern's documented prose colorway into the two colors it names, so a piece with no
+photo still arrives wearing its real colors. It must always be labelled as a swatch —
+same reasoning as never rendering a bare price.
+
 ## Commands
 
 ```bash
@@ -43,7 +56,7 @@ cd app && npx expo start --web                                      # browser pr
 
 npm --prefix backend run typecheck && (cd app && npx tsc --noEmit)
 cd backend && node --import tsx --test "src/**/*.test.ts"           # 23
-cd app     && node --import tsx --test "src/features/**/*.test.ts"  #  5
+cd app     && node --import tsx --test "src/**/*.test.ts"           # 13
 cd scripts && node --import tsx --test "*.test.ts"                  #  4
 cd app && npx expo export --platform ios                            # Metro resolves @shared/@data
 ```

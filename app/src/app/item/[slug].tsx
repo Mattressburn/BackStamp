@@ -1,3 +1,13 @@
+/**
+ * The specimen placard.
+ *
+ * One object, presented large, with its record stacked beneath it — the museum-label
+ * treatment the archive reference uses. Rules instead of shadows; the only shadow on
+ * the screen belongs to the specimen tile, because a physical dish casts one and a
+ * panel of text does not. The accent is ceremonial: hairline outlines everywhere, and
+ * a single solid fill on the one thing that changes what you own.
+ */
+
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -9,10 +19,14 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  useColorScheme,
   useWindowDimensions,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
+import Animated, { Easing, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fetchItem, getToken, uploadPhoto } from '@/api';
@@ -21,7 +35,9 @@ import {
   Elevation,
   HitTarget,
   MaxContentWidth,
+  Motion,
   Radius,
+  Rule,
   Spacing,
   Type,
 } from '@/constants/theme';
@@ -35,29 +51,69 @@ import {
   setOwnership,
 } from '@/db';
 import {
-  AiApproximationBadge,
-  PhotoPlaceholder,
-  photoSource,
+  Divider,
+  Label,
+  PriceFigure,
   priceSourceLabel,
   RarityBadge,
+  SpecimenTile,
+  useColors,
 } from '@/features/collection/collection-ui';
 import type {
   Condition,
   ItemDetail,
   OwnershipStatus,
+  Photo,
   PhotoVisibility,
   UserItem,
 } from '@shared/types';
 
-const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' });
+const money = new Intl.NumberFormat(undefined, {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+});
 const CONDITIONS: Condition[] = ['mint', 'excellent', 'good', 'fair', 'damaged'];
 const VISIBILITIES: PhotoVisibility[] = ['attributed', 'anonymous', 'private'];
+
+const ENTER_EASING = Easing.bezier(...Motion.easing);
+
+/**
+ * Content arrives with a short fade and rise. `useReducedMotion` drops the animation
+ * entirely rather than shortening it — a user who asked for no motion means none.
+ */
+function Enter({
+  step = 0,
+  style,
+  children,
+}: {
+  step?: number;
+  style?: StyleProp<ViewStyle>;
+  children: React.ReactNode;
+}) {
+  const reduced = useReducedMotion();
+
+  return (
+    <Animated.View
+      style={style}
+      entering={
+        reduced
+          ? undefined
+          : FadeInDown.duration(Motion.enter)
+              .delay(step * Motion.press)
+              .easing(ENTER_EASING)
+              .withInitialValues({ opacity: 0, transform: [{ translateY: Motion.enterOffset }] })
+      }>
+      {children}
+    </Animated.View>
+  );
+}
 
 // CONTRACT: app.json must declare the expo-camera permission used by photo uploads.
 export default function ItemDetailScreen() {
   const params = useLocalSearchParams<{ slug: string | string[] }>();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
-  const colors = Colors[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const photoSize = Math.min(
@@ -260,16 +316,26 @@ export default function ItemDetailScreen() {
         styles.missing,
         { backgroundColor: colors.background, paddingTop: insets.top + Spacing.three },
       ]}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Piece unavailable</Text>
+        <Text style={[styles.patternName, { color: colors.text }]}>Piece unavailable</Text>
         <Text style={[styles.body, { color: colors.textSecondary }]}>
           It is not in the offline catalog, and the network copy could not be loaded.
         </Text>
-        <ActionButton label="Go back" onPress={() => router.back()} colors={colors} />
+        <ActionButton label="Go back" onPress={() => router.back()} />
       </View>
     );
   }
 
   const years = formatYears(detail.pattern.yearsStart, detail.pattern.yearsEnd);
+  const specs: { label: string; value: string; numeral?: boolean }[] = [
+    { label: 'Production', value: years },
+    { label: 'Colorway', value: detail.pattern.colorway ?? 'Not documented' },
+    { label: 'Form', value: detail.form.shape },
+    { label: 'Model number', value: detail.form.modelNo, numeral: true },
+    ...(detail.form.capacityQt !== null
+      ? [{ label: 'Capacity', value: `${detail.form.capacityQt} qt`, numeral: true }]
+      : []),
+    ...(detail.form.dimensions ? [{ label: 'Dimensions', value: detail.form.dimensions }] : []),
+  ];
 
   return (
     <ScrollView
@@ -278,7 +344,7 @@ export default function ItemDetailScreen() {
         styles.content,
         {
           paddingTop: insets.top + Spacing.two,
-          paddingBottom: insets.bottom + Spacing.five,
+          paddingBottom: insets.bottom + Spacing.six,
         },
       ]}>
       <Pressable
@@ -287,50 +353,30 @@ export default function ItemDetailScreen() {
         accessibilityLabel="Go back"
         style={({ pressed }) => [
           styles.backButton,
-          { backgroundColor: pressed ? colors.backgroundSelected : colors.backgroundElement },
+          { borderColor: colors.border },
+          pressed && {
+            backgroundColor: colors.backgroundElement,
+            transform: [{ scale: Motion.pressScale }],
+          },
         ]}>
-        <Text style={[styles.backText, { color: colors.text }]}>‹ Back</Text>
+        <Text style={[styles.backText, { color: colors.textSecondary }]}>‹ Back</Text>
       </Pressable>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.photoStrip}
-        accessibilityLabel={`Photos of ${detail.pattern.name}`}>
-        {detail.photos.length > 0 ? detail.photos.map((photo) => (
-          <View
-            key={photo.id}
-            style={[
-              styles.heroPhoto,
-              { width: photoSize, height: photoSize, backgroundColor: colors.backgroundElement },
-            ]}>
-            <Image source={photoSource(photo, photoToken)} contentFit="cover" style={styles.image} />
-            {photo.isAiPlaceholder && <AiApproximationBadge />}
-            {photo.visibility === 'attributed' && photo.uploaderHandle && (
-              <View style={[styles.photoAttribution, { backgroundColor: colors.scrim }]}>
-                <Text style={[styles.photoAttributionText, { color: Colors.light.accentText }]}>
-                  by {photo.uploaderHandle}
-                </Text>
-              </View>
-            )}
-          </View>
-        )) : (
-          <View style={[
-            styles.heroPhoto,
-            { width: photoSize, height: photoSize, backgroundColor: colors.backgroundElement },
-          ]}>
-            <PhotoPlaceholder label="No catalog photo available offline" />
-          </View>
-        )}
-      </ScrollView>
+      <Enter step={0}>
+        <Hero detail={detail} photoToken={photoToken} size={photoSize} />
+      </Enter>
 
-      <View style={styles.titleBlock}>
+      <Enter step={1} style={styles.placard}>
         <RarityBadge rarity={detail.rarity} />
-        <Text style={[styles.title, { color: colors.text }]}>{detail.pattern.name}</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          {detail.form.shape} · model {detail.form.modelNo}
-        </Text>
-      </View>
+        <Text style={[styles.patternName, { color: colors.text }]}>{detail.pattern.name}</Text>
+        <View style={styles.placardMeta}>
+          <Text style={[styles.formName, { color: colors.textSecondary }]}>{detail.form.shape}</Text>
+          <View style={styles.modelLine}>
+            <Label tone="secondary">model</Label>
+            <Text style={[styles.modelNo, { color: colors.text }]}>{detail.form.modelNo}</Text>
+          </View>
+        </View>
+      </Enter>
 
       {networkError && (
         <Text style={[styles.offlineNote, { color: colors.textSecondary, borderColor: colors.border }]}>
@@ -338,171 +384,292 @@ export default function ItemDetailScreen() {
         </Text>
       )}
 
-      <Section title="About this piece" colors={colors}>
-        <Fact label="Production" value={years} colors={colors} />
-        <Fact label="Colorway" value={detail.pattern.colorway ?? 'Not documented'} colors={colors} />
-        <Fact label="Form" value={detail.form.shape} colors={colors} />
-        <Fact label="Model number" value={detail.form.modelNo} colors={colors} />
-        {detail.form.capacityQt !== null && (
-          <Fact label="Capacity" value={`${detail.form.capacityQt} qt`} colors={colors} />
-        )}
-        {detail.form.dimensions && <Fact label="Dimensions" value={detail.form.dimensions} colors={colors} />}
-        {detail.pattern.notes && (
-          <Text style={[styles.history, { color: colors.textSecondary }]}>{detail.pattern.notes}</Text>
-        )}
-      </Section>
+      <Enter step={2}>
+        <Section title="Specification">
+          <View style={styles.specTable}>
+            <Divider />
+            {specs.map((spec) => (
+              <Spec key={spec.label} label={spec.label} value={spec.value} numeral={spec.numeral} />
+            ))}
+          </View>
+          {detail.pattern.notes && (
+            <Text style={[styles.body, { color: colors.textSecondary }]}>{detail.pattern.notes}</Text>
+          )}
+        </Section>
+      </Enter>
 
-      <Section title="Current price range" colors={colors}>
-        {detail.price ? (
-          <>
-            <Text style={[styles.price, { color: colors.text }]}>
-              {money.format(detail.price.low)}–{money.format(detail.price.high)}
-            </Text>
-            <Text style={[styles.priceSource, { color: colors.textSecondary }]}>
-              {priceSourceLabel(detail.price.source)} · {detail.price.sampleSize} {detail.price.sampleSize === 1 ? 'comparable' : 'comparables'}
-            </Text>
+      <Enter step={3}>
+        <Section title="Current price range">
+          <PriceFigure quote={detail.price} size="large" />
+          {detail.price ? (
             <Text style={[styles.body, { color: colors.textSecondary }]}>
               Median {money.format(detail.price.median)} — {priceSourceLabel(detail.price.source)}.
             </Text>
-          </>
-        ) : (
-          <Text style={[styles.body, { color: colors.textSecondary }]}>
-            No comparable prices yet. This piece is excluded from collection totals.
-          </Text>
-        )}
-      </Section>
+          ) : (
+            <Text style={[styles.body, { color: colors.textSecondary }]}>
+              No comparable prices yet. This piece is excluded from collection totals.
+            </Text>
+          )}
+        </Section>
+      </Enter>
 
-      <Section title="Your collection" colors={colors}>
-        <View style={[styles.segment, { backgroundColor: colors.backgroundElement }]}>
-          {(['have', 'want'] as const).map((status) => {
-            const selected = ownership?.status === status;
-            return (
-              <Pressable
-                key={status}
-                onPress={() => void chooseStatus(status)}
-                disabled={saving}
-                accessibilityRole="button"
-                accessibilityLabel={`Mark ${detail.pattern.name} as ${status === 'have' ? 'owned' : 'wanted'}`}
-                accessibilityState={{ selected, disabled: saving }}
-                style={({ pressed }) => [
-                  styles.segmentButton,
-                  selected && { backgroundColor: status === 'have' ? colors.have : colors.want },
-                  pressed && !selected && { backgroundColor: colors.backgroundSelected },
-                ]}>
-                <Text style={[
-                  styles.segmentText,
-                  { color: selected ? colors.accentText : colors.textSecondary },
-                ]}>
-                  {status === 'have' ? 'Have' : 'Want'}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {ownership?.status === 'have' && (
-          <>
-            <View style={styles.fieldRow}>
-              <Text style={[styles.fieldLabel, { color: colors.text }]}>Quantity</Text>
-              <View style={[styles.stepper, { borderColor: colors.border }]}>
+      <Enter step={4}>
+        <Section title="Your collection" tinted>
+          {/* The one solid fill on this screen. Everything else is a hairline outline. */}
+          <View style={[styles.segment, { borderColor: colors.border }]}>
+            {(['have', 'want'] as const).map((status, index) => {
+              const selected = ownership?.status === status;
+              return (
                 <Pressable
-                  onPress={() => void changeQuantity(-1)}
-                  disabled={saving || ownership.quantity <= 1}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Decrease quantity of ${detail.pattern.name}`}
-                  accessibilityState={{ disabled: saving || ownership.quantity <= 1 }}
-                  style={({ pressed }) => [styles.stepperButton, pressed && { backgroundColor: colors.backgroundSelected }]}>
-                  <Text style={[styles.stepperSymbol, { color: ownership.quantity <= 1 ? colors.textTertiary : colors.text }]}>−</Text>
-                </Pressable>
-                <Text accessibilityLabel={`${ownership.quantity} owned`} style={[styles.quantity, { color: colors.text }]}>
-                  {ownership.quantity}
-                </Text>
-                <Pressable
-                  onPress={() => void changeQuantity(1)}
+                  key={status}
+                  onPress={() => void chooseStatus(status)}
                   disabled={saving}
                   accessibilityRole="button"
-                  accessibilityLabel={`Increase quantity of ${detail.pattern.name}`}
-                  accessibilityState={{ disabled: saving }}
-                  style={({ pressed }) => [styles.stepperButton, pressed && { backgroundColor: colors.backgroundSelected }]}>
-                  <Text style={[styles.stepperSymbol, { color: colors.text }]}>+</Text>
+                  accessibilityLabel={`Mark ${detail.pattern.name} as ${status === 'have' ? 'owned' : 'wanted'}`}
+                  accessibilityState={{ selected, disabled: saving }}
+                  style={({ pressed }) => [
+                    styles.segmentButton,
+                    index > 0 && { borderLeftWidth: Rule, borderLeftColor: colors.border },
+                    selected && { backgroundColor: status === 'have' ? colors.have : colors.want },
+                    pressed && !selected && { backgroundColor: colors.backgroundSelected },
+                  ]}>
+                  <Text style={[
+                    styles.segmentText,
+                    { color: selected ? colors.accentText : colors.textSecondary },
+                  ]}>
+                    {status === 'have' ? 'Have' : 'Want'}
+                  </Text>
                 </Pressable>
-              </View>
-            </View>
+              );
+            })}
+          </View>
 
-            <Text style={[styles.fieldLabel, { color: colors.text }]}>Condition</Text>
-            <View style={styles.choiceWrap}>
-              {CONDITIONS.map((condition) => {
-                const selected = ownership.condition === condition;
-                return (
+          {ownership?.status === 'have' && (
+            <>
+              <View style={styles.fieldRow}>
+                <Label tone="secondary">Quantity</Label>
+                <View style={[styles.stepper, { borderColor: colors.border }]}>
                   <Pressable
-                    key={condition}
-                    onPress={() => void chooseCondition(condition)}
+                    onPress={() => void changeQuantity(-1)}
+                    disabled={saving || ownership.quantity <= 1}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Decrease quantity of ${detail.pattern.name}`}
+                    accessibilityState={{ disabled: saving || ownership.quantity <= 1 }}
+                    style={({ pressed }) => [styles.stepperButton, pressed && { backgroundColor: colors.backgroundSelected }]}>
+                    <Text style={[styles.stepperSymbol, { color: ownership.quantity <= 1 ? colors.textTertiary : colors.text }]}>−</Text>
+                  </Pressable>
+                  <Text
+                    accessibilityLabel={`${ownership.quantity} owned`}
+                    style={[styles.quantity, { color: colors.text, borderColor: colors.border }]}>
+                    {ownership.quantity}
+                  </Text>
+                  <Pressable
+                    onPress={() => void changeQuantity(1)}
                     disabled={saving}
                     accessibilityRole="button"
-                    accessibilityLabel={`Set condition to ${condition}`}
-                    accessibilityState={{ selected, disabled: saving }}
-                    style={({ pressed }) => [
-                      styles.choice,
-                      { borderColor: selected ? colors.accent : colors.border },
-                      selected && { backgroundColor: colors.backgroundSelected },
-                      pressed && { backgroundColor: colors.backgroundElement },
-                    ]}>
-                    <Text style={[styles.choiceText, { color: selected ? colors.accent : colors.textSecondary }]}>
-                      {condition}
-                    </Text>
+                    accessibilityLabel={`Increase quantity of ${detail.pattern.name}`}
+                    accessibilityState={{ disabled: saving }}
+                    style={({ pressed }) => [styles.stepperButton, pressed && { backgroundColor: colors.backgroundSelected }]}>
+                    <Text style={[styles.stepperSymbol, { color: colors.text }]}>+</Text>
                   </Pressable>
-                );
-              })}
-            </View>
-          </>
-        )}
+                </View>
+              </View>
 
-        {ownership && (
-          <>
-            <Text style={[styles.fieldLabel, { color: colors.text }]}>Notes</Text>
-            <TextInput
-              value={notes}
-              onChangeText={setNotes}
-              editable={!saving}
-              multiline
-              placeholder="Where you found it, lid details, repairs…"
-              placeholderTextColor={colors.textTertiary}
-              accessibilityLabel={`Notes for ${detail.pattern.name}`}
-              style={[
-                styles.notes,
-                { color: colors.text, backgroundColor: colors.backgroundElement, borderColor: colors.border },
-              ]}
-            />
-            <ActionButton
-              label="Save notes"
-              onPress={() => void saveNotes()}
-              colors={colors}
-              disabled={saving || notes.trim() === (ownership.notes ?? '')}
-              secondary
-            />
-            <Pressable
-              onPress={() => void removeItem()}
-              disabled={saving}
-              accessibilityRole="button"
-              accessibilityLabel={`Remove ${detail.pattern.name} from collection`}
-              accessibilityState={{ disabled: saving }}
-              style={({ pressed }) => [styles.removeButton, pressed && { backgroundColor: colors.backgroundElement }]}>
-              <Text style={[styles.removeText, { color: colors.danger }]}>Remove from collection</Text>
-            </Pressable>
-          </>
-        )}
-        {saveError && <Text style={[styles.error, { color: colors.danger }]}>{saveError}</Text>}
-      </Section>
+              <Label tone="secondary">Condition</Label>
+              <View style={styles.choiceWrap}>
+                {CONDITIONS.map((condition) => {
+                  const selected = ownership.condition === condition;
+                  return (
+                    <Pressable
+                      key={condition}
+                      onPress={() => void chooseCondition(condition)}
+                      disabled={saving}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Set condition to ${condition}`}
+                      accessibilityState={{ selected, disabled: saving }}
+                      style={({ pressed }) => [
+                        styles.choice,
+                        { borderColor: selected ? colors.accent : colors.border },
+                        selected && { backgroundColor: colors.backgroundSelected },
+                        pressed && { backgroundColor: colors.backgroundElement },
+                      ]}>
+                      <Text style={[styles.choiceText, { color: selected ? colors.text : colors.textSecondary }]}>
+                        {condition}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          )}
 
-      <PhotoUpload
-        itemSlug={detail.slug}
-        patternName={detail.pattern.name}
-        visibility={visibility}
-        onVisibilityChange={setVisibility}
-        onUploaded={refreshRemote}
-        colors={colors}
-      />
+          {ownership && (
+            <>
+              <Label tone="secondary">Notes</Label>
+              <TextInput
+                value={notes}
+                onChangeText={setNotes}
+                editable={!saving}
+                multiline
+                placeholder="Where you found it, lid details, repairs…"
+                placeholderTextColor={colors.textTertiary}
+                accessibilityLabel={`Notes for ${detail.pattern.name}`}
+                style={[
+                  styles.notes,
+                  { color: colors.text, backgroundColor: colors.background, borderColor: colors.border },
+                ]}
+              />
+              <ActionButton
+                label="Save notes"
+                onPress={() => void saveNotes()}
+                disabled={saving || notes.trim() === (ownership.notes ?? '')}
+              />
+              <Pressable
+                onPress={() => void removeItem()}
+                disabled={saving}
+                accessibilityRole="button"
+                accessibilityLabel={`Remove ${detail.pattern.name} from collection`}
+                accessibilityState={{ disabled: saving }}
+                style={({ pressed }) => [styles.removeButton, pressed && { backgroundColor: colors.backgroundElement }]}>
+                <Text style={[styles.removeText, { color: colors.danger }]}>Remove from collection</Text>
+              </Pressable>
+            </>
+          )}
+          {saveError && <Text style={[styles.error, { color: colors.danger }]}>{saveError}</Text>}
+        </Section>
+      </Enter>
+
+      <Enter step={5}>
+        <PhotoUpload
+          itemSlug={detail.slug}
+          patternName={detail.pattern.name}
+          visibility={visibility}
+          onVisibilityChange={setVisibility}
+          onUploaded={refreshRemote}
+        />
+      </Enter>
     </ScrollView>
+  );
+}
+
+/**
+ * The object, presented large and almost unframed. With photographs it pages sideways;
+ * without them the tile still carries the piece's documented colorway and its model
+ * number, because a grey rectangle tells a collector nothing.
+ */
+function Hero({
+  detail,
+  photoToken,
+  size,
+}: {
+  detail: ItemDetail;
+  photoToken: string | null;
+  size: number;
+}) {
+  const [page, setPage] = useState(0);
+  const stride = size + Spacing.two;
+  const photos = detail.photos;
+
+  function onSettle(event: NativeSyntheticEvent<NativeScrollEvent>) {
+    const next = Math.min(
+      Math.max(0, Math.round(event.nativeEvent.contentOffset.x / stride)),
+      photos.length - 1,
+    );
+    if (next !== page) setPage(next);
+  }
+
+  const tile = (photo: Photo | null) => (
+    <HeroTile
+      key={photo?.id ?? detail.slug}
+      photo={photo}
+      photoToken={photoToken}
+      detail={detail}
+      size={size}
+    />
+  );
+
+  return (
+    <View style={styles.hero}>
+      {photos.length > 1 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={stride}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          onMomentumScrollEnd={onSettle}
+          contentContainerStyle={styles.heroStrip}
+          accessibilityLabel={`Photographs of ${detail.pattern.name}`}>
+          {photos.map((photo) => tile(photo))}
+        </ScrollView>
+      ) : (
+        tile(photos[0] ?? null)
+      )}
+      {photos.length > 1 && <PageIndicator count={photos.length} index={page} />}
+    </View>
+  );
+}
+
+function HeroTile({
+  photo,
+  photoToken,
+  detail,
+  size,
+}: {
+  photo: Photo | null;
+  photoToken: string | null;
+  detail: ItemDetail;
+  size: number;
+}) {
+  const colors = useColors();
+
+  return (
+    <View
+      style={[
+        styles.heroTile,
+        // Android draws `elevation` from the view's own outline, so the wrapper needs a
+        // fill even though the tile covers it.
+        { width: size, height: size, backgroundColor: colors.surface },
+        Elevation.object,
+      ]}>
+      <SpecimenTile
+        photo={photo}
+        photoToken={photoToken}
+        colorway={detail.pattern.colorway}
+        modelNo={detail.form.modelNo}
+        patternName={detail.pattern.name}
+        stampSize="large"
+        style={{ width: size, height: size }}
+      />
+      {photo?.visibility === 'attributed' && photo.uploaderHandle && (
+        <View style={[styles.attribution, { backgroundColor: colors.scrim }]}>
+          <Text style={[styles.attributionText, { color: Colors.light.accentText }]}>
+            by {photo.uploaderHandle}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+/** Ticks rather than dots — the same rank vocabulary the rarity badge uses. */
+function PageIndicator({ count, index }: { count: number; index: number }) {
+  const colors = useColors();
+
+  return (
+    <View
+      style={styles.pageIndicator}
+      accessibilityLabel={`Photograph ${index + 1} of ${count}`}>
+      {Array.from({ length: count }, (_, position) => (
+        <View
+          key={position}
+          style={[
+            styles.pageTick,
+            { backgroundColor: position === index ? colors.text : colors.border },
+          ]}
+        />
+      ))}
+    </View>
   );
 }
 
@@ -512,15 +679,14 @@ function PhotoUpload({
   visibility,
   onVisibilityChange,
   onUploaded,
-  colors,
 }: {
   itemSlug: string;
   patternName: string;
   visibility: PhotoVisibility;
   onVisibilityChange: (visibility: PhotoVisibility) => void;
   onUploaded: () => Promise<void>;
-  colors: (typeof Colors)['light'] | (typeof Colors)['dark'];
 }) {
+  const colors = useColors();
   const [permission, requestPermission] = useCameraPermissions();
   const camera = useRef<CameraView>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -576,7 +742,7 @@ function PhotoUpload({
   }
 
   return (
-    <Section title="Add your photo" colors={colors}>
+    <Section title="Add your photo" tinted>
       <Text style={[styles.body, { color: colors.textSecondary }]}>
         Location metadata is removed by the server before the photo is stored.
       </Text>
@@ -599,6 +765,9 @@ function PhotoUpload({
               pressed && { backgroundColor: colors.backgroundElement },
             ]}>
             <View style={styles.visibilityCopy}>
+              {/* Full-strength text, not a toned Label: this sits on a tinted field and
+                  the toned greys fall under 4.5:1 there. Selection reads from the
+                  accent hairline and the radio mark. */}
               <Text style={[styles.visibilityTitle, { color: colors.text }]}>{choice}</Text>
               <Text style={[styles.body, { color: colors.textSecondary }]}>{visibilityDescription(choice)}</Text>
             </View>
@@ -625,14 +794,12 @@ function PhotoUpload({
                 setCameraReady(false);
                 setCameraOpen(false);
               }}
-              colors={colors}
-              secondary
             />
             <ActionButton
               label={cameraReady ? 'Take photo' : 'Camera starting…'}
               onPress={() => void takePhoto()}
-              colors={colors}
               disabled={!cameraReady}
+              emphasis="accent"
             />
           </View>
         </View>
@@ -647,19 +814,19 @@ function PhotoUpload({
             accessibilityLabel={`New photo of ${patternName}`}
           />
           <View style={styles.cameraControls}>
-            <ActionButton label="Retake photo" onPress={() => void openCamera()} colors={colors} secondary />
+            <ActionButton label="Retake photo" onPress={() => void openCamera()} />
             <ActionButton
               label={uploading ? 'Uploading…' : `Upload as ${visibility}`}
               onPress={() => void submitPhoto()}
-              colors={colors}
               disabled={uploading}
+              emphasis="accent"
             />
           </View>
         </View>
       )}
 
       {!cameraOpen && !photoUri && (
-        <ActionButton label="Take a photo" onPress={() => void openCamera()} colors={colors} />
+        <ActionButton label="Take a photo" onPress={() => void openCamera()} emphasis="accent" />
       )}
       {error && <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>}
     </Section>
@@ -681,53 +848,73 @@ function formatYears(start: number | null, end: number | null): string {
   return 'Not documented';
 }
 
+/**
+ * Archive sections sit bare on the page under a hairline rule. The two sections that
+ * change something — your collection and your photo — take a surface tint so the
+ * interactive half of the screen reads apart from the record. No shadows either way.
+ */
 function Section({
   title,
   children,
-  colors,
+  tinted = false,
 }: {
   title: string;
   children: React.ReactNode;
-  colors: (typeof Colors)['light'] | (typeof Colors)['dark'];
+  tinted?: boolean;
 }) {
+  const colors = useColors();
+
   return (
-    <View style={[styles.section, { backgroundColor: colors.surface, ...Elevation.card }]}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
+    <View
+      style={[
+        styles.section,
+        tinted && styles.sectionPanel,
+        tinted && { backgroundColor: colors.surface, borderColor: colors.border },
+      ]}>
+      {!tinted && <Divider />}
+      <Label tone="secondary">{title}</Label>
       {children}
     </View>
   );
 }
 
-function Fact({
-  label,
-  value,
-  colors,
-}: {
-  label: string;
-  value: string;
-  colors: (typeof Colors)['light'] | (typeof Colors)['dark'];
-}) {
+function Spec({ label, value, numeral = false }: { label: string; value: string; numeral?: boolean }) {
+  const colors = useColors();
+
   return (
-    <View style={[styles.fact, { borderBottomColor: colors.border }]}>
-      <Text style={[styles.factLabel, { color: colors.textSecondary }]}>{label}</Text>
-      <Text style={[styles.factValue, { color: colors.text }]}>{value}</Text>
-    </View>
+    <>
+      <View style={styles.specRow}>
+        {/* Wrapped rather than styled: `Label`'s own style prop is typed for a View. */}
+        <View style={styles.specLabel}>
+          <Label tone="secondary">{label}</Label>
+        </View>
+        <Text style={[numeral ? styles.specNumeral : styles.specValue, { color: colors.text }]}>
+          {value}
+        </Text>
+      </View>
+      <Divider />
+    </>
   );
 }
 
+/**
+ * Ghost by default. `accent` raises it to a ceremonial hairline outline rather than a
+ * fill — the solid accent is spent once per screen, on the ownership control.
+ */
 function ActionButton({
   label,
   onPress,
-  colors,
-  secondary = false,
+  emphasis = 'plain',
   disabled = false,
 }: {
   label: string;
   onPress: () => void;
-  colors: (typeof Colors)['light'] | (typeof Colors)['dark'];
-  secondary?: boolean;
+  emphasis?: 'plain' | 'accent';
   disabled?: boolean;
 }) {
+  const colors = useColors();
+  const border = disabled ? colors.border : emphasis === 'accent' ? colors.accent : colors.border;
+
   return (
     <Pressable
       onPress={onPress}
@@ -737,14 +924,15 @@ function ActionButton({
       accessibilityState={{ disabled }}
       style={({ pressed }) => [
         styles.actionButton,
-        {
-          backgroundColor: secondary
-            ? pressed ? colors.backgroundSelected : colors.backgroundElement
-            : pressed ? colors.have : colors.accent,
-          borderColor: secondary ? colors.border : colors.accent,
+        { borderColor: border },
+        pressed && {
+          backgroundColor: colors.backgroundElement,
+          transform: [{ scale: Motion.pressScale }],
         },
       ]}>
-      <Text style={[styles.actionText, { color: secondary ? colors.text : colors.accentText }]}>{label}</Text>
+      <Text style={[styles.actionText, { color: disabled ? colors.textTertiary : colors.text }]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -757,60 +945,141 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     paddingHorizontal: Spacing.three,
-    gap: Spacing.three,
+    gap: Spacing.four,
   },
+
   backButton: {
     alignSelf: 'flex-start',
     minHeight: HitTarget,
     paddingHorizontal: Spacing.three,
-    borderRadius: Radius.pill,
+    borderWidth: Rule,
+    borderRadius: Radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backText: { ...Type.bodyStrong },
-  photoStrip: { gap: Spacing.two },
-  heroPhoto: { borderRadius: Radius.lg, overflow: 'hidden' },
-  image: { width: '100%', height: '100%' },
-  photoAttribution: { position: 'absolute', top: Spacing.two, right: Spacing.two, borderRadius: Radius.pill, paddingHorizontal: Spacing.two, paddingVertical: Spacing.one },
-  photoAttributionText: { ...Type.micro },
-  titleBlock: { gap: Spacing.one },
-  title: { ...Type.display },
-  subtitle: { ...Type.body },
-  offlineNote: { ...Type.caption, borderWidth: Spacing.half, borderRadius: Radius.md, padding: Spacing.three },
-  section: { borderRadius: Radius.lg, padding: Spacing.three, gap: Spacing.three },
-  sectionTitle: { ...Type.headline },
+  backText: { ...Type.label },
+
+  // --- hero: the object, and the only shadow on the screen ---
+  hero: { gap: Spacing.two },
+  heroStrip: { gap: Spacing.two },
+  heroTile: { borderRadius: Radius.sm },
+  attribution: {
+    position: 'absolute',
+    top: Spacing.two,
+    right: Spacing.two,
+    borderRadius: Radius.xs,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
+  },
+  attributionText: { ...Type.label },
+  pageIndicator: { flexDirection: 'row', gap: Spacing.one, justifyContent: 'center' },
+  pageTick: { width: Spacing.three, height: Spacing.half, borderRadius: Radius.xs },
+
+  // --- placard ---
+  placard: { gap: Spacing.two, paddingTop: Spacing.two },
+  patternName: { ...Type.display },
+  placardMeta: { gap: Spacing.two, paddingTop: Spacing.one },
+  formName: { ...Type.body },
+  modelLine: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two },
+  modelNo: { ...Type.numeral },
+
+  offlineNote: {
+    ...Type.caption,
+    borderWidth: Rule,
+    borderRadius: Radius.xs,
+    padding: Spacing.three,
+  },
+
+  // --- sections ---
+  section: { gap: Spacing.three },
+  sectionPanel: {
+    borderWidth: Rule,
+    borderRadius: Radius.sm,
+    padding: Spacing.three,
+  },
   body: { ...Type.body },
-  history: { ...Type.body, paddingTop: Spacing.one },
-  fact: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.three, paddingBottom: Spacing.two, borderBottomWidth: Spacing.half },
-  factLabel: { ...Type.callout },
-  factValue: { ...Type.bodyStrong, flex: 1, textAlign: 'right' },
-  price: { ...Type.title },
-  priceSource: { ...Type.callout },
-  segment: { flexDirection: 'row', borderRadius: Radius.md, padding: Spacing.one },
-  segmentButton: { flex: 1, minHeight: HitTarget, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center' },
-  segmentText: { ...Type.bodyStrong },
+
+  specTable: { marginTop: -Spacing.two },
+  specRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  specLabel: { flex: 1 },
+  specValue: { ...Type.body, flex: 1, textAlign: 'right' },
+  specNumeral: { ...Type.numeral, flex: 1, textAlign: 'right' },
+
+  // --- collection ---
+  segment: {
+    flexDirection: 'row',
+    borderWidth: Rule,
+    borderRadius: Radius.sm,
+    overflow: 'hidden',
+  },
+  segmentButton: { flex: 1, minHeight: HitTarget, alignItems: 'center', justifyContent: 'center' },
+  segmentText: { ...Type.headline },
   fieldRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  fieldLabel: { ...Type.bodyStrong },
-  stepper: { flexDirection: 'row', alignItems: 'center', borderWidth: Spacing.half, borderRadius: Radius.pill },
+  stepper: { flexDirection: 'row', alignItems: 'center', borderWidth: Rule, borderRadius: Radius.sm },
   stepperButton: { minWidth: HitTarget, minHeight: HitTarget, alignItems: 'center', justifyContent: 'center' },
   stepperSymbol: { ...Type.headline },
-  quantity: { ...Type.bodyStrong, minWidth: Spacing.four, textAlign: 'center' },
+  quantity: {
+    ...Type.numeral,
+    minWidth: Spacing.five,
+    textAlign: 'center',
+    borderLeftWidth: Rule,
+    borderRightWidth: Rule,
+    paddingVertical: Spacing.two,
+  },
   choiceWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  choice: { minHeight: HitTarget, borderWidth: Spacing.half, borderRadius: Radius.pill, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center' },
-  choiceText: { ...Type.callout, textTransform: 'capitalize' },
-  notes: { ...Type.body, minHeight: Spacing.six * 2, borderWidth: Spacing.half, borderRadius: Radius.md, padding: Spacing.three, textAlignVertical: 'top' },
-  removeButton: { minHeight: HitTarget, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
-  removeText: { ...Type.bodyStrong },
+  choice: {
+    minHeight: HitTarget,
+    borderWidth: Rule,
+    borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.three,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  choiceText: { ...Type.label },
+  notes: {
+    ...Type.body,
+    minHeight: Spacing.six * 2,
+    borderWidth: Rule,
+    borderRadius: Radius.sm,
+    padding: Spacing.three,
+    textAlignVertical: 'top',
+  },
+  removeButton: { minHeight: HitTarget, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center' },
+  removeText: { ...Type.label },
   error: { ...Type.callout },
-  visibilityChoice: { minHeight: HitTarget, borderWidth: Spacing.half, borderRadius: Radius.md, padding: Spacing.three, flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+
+  // --- photo upload ---
+  visibilityChoice: {
+    minHeight: HitTarget,
+    borderWidth: Rule,
+    borderRadius: Radius.sm,
+    padding: Spacing.three,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+  },
   visibilityCopy: { flex: 1, gap: Spacing.one },
-  visibilityTitle: { ...Type.bodyStrong, textTransform: 'capitalize' },
+  visibilityTitle: { ...Type.label },
   radioMark: { ...Type.headline },
-  cameraFrame: { borderRadius: Radius.lg, overflow: 'hidden' },
+  cameraFrame: { borderRadius: Radius.sm, overflow: 'hidden' },
   camera: { height: Spacing.six * 5 },
   cameraControls: { flexDirection: 'row', gap: Spacing.two, paddingTop: Spacing.two },
   previewBlock: { gap: Spacing.two },
-  preview: { width: '100%', height: Spacing.six * 5, borderRadius: Radius.lg },
-  actionButton: { flex: 1, minHeight: HitTarget, borderWidth: Spacing.half, borderRadius: Radius.pill, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center' },
-  actionText: { ...Type.bodyStrong, textAlign: 'center' },
+  preview: { width: '100%', height: Spacing.six * 5, borderRadius: Radius.sm },
+
+  actionButton: {
+    flex: 1,
+    minHeight: HitTarget,
+    borderWidth: Rule,
+    borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.three,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionText: { ...Type.label, textAlign: 'center' },
 });

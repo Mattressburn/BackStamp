@@ -1,14 +1,24 @@
+/**
+ * The scan flow: permission, viewfinder, the identification wait, the guesses, and the
+ * offline fallbacks around them.
+ *
+ * Two visual languages meet on this screen, deliberately.
+ *
+ * Everything on the vellum ground — permission, the wait, results, catalog browse,
+ * ownership — is the specimen index: condensed display type, metadata stacked under
+ * its tile, hairline rules instead of shadows, accent held back to an outline.
+ *
+ * The viewfinder is the exception. It is an instrument used one-handed in a thrift
+ * aisle under bad light, so it drops the restraint: an opaque deck, a fixed dark
+ * palette in both schemes, and a shutter big enough to hit without looking. The line
+ * runs at the shutter — everything the shutter produces goes back to the archive.
+ */
+
 import { useNetInfo } from '@react-native-community/netinfo';
 import { CameraView, PermissionStatus, useCameraPermissions } from 'expo-camera';
 import { randomUUID } from 'expo-crypto';
 import { Directory, File, Paths } from 'expo-file-system';
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   AppState,
@@ -20,8 +30,17 @@ import {
   Text,
   TextInput,
   View,
-  useColorScheme,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { IdentifyResponse, OwnershipStatus, ScanGuess } from '@shared/types';
@@ -40,13 +59,21 @@ import {
   BottomTabInset,
   Colors,
   Elevation,
-  Fonts,
   HitTarget,
   MaxContentWidth,
+  Motion,
   Radius,
+  Rule,
   Spacing,
   Type,
 } from '@/constants/theme';
+import {
+  Divider,
+  Label,
+  RarityBadge,
+  SpecimenTile,
+  useScheme,
+} from '@/features/collection/collection-ui';
 import { deriveLlmWasRight, shouldRetryQueueDrain } from './logic';
 
 type ColorPalette = (typeof Colors)[keyof typeof Colors];
@@ -59,10 +86,42 @@ type Phase =
   | 'ownership'
   | 'saved';
 
+/**
+ * The two stages the identify round trip actually performs, and nothing else. `reading`
+ * covers the single await on the vision request; `matching` covers resolving the
+ * returned slugs against the local catalog. Naming a stage the code does not run would
+ * be theatre, which is the opposite of why staged progress is here.
+ */
+type IdentifyStage = 'reading' | 'matching';
+
 // ponytail: one capture-quality knob is enough; tune it only if upload time or model detail suffers.
 const CAPTURE_QUALITY = 0.8;
-const CAMERA_TEXT = Colors.dark.text;
 const QUEUE_PHOTO_DIRECTORY = 'scan-queue';
+
+/**
+ * The viewfinder keeps one fixed palette in both schemes: a camera feed is not a
+ * surface that can be tinted, and a control that changes contrast with the system
+ * theme is a control that disappears in half of them.
+ */
+const CAMERA_INK = Colors.dark.text;
+const CAMERA_INK_DIM = Colors.dark.textSecondary;
+const CAMERA_DECK = Colors.dark.background;
+const CAMERA_RULE = Colors.dark.border;
+const CAMERA_SCRIM = Colors.dark.scrim;
+const CAMERA_ACCENT = Colors.dark.accent;
+const CAMERA_DISABLED = Colors.dark.textTertiary;
+
+const SHUTTER = Spacing.six + Spacing.three;
+const SHUTTER_CORE = SHUTTER - Spacing.four;
+const SHUTTER_SLOT = HitTarget * 2;
+const THUMB = Spacing.six;
+/** Big enough that the model stamp reads as a stamp rather than a cropped arc. */
+const INDEX_TILE = HitTarget * 2;
+const LEAD_TILE = Spacing.six * 2;
+
+/** Confidence bands. The wording is what gets read; the percentage stays in the label. */
+const STRONG_MATCH = 0.75;
+const LIKELY_MATCH = 0.5;
 
 async function persistQueuedPhotos(photoUris: string[]): Promise<string[]> {
   const directory = new Directory(Paths.document, QUEUE_PHOTO_DIRECTORY);
@@ -100,7 +159,6 @@ function deleteQueuedPhotos(photoUris: string[]): void {
 }
 
 function queueLabel(count: number): string {
-  if (count === 0) return 'No scans waiting';
   return `${count} scan${count === 1 ? '' : 's'} waiting`;
 }
 
@@ -108,85 +166,101 @@ function confidenceLabel(confidence: number): string {
   return `About ${Math.round(confidence * 10) * 10}% confidence`;
 }
 
-function ActionButton({
-  label,
-  onPress,
-  colors,
-  secondary = false,
-  disabled = false,
-}: {
-  label: string;
-  onPress: () => void;
-  colors: ColorPalette;
-  secondary?: boolean;
-  disabled?: boolean;
-}) {
-  const backgroundColor = disabled
-    ? colors.backgroundSelected
-    : secondary
-      ? colors.backgroundElement
-      : colors.accent;
-  const color = disabled
-    ? colors.textTertiary
-    : secondary
-      ? colors.text
-      : colors.accentText;
-  // CONTRACT: Colors.light accent/accentText needs stronger text contrast; theme.ts owns the pair.
-
-  return (
-    <Pressable
-      accessibilityLabel={label}
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.actionButton,
-        { backgroundColor: pressed && !disabled ? colors.backgroundSelected : backgroundColor },
-      ]}>
-      {({ pressed }) => (
-        <Text style={[styles.buttonText, { color: pressed && !disabled ? colors.text : color }]}>
-          {label}
-        </Text>
-      )}
-    </Pressable>
-  );
+function confidenceTier(confidence: number): string {
+  if (confidence >= STRONG_MATCH) return 'strong match';
+  if (confidence >= LIKELY_MATCH) return 'likely match';
+  return 'possible match';
 }
 
-function QueueBadge({ count, colors, camera = false }: {
+/**
+ * Motion is confirmation, not decoration: the two moments worth animating are a frame
+ * landing in the tray and the guesses arriving. Reduced motion skips straight to the
+ * resting state rather than shortening the animation.
+ */
+function Rise({
+  children,
+  delay = 0,
+  zoom = false,
+  style,
+}: {
+  children: ReactNode;
+  delay?: number;
+  zoom?: boolean;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const reduced = useReducedMotion();
+  const progress = useSharedValue(reduced ? 1 : 0);
+
+  useEffect(() => {
+    if (reduced) {
+      progress.value = 1;
+      return;
+    }
+    progress.value = withDelay(
+      delay,
+      withTiming(1, { duration: Motion.enter, easing: Easing.bezier(...Motion.easing) }),
+    );
+  }, [delay, progress, reduced]);
+
+  const animated = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [
+      { translateY: (1 - progress.value) * Motion.enterOffset },
+      { scale: zoom ? Motion.pressScale + (1 - Motion.pressScale) * progress.value : 1 },
+    ],
+  }));
+
+  return <Animated.View style={[style, animated]}>{children}</Animated.View>;
+}
+
+/**
+ * Quiet when the queue is empty — it says nothing then, so it is worth reading when it
+ * says anything at all. Loud enough to answer the only question a waiting scan raises:
+ * how many, and what is it waiting on.
+ */
+function QueueStrip({
+  count,
+  colors,
+  offline,
+  camera = false,
+}: {
   count: number;
   colors: ColorPalette;
+  offline: boolean;
   camera?: boolean;
 }) {
+  if (count === 0) return null;
+
+  const detail = offline ? 'waiting for a connection' : 'identifying when ready';
+  const ink = camera ? CAMERA_INK : colors.text;
+  const dim = camera ? CAMERA_INK_DIM : colors.textSecondary;
+
   return (
     <View
-      accessibilityLabel={queueLabel(count)}
+      accessibilityLabel={`${queueLabel(count)}, ${detail}`}
+      accessibilityLiveRegion="polite"
       style={[
-        styles.queueBadge,
-        { backgroundColor: camera ? colors.scrim : colors.backgroundElement },
+        styles.queueStrip,
+        camera
+          ? { backgroundColor: CAMERA_SCRIM, borderColor: CAMERA_RULE }
+          : { backgroundColor: colors.surface, borderColor: colors.border },
       ]}>
-      {camera ? <View pointerEvents="none" style={[styles.scrimLayer, { backgroundColor: colors.scrim }]} /> : null}
-      <Text style={[styles.microText, { color: camera ? CAMERA_TEXT : colors.textSecondary }]}>
-        {queueLabel(count)}
-      </Text>
+      <Text style={[styles.numeral, { color: ink }]}>{count}</Text>
+      <View style={styles.queueCopy}>
+        <Text style={[styles.label, { color: ink }]}>
+          {count === 1 ? 'scan waiting' : 'scans waiting'}
+        </Text>
+        <Text style={[styles.caption, { color: dim }]}>{detail}</Text>
+      </View>
     </View>
   );
 }
 
-function CapturedFrames({
-  photoUris,
-  colors,
-  camera = false,
-}: {
-  photoUris: string[];
-  colors: ColorPalette;
-  camera?: boolean;
-}) {
-  const frameColor = camera ? CAMERA_TEXT : colors.text;
-  const frameBackground = camera ? colors.scrim : colors.backgroundElement;
+/** The two views a burst is made of, as an index entry each. */
+function FrameStrip({ photoUris, colors }: { photoUris: string[]; colors: ColorPalette }) {
   return (
     <View style={styles.framesRow}>
-      {['Pattern', 'Base'].map((label, index) => {
+      {['Pattern', 'Model no.'].map((label, index) => {
         const uri = photoUris[index];
         return (
           <View key={label} style={styles.frameColumn}>
@@ -195,21 +269,19 @@ function CapturedFrames({
                 accessibilityLabel={`${label} photo captured`}
                 accessibilityRole="image"
                 source={{ uri }}
-                style={[styles.frameImage, { borderColor: frameColor }]}
+                style={[styles.frameImage, { borderColor: colors.border }]}
               />
             ) : (
               <View
                 style={[
                   styles.frameImage,
                   styles.emptyFrame,
-                  { backgroundColor: frameBackground, borderColor: frameColor },
+                  { backgroundColor: colors.backgroundElement, borderColor: colors.border },
                 ]}>
-                <Text style={[styles.captionText, { color: frameColor }]}>Next</Text>
+                <Text style={[styles.label, { color: colors.textTertiary }]}>—</Text>
               </View>
             )}
-            <Text style={[styles.captionText, { color: frameColor }]}>
-              {label} {uri ? 'captured' : ''}
-            </Text>
+            <Label tone={uri ? 'secondary' : 'tertiary'}>{label}</Label>
           </View>
         );
       })}
@@ -230,14 +302,88 @@ function Notice({ message, colors, error = false }: {
       style={[
         styles.notice,
         {
-          backgroundColor: colors.backgroundElement,
+          backgroundColor: colors.surface,
           borderColor: error ? colors.danger : colors.border,
         },
       ]}>
-      <Text style={[styles.calloutText, { color: error ? colors.danger : colors.text }]}>
-        {message}
+      <Text style={[styles.label, { color: error ? colors.danger : colors.textSecondary }]}>
+        {error ? 'problem' : 'note'}
       </Text>
+      <Text style={[styles.body, { color: colors.text }]}>{message}</Text>
     </View>
+  );
+}
+
+/** Eyebrow, title, and the sentence under it — the header every archive page shares. */
+function ScreenHeader({
+  eyebrow,
+  title,
+  blurb,
+  colors,
+}: {
+  eyebrow: string;
+  title: string;
+  blurb?: string;
+  colors: ColorPalette;
+}) {
+  return (
+    <View style={styles.header}>
+      <Label tone="tertiary">{eyebrow}</Label>
+      <Text accessibilityRole="header" style={[styles.display, { color: colors.text }]}>
+        {title}
+      </Text>
+      {blurb ? <Text style={[styles.body, { color: colors.textSecondary }]}>{blurb}</Text> : null}
+      <Divider />
+    </View>
+  );
+}
+
+/** Solid accent fill is ceremonial: at most one per screen. Everything else is a ghost. */
+function ActionButton({
+  label,
+  onPress,
+  colors,
+  secondary = false,
+  disabled = false,
+  hint,
+}: {
+  label: string;
+  onPress: () => void;
+  colors: ColorPalette;
+  secondary?: boolean;
+  disabled?: boolean;
+  hint?: string;
+}) {
+  // CONTRACT: Colors.light accent/accentText needs stronger text contrast; theme.ts owns the pair.
+  const fill = disabled
+    ? colors.backgroundElement
+    : secondary
+      ? 'transparent'
+      : colors.accent;
+  const ink = disabled ? colors.textTertiary : secondary ? colors.text : colors.accentText;
+
+  return (
+    <Pressable
+      accessibilityHint={hint}
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.actionButton,
+        secondary ? styles.ghostButton : styles.solidButton,
+        {
+          backgroundColor: pressed && !disabled ? colors.backgroundSelected : fill,
+          borderColor: disabled ? colors.border : colors.accent,
+        },
+      ]}>
+      {({ pressed }) => (
+        <Text style={[styles.buttonLabel, { color: pressed && !disabled ? colors.text : ink }]}>
+          {label}
+        </Text>
+      )}
+    </Pressable>
   );
 }
 
@@ -247,12 +393,14 @@ function Surface({
   topInset,
   bottomInset,
   queuedCount,
+  offline,
 }: {
   children: ReactNode;
   colors: ColorPalette;
   topInset: number;
   bottomInset: number;
   queuedCount: number;
+  offline: boolean;
 }) {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -265,19 +413,24 @@ function Surface({
           },
         ]}
         keyboardShouldPersistTaps="handled">
-        <QueueBadge count={queuedCount} colors={colors} />
+        <QueueStrip count={queuedCount} colors={colors} offline={offline} />
         {children}
       </ScrollView>
     </View>
   );
 }
 
+/**
+ * Handing over the instrument. The two frames are drawn before the camera opens, so the
+ * two-shot burst is a thing the user has already seen once by the time it is asked for.
+ */
 function PermissionScreen({
   mode,
   colors,
   topInset,
   bottomInset,
   queuedCount,
+  offline,
   onRequest,
   onSettings,
 }: {
@@ -286,6 +439,7 @@ function PermissionScreen({
   topInset: number;
   bottomInset: number;
   queuedCount: number;
+  offline: boolean;
   onRequest: () => void;
   onSettings: () => void;
 }) {
@@ -294,39 +448,255 @@ function PermissionScreen({
       colors={colors}
       topInset={topInset}
       bottomInset={bottomInset}
-      queuedCount={queuedCount}>
-      <View style={[styles.permissionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Text accessibilityRole="header" style={[styles.titleText, { color: colors.text }]}>Camera access</Text>
-        <Text style={[styles.bodyText, { color: colors.textSecondary }]}>
-          Photograph the pattern first, then the embossed model number underneath. Those two views let the catalog identify the exact pattern and form.
-        </Text>
-        {mode === 'checking' ? (
-          <View
-            accessibilityLabel="Checking camera access"
-            accessibilityLiveRegion="polite"
-            accessibilityRole="progressbar"
-            style={styles.progressRow}>
-            <ActivityIndicator color={colors.accent} />
-            <Text style={[styles.calloutText, { color: colors.textSecondary }]}>Checking camera access…</Text>
-          </View>
-        ) : mode === 'undetermined' ? (
-          <ActionButton label="Allow camera access" onPress={onRequest} colors={colors} />
-        ) : (
-          <>
-            <Text style={[styles.calloutText, { color: colors.textSecondary }]}>
-              Camera access is off. Open this app’s system settings and allow Camera to scan a dish.
+      queuedCount={queuedCount}
+      offline={offline}>
+      <ScreenHeader
+        eyebrow="camera"
+        title="Two views, one piece"
+        blurb="Photograph the pattern first, then the embossed model number underneath. Those two views let the catalog identify the exact pattern and form."
+        colors={colors}
+      />
+
+      <View style={styles.plateRow}>
+        {['Pattern', 'Model no.'].map((label, index) => (
+          <View key={label} style={styles.plateColumn}>
+            <View style={[styles.plate, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+              <Text style={[styles.numeralLarge, { color: colors.textTertiary }]}>{index + 1}</Text>
+            </View>
+            <Label tone="secondary">{label}</Label>
+            <Text style={[styles.caption, { color: colors.textTertiary }]}>
+              {index === 0 ? 'Face up, glare off the design' : 'Underside, centred'}
             </Text>
-            <ActionButton label="Open app settings" onPress={onSettings} colors={colors} />
-          </>
-        )}
+          </View>
+        ))}
       </View>
+
+      <Divider />
+
+      {mode === 'checking' ? (
+        <View
+          accessibilityLabel="Checking camera access"
+          accessibilityLiveRegion="polite"
+          accessibilityRole="progressbar"
+          style={styles.progressRow}>
+          <ActivityIndicator color={colors.accent} />
+          <Text style={[styles.callout, { color: colors.textSecondary }]}>Checking camera access…</Text>
+        </View>
+      ) : mode === 'undetermined' ? (
+        <ActionButton label="Allow camera access" onPress={onRequest} colors={colors} />
+      ) : (
+        <>
+          <Text style={[styles.callout, { color: colors.textSecondary }]}>
+            Camera access is off. Open this app’s system settings and allow Camera to scan a dish.
+          </Text>
+          <ActionButton label="Open app settings" onPress={onSettings} colors={colors} />
+        </>
+      )}
     </Surface>
   );
 }
 
+/**
+ * The wait, named. Each row is work the app is doing at that moment — the request in
+ * flight, then the returned slugs being matched against the saved catalog — so the
+ * ledger is evidence rather than reassurance.
+ */
+function IdentifyLedger({
+  stage,
+  hasBaseShot,
+  colors,
+}: {
+  stage: IdentifyStage;
+  hasBaseShot: boolean;
+  colors: ColorPalette;
+}) {
+  const steps: { key: IdentifyStage; label: string; detail: string }[] = [
+    {
+      key: 'reading',
+      label: hasBaseShot ? 'Reading pattern and model no.' : 'Reading the pattern',
+      detail: hasBaseShot
+        ? 'Both views are with the identifier.'
+        : 'The pattern view is with the identifier.',
+    },
+    {
+      key: 'matching',
+      label: 'Matching the saved catalog',
+      detail: 'Turning the answer into catalogued pieces.',
+    },
+  ];
+  const activeIndex = steps.findIndex((step) => step.key === stage);
+
+  return (
+    <View
+      accessibilityLabel={steps[activeIndex]?.detail ?? ''}
+      accessibilityLiveRegion="polite"
+      accessibilityRole="progressbar"
+      style={styles.ledger}>
+      {steps.map((step, index) => {
+        const done = index < activeIndex;
+        const active = index === activeIndex;
+        return (
+          <View key={step.key} style={styles.ledgerRow}>
+            <View style={styles.ledgerMarker}>
+              {active ? (
+                <ActivityIndicator color={colors.accent} size="small" />
+              ) : (
+                <View
+                  style={[
+                    styles.ledgerTick,
+                    done
+                      ? { backgroundColor: colors.accent, borderColor: colors.accent }
+                      : { borderColor: colors.border },
+                  ]}
+                />
+              )}
+            </View>
+            <View style={styles.ledgerCopy}>
+              <Text
+                style={[
+                  styles.label,
+                  { color: active ? colors.text : done ? colors.textSecondary : colors.textTertiary },
+                ]}>
+                {step.label}
+              </Text>
+              {active ? (
+                <Text style={[styles.caption, { color: colors.textSecondary }]}>{step.detail}</Text>
+              ) : null}
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+/** Confidence as a length, not a percentage: a hairline that fills, and the word for it. */
+function ConfidenceMeter({ confidence, colors }: { confidence: number; colors: ColorPalette }) {
+  return (
+    <View style={styles.confidenceBlock}>
+      <View style={[styles.confidenceTrack, { backgroundColor: colors.backgroundElement }]}>
+        <View
+          style={[
+            styles.confidenceFill,
+            { backgroundColor: colors.accent, width: `${Math.round(confidence * 100)}%` },
+          ]}
+        />
+      </View>
+      <Text style={[styles.label, { color: colors.accent }]}>{confidenceTier(confidence)}</Text>
+    </View>
+  );
+}
+
+/**
+ * A guess as a specimen entry: the piece in its documented colors with its model number
+ * struck across it, and the metadata stacked directly underneath. The top guess gets
+ * the full plate and the accent outline — the one ceremonial mark on this screen.
+ */
+function CandidateEntry({
+  guess,
+  row,
+  index,
+  lead,
+  colors,
+  onPress,
+}: {
+  guess: ScanGuess;
+  row: CatalogRow;
+  index: number;
+  lead: boolean;
+  colors: ColorPalette;
+  onPress: () => void;
+}) {
+  const metadata = (
+    <View style={styles.entryCopy}>
+      <Text style={[styles.headline, { color: colors.text }]}>{row.patternName}</Text>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>
+        {row.shape} · {row.modelNo}
+      </Text>
+      <RarityBadge rarity={row.rarity} compact={!lead} />
+      <ConfidenceMeter confidence={guess.confidence} colors={colors} />
+      {lead ? (
+        <Text style={[styles.caption, { color: colors.textSecondary }]}>{guess.reasoning}</Text>
+      ) : null}
+    </View>
+  );
+
+  return (
+    <Pressable
+      accessibilityHint="Confirms this item and records whether it was the top guess"
+      accessibilityLabel={`${row.patternName}, ${row.shape}, model ${row.modelNo}, ${confidenceLabel(guess.confidence)}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.entry,
+        lead ? styles.leadEntry : styles.rowEntry,
+        {
+          backgroundColor: pressed ? colors.backgroundSelected : colors.surface,
+          borderColor: lead ? colors.accent : colors.border,
+        },
+      ]}>
+      <View style={lead ? styles.leadRank : styles.rowRank}>
+        <Text style={[styles.numeral, { color: colors.textTertiary }]}>
+          {String(index + 1).padStart(2, '0')}
+        </Text>
+      </View>
+      <SpecimenTile
+        colorway={row.colorway}
+        modelNo={row.modelNo}
+        patternName={row.patternName}
+        stampSize={lead ? 'large' : 'small'}
+        style={[lead ? styles.leadTile : styles.indexTile, Elevation.object]}
+      />
+      {metadata}
+    </Pressable>
+  );
+}
+
+/** The same entry, minus the guess — catalog browse is the identical index, unsorted. */
+function CatalogEntry({
+  row,
+  colors,
+  onPress,
+}: {
+  row: CatalogRow;
+  colors: ColorPalette;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityHint="Confirms this item as the piece you photographed"
+      accessibilityLabel={`${row.patternName}, ${row.shape}, model ${row.modelNo}`}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.entry,
+        styles.rowEntry,
+        {
+          backgroundColor: pressed ? colors.backgroundSelected : colors.surface,
+          borderColor: colors.border,
+        },
+      ]}>
+      <SpecimenTile
+        colorway={row.colorway}
+        modelNo={row.modelNo}
+        patternName={row.patternName}
+        stampSize="small"
+        style={[styles.indexTile, Elevation.object]}
+      />
+      <View style={styles.entryCopy}>
+        <Text style={[styles.headline, { color: colors.text }]}>{row.patternName}</Text>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>
+          {row.shape} · {row.modelNo}
+        </Text>
+        <RarityBadge rarity={row.rarity} compact />
+      </View>
+    </Pressable>
+  );
+}
+
 export default function ScanScreen() {
-  const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const scheme = useScheme();
+  const colors = Colors[scheme];
   const insets = useSafeAreaInsets();
   const netInfo = useNetInfo();
   const [permission, requestPermission, refreshPermission] = useCameraPermissions();
@@ -345,6 +715,9 @@ export default function ScanScreen() {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progressMessage, setProgressMessage] = useState('Comparing both views with the saved catalog…');
+  // Held apart from `phase` on purpose: a background queue drain runs the matching stage
+  // while the user is still on the viewfinder, and must not pull them off it.
+  const [stage, setStage] = useState<IdentifyStage | null>(null);
   const [catalogQuery, setCatalogQuery] = useState('');
   const [catalogRows, setCatalogRows] = useState<CatalogRow[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
@@ -377,8 +750,10 @@ export default function ScanScreen() {
     setPhotoUris(queuedPhotoUris);
     setGuesses(response.guesses);
     setError(null);
+    setStage('matching');
     if (response.lowConfidence || response.guesses.length === 0) {
       setCatalogQuery('');
+      setStage(null);
       setPhase('browse');
       return;
     }
@@ -391,10 +766,12 @@ export default function ScanScreen() {
       .filter((row): row is CatalogRow => Boolean(row));
     if (resolved.length === 0) {
       setCatalogQuery('');
+      setStage(null);
       setPhase('browse');
       return;
     }
     setGuessRows(resolved);
+    setStage(null);
     setPhase('results');
   }, []);
 
@@ -482,6 +859,7 @@ export default function ScanScreen() {
     setGuessRows([]);
     setNotice(null);
     setError(null);
+    setStage(null);
     setCatalogQuery('');
     setUnknownPatternName('');
     setConfirmedSlug('');
@@ -492,6 +870,7 @@ export default function ScanScreen() {
   };
 
   const queueBurst = async (uris: string[], hasBaseShot: boolean) => {
+    setStage(null);
     setProgressMessage('Saving this scan on your phone…');
     setPhase('identifying');
     let queuedPhotoUris: string[] = [];
@@ -524,6 +903,7 @@ export default function ScanScreen() {
         ? 'Reading the pattern and embossed model number…'
         : 'Comparing the pattern with the saved catalog…',
     );
+    setStage('reading');
     setPhase('identifying');
     setError(null);
     try {
@@ -533,10 +913,12 @@ export default function ScanScreen() {
       } else if (shouldRetryQueueDrain(result.code, 0)) {
         await queueBurst(uris, hasBaseShot);
       } else {
+        setStage(null);
         setPhase('camera');
         setError(result.error);
       }
     } catch {
+      setStage(null);
       setPhase('camera');
       setError('The photo could not be read. Please capture it again.');
     }
@@ -572,6 +954,7 @@ export default function ScanScreen() {
     setConfirmedSlug(slug);
     setConfirmedPatternName(patternName);
     setConfirmedForm(form);
+    setStage(null);
     setProgressMessage('Saving your confirmation and correction…');
     setPhase('confirming');
     setError(null);
@@ -622,6 +1005,7 @@ export default function ScanScreen() {
       return;
     }
 
+    setStage(null);
     setProgressMessage('Creating the new catalog entry…');
     setPhase('confirming');
     setError(null);
@@ -668,6 +1052,7 @@ export default function ScanScreen() {
         topInset={safeTop}
         bottomInset={surfaceBottom}
         queuedCount={queuedCount}
+        offline={isOffline}
         onRequest={() => {}}
         onSettings={() => {}}
       />
@@ -682,6 +1067,7 @@ export default function ScanScreen() {
         topInset={safeTop}
         bottomInset={surfaceBottom}
         queuedCount={queuedCount}
+        offline={isOffline}
         onRequest={() => void requestPermission()}
         onSettings={() => {}}
       />
@@ -696,6 +1082,7 @@ export default function ScanScreen() {
         topInset={safeTop}
         bottomInset={surfaceBottom}
         queuedCount={queuedCount}
+        offline={isOffline}
         onRequest={() => {}}
         onSettings={() => void Linking.openSettings()}
       />
@@ -703,8 +1090,15 @@ export default function ScanScreen() {
   }
 
   if (phase === 'camera') {
+    const shutterBusy = capturing || !cameraReady;
+    const shutterCore = shutterBusy
+      ? CAMERA_DISABLED
+      : needsBaseShot
+        ? CAMERA_ACCENT
+        : CAMERA_INK;
+
     return (
-      <View style={[styles.screen, { backgroundColor: colors.background }]}>
+      <View style={[styles.screen, { backgroundColor: CAMERA_DECK }]}>
         <CameraView
           accessible={false}
           facing="back"
@@ -716,71 +1110,112 @@ export default function ScanScreen() {
         <ScrollView
           contentContainerStyle={styles.cameraOverlayContent}
           showsVerticalScrollIndicator={false}
-          style={styles.cameraOverlay}>
+          style={StyleSheet.absoluteFill}>
           <View pointerEvents="box-none" style={[styles.cameraTop, { paddingTop: safeTop }]}>
-            <QueueBadge count={queuedCount} colors={colors} camera />
-            <View style={[styles.cameraPrompt, { backgroundColor: colors.scrim }]}>
-              <View pointerEvents="none" style={[styles.scrimLayer, { backgroundColor: colors.scrim }]} />
-              <Text accessibilityRole="header" style={[styles.headlineText, { color: CAMERA_TEXT }]}>
+            <QueueStrip count={queuedCount} colors={colors} offline={isOffline} camera />
+            <View style={[styles.cameraPrompt, { backgroundColor: CAMERA_SCRIM, borderColor: CAMERA_RULE }]}>
+              <Text style={[styles.label, { color: needsBaseShot ? CAMERA_ACCENT : CAMERA_INK_DIM }]}>
+                {needsBaseShot ? 'Shot 2 of 2 · underside' : 'Shot 1 of 2 · pattern'}
+              </Text>
+              <Text accessibilityRole="header" style={[styles.title, { color: CAMERA_INK }]}>
                 {needsBaseShot ? 'Now flip it over' : 'Start with the pattern'}
               </Text>
-              <Text style={[styles.calloutText, { color: CAMERA_TEXT }]}>
+              <Text style={[styles.callout, { color: CAMERA_INK }]}>
                 {needsBaseShot
                   ? 'Center the embossed model number on the underside. It is usually the strongest identification clue.'
                   : 'Fill the frame with the printed pattern and keep glare away from the design.'}
               </Text>
-              <CapturedFrames photoUris={photoUris} colors={colors} camera />
+            </View>
+          </View>
+
+          {/* The aiming square. It turns accent the moment the second shot is the one being asked for. */}
+          <View pointerEvents="none" style={styles.reticleWrap}>
+            <View style={styles.reticle}>
+              {['topLeft', 'topRight', 'bottomLeft', 'bottomRight'].map((corner) => (
+                <View
+                  key={corner}
+                  style={[
+                    styles.reticleCorner,
+                    styles[corner as 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight'],
+                    { borderColor: needsBaseShot ? CAMERA_ACCENT : CAMERA_INK },
+                  ]}
+                />
+              ))}
             </View>
           </View>
 
           <View
             pointerEvents="box-none"
-            style={[styles.cameraBottom, { backgroundColor: colors.scrim, paddingBottom: safeBottom }]}>
-            <View pointerEvents="none" style={[styles.scrimLayer, { backgroundColor: colors.scrim }]} />
+            style={[
+              styles.cameraDeck,
+              Elevation.sheet,
+              { backgroundColor: CAMERA_DECK, borderTopColor: CAMERA_RULE, paddingBottom: safeBottom },
+            ]}>
             {notice ? (
-              <View accessibilityLiveRegion="polite" accessibilityRole="alert" style={[styles.cameraNotice, { backgroundColor: colors.scrim }]}>
-                <Text style={[styles.calloutText, { color: CAMERA_TEXT }]}>{notice}</Text>
+              <View accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.cameraNotice}>
+                <Text style={[styles.callout, { color: CAMERA_INK }]}>{notice}</Text>
               </View>
             ) : null}
             {error ? (
-              <View accessibilityLiveRegion="polite" accessibilityRole="alert" style={[styles.cameraNotice, { backgroundColor: colors.scrim }]}>
-                <Text style={[styles.calloutText, { color: CAMERA_TEXT }]}>{error}</Text>
+              <View accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.cameraNotice}>
+                <Text style={[styles.callout, { color: Colors.dark.danger }]}>{error}</Text>
               </View>
             ) : null}
-            <Pressable
-              accessibilityLabel={needsBaseShot ? 'Capture base model number' : 'Capture pattern'}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: capturing || !cameraReady }}
-              disabled={capturing || !cameraReady}
-              onPress={() => void captureFrame()}
-              style={({ pressed }) => [
-                styles.shutter,
-                {
-                  backgroundColor:
-                    capturing || !cameraReady
-                      ? colors.textTertiary
-                      : pressed
-                        ? Colors.light.backgroundSelected
-                        : Colors.light.surface,
-                  borderColor: Colors.light.backgroundSelected,
-                },
-              ]}
-            />
-            <Text accessibilityLiveRegion="polite" style={[styles.captionText, { color: CAMERA_TEXT }]}>
-              {capturing ? 'Saving frame…' : needsBaseShot ? 'Base shot' : 'Pattern shot'}
-            </Text>
-            {needsBaseShot ? (
+
+            <View style={styles.shutterRow}>
+              <View style={styles.shutterSlot}>
+                {photoUris[0] ? (
+                  <Rise zoom style={styles.thumbWrap}>
+                    <Image
+                      accessibilityLabel="Pattern photo captured"
+                      accessibilityRole="image"
+                      source={{ uri: photoUris[0] }}
+                      style={[styles.thumb, { borderColor: CAMERA_ACCENT }]}
+                    />
+                    <Text style={[styles.label, { color: CAMERA_ACCENT }]}>kept</Text>
+                  </Rise>
+                ) : null}
+              </View>
+
               <Pressable
-                accessibilityLabel="Skip the base shot"
+                accessibilityLabel={needsBaseShot ? 'Capture base model number' : 'Capture pattern'}
                 accessibilityRole="button"
-                onPress={() => void identifyBurst(photoUris, false)}
+                accessibilityState={{ disabled: shutterBusy }}
+                disabled={shutterBusy}
+                onPress={() => void captureFrame()}
                 style={({ pressed }) => [
-                  styles.cameraSecondaryButton,
-                  { backgroundColor: pressed ? colors.textSecondary : colors.scrim },
+                  styles.shutter,
+                  {
+                    borderColor: shutterBusy ? CAMERA_DISABLED : CAMERA_INK,
+                    transform: [{ scale: pressed ? Motion.pressScale : 1 }],
+                  },
                 ]}>
-                <Text style={[styles.buttonText, { color: CAMERA_TEXT }]}>Skip base shot</Text>
+                <View style={[styles.shutterCore, { backgroundColor: shutterCore }]} />
               </Pressable>
-            ) : null}
+
+              <View style={styles.shutterSlot}>
+                {needsBaseShot ? (
+                  <Pressable
+                    accessibilityHint="Identifies from the pattern photo alone"
+                    accessibilityLabel="Skip the base shot"
+                    accessibilityRole="button"
+                    onPress={() => void identifyBurst(photoUris, false)}
+                    style={({ pressed }) => [
+                      styles.cameraGhostButton,
+                      {
+                        backgroundColor: pressed ? CAMERA_RULE : 'transparent',
+                        borderColor: CAMERA_INK_DIM,
+                      },
+                    ]}>
+                    <Text style={[styles.buttonLabel, { color: CAMERA_INK }]}>Skip</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
+
+            <Text accessibilityLiveRegion="polite" style={[styles.label, { color: CAMERA_INK_DIM }]}>
+              {capturing ? 'Saving frame…' : needsBaseShot ? 'Capture the underside' : 'Capture the pattern'}
+            </Text>
           </View>
         </ScrollView>
       </View>
@@ -789,19 +1224,30 @@ export default function ScanScreen() {
 
   if (phase === 'identifying' || phase === 'confirming') {
     return (
-      <Surface colors={colors} topInset={safeTop} bottomInset={surfaceBottom} queuedCount={queuedCount}>
-        <View
-          accessibilityLabel={progressMessage}
-          accessibilityLiveRegion="polite"
-          accessibilityRole="progressbar"
-          style={[styles.progressCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <ActivityIndicator color={colors.accent} />
-          <Text accessibilityRole="header" style={[styles.titleText, { color: colors.text }]}>
-            {phase === 'identifying' ? 'Identifying your piece' : 'Saving your choice'}
-          </Text>
-          <Text style={[styles.bodyText, { color: colors.textSecondary }]}>{progressMessage}</Text>
-          {phase === 'identifying' ? <CapturedFrames photoUris={photoUris} colors={colors} /> : null}
-        </View>
+      <Surface
+        colors={colors}
+        topInset={safeTop}
+        bottomInset={surfaceBottom}
+        queuedCount={queuedCount}
+        offline={isOffline}>
+        <ScreenHeader
+          eyebrow={phase === 'identifying' ? 'in progress' : 'confirming'}
+          title={phase === 'identifying' ? 'Identifying your piece' : 'Saving your choice'}
+          colors={colors}
+        />
+        {stage ? (
+          <IdentifyLedger stage={stage} hasBaseShot={photoUris.length > 1} colors={colors} />
+        ) : (
+          <View
+            accessibilityLabel={progressMessage}
+            accessibilityLiveRegion="polite"
+            accessibilityRole="progressbar"
+            style={styles.progressRow}>
+            <ActivityIndicator color={colors.accent} />
+            <Text style={[styles.callout, { color: colors.textSecondary }]}>{progressMessage}</Text>
+          </View>
+        )}
+        {phase === 'identifying' ? <FrameStrip photoUris={photoUris} colors={colors} /> : null}
       </Surface>
     );
   }
@@ -812,40 +1258,38 @@ export default function ScanScreen() {
       .map((guess) => ({ guess, row: guessRows.find((row) => row.slug === guess.itemSlug) }))
       .filter((candidate): candidate is { guess: ScanGuess; row: CatalogRow } => Boolean(candidate.row));
     return (
-      <Surface colors={colors} topInset={safeTop} bottomInset={surfaceBottom} queuedCount={queuedCount}>
-        <Text accessibilityRole="header" style={[styles.displayText, { color: colors.text }]}>Best matches</Text>
-        <Text style={[styles.bodyText, { color: colors.textSecondary }]}>Tap the exact pattern and form to confirm it.</Text>
+      <Surface
+        colors={colors}
+        topInset={safeTop}
+        bottomInset={surfaceBottom}
+        queuedCount={queuedCount}
+        offline={isOffline}>
+        <ScreenHeader
+          eyebrow={`${candidates.length} ${candidates.length === 1 ? 'match' : 'matches'}`}
+          title="Best matches"
+          blurb="Tap the exact pattern and form to confirm it."
+          colors={colors}
+        />
         <Notice message={notice} colors={colors} />
         <Notice message={error} colors={colors} error />
         <View style={styles.stack}>
           {candidates.map(({ guess, row }, index) => (
-            <Pressable
-              accessibilityHint="Confirms this item and records whether it was the top guess"
-              accessibilityLabel={`${row.patternName}, ${row.shape}, model ${row.modelNo}, ${confidenceLabel(guess.confidence)}`}
-              accessibilityRole="button"
-              key={row.slug}
-              onPress={() => void confirmItem(row.slug, row.patternName, `${row.shape} · ${row.modelNo}`)}
-              style={({ pressed }) => [
-                styles.candidateCard,
-                {
-                  backgroundColor: pressed ? colors.backgroundSelected : colors.surface,
-                  borderColor: colors.border,
-                },
-              ]}>
-              <View style={[styles.rank, { backgroundColor: colors.backgroundElement }]}>
-                <Text style={[styles.bodyStrongText, { color: colors.text }]}>{index + 1}</Text>
-              </View>
-              <View style={styles.candidateCopy}>
-                <Text style={[styles.headlineText, { color: colors.text }]}>{row.patternName}</Text>
-                <Text style={[styles.calloutText, { color: colors.textSecondary }]}>{row.shape} · {row.modelNo}</Text>
-                <Text style={[styles.captionText, { color: colors.accent }]}>{confidenceLabel(guess.confidence)}</Text>
-                <Text style={[styles.captionText, { color: colors.textSecondary }]}>{guess.reasoning}</Text>
-              </View>
-            </Pressable>
+            <Rise key={row.slug} delay={index * (Motion.press / 2)}>
+              <CandidateEntry
+                guess={guess}
+                row={row}
+                index={index}
+                lead={index === 0}
+                colors={colors}
+                onPress={() => void confirmItem(row.slug, row.patternName, `${row.shape} · ${row.modelNo}`)}
+              />
+            </Rise>
           ))}
         </View>
+        <Divider />
         <ActionButton
           label="None of these"
+          hint="Opens the saved catalog so you can find the piece yourself"
           onPress={() => {
             setCatalogQuery('');
             setError(null);
@@ -860,9 +1304,18 @@ export default function ScanScreen() {
 
   if (phase === 'browse') {
     return (
-      <Surface colors={colors} topInset={safeTop} bottomInset={surfaceBottom} queuedCount={queuedCount}>
-        <Text accessibilityRole="header" style={[styles.displayText, { color: colors.text }]}>Find the right piece</Text>
-        <Text style={[styles.bodyText, { color: colors.textSecondary }]}>The saved catalog works without a connection. Search by pattern, shape, or model number.</Text>
+      <Surface
+        colors={colors}
+        topInset={safeTop}
+        bottomInset={surfaceBottom}
+        queuedCount={queuedCount}
+        offline={isOffline}>
+        <ScreenHeader
+          eyebrow="saved catalog"
+          title="Find the right piece"
+          blurb="The saved catalog works without a connection. Search by pattern, shape, or model number."
+          colors={colors}
+        />
         <Notice message={notice} colors={colors} />
         <Notice message={error} colors={colors} error />
         <TextInput
@@ -871,7 +1324,7 @@ export default function ScanScreen() {
           autoCapitalize="words"
           onChangeText={setCatalogQuery}
           placeholder="Butterprint, casserole, 444…"
-          placeholderTextColor={colors.textSecondary}
+          placeholderTextColor={colors.textTertiary}
           returnKeyType="search"
           style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
           value={catalogQuery}
@@ -883,48 +1336,46 @@ export default function ScanScreen() {
             accessibilityRole="progressbar"
             style={styles.progressRow}>
             <ActivityIndicator color={colors.accent} />
-            <Text style={[styles.calloutText, { color: colors.textSecondary }]}>Searching the saved catalog…</Text>
+            <Text style={[styles.callout, { color: colors.textSecondary }]}>Searching the saved catalog…</Text>
           </View>
         ) : (
           <View style={styles.stack}>
+            <Label tone="tertiary">
+              {catalogRows.length} {catalogRows.length === 1 ? 'entry' : 'entries'}
+            </Label>
             {catalogRows.map((row) => (
-              <Pressable
-                accessibilityLabel={`${row.patternName}, ${row.shape}, model ${row.modelNo}`}
-                accessibilityRole="button"
+              <CatalogEntry
                 key={row.slug}
+                row={row}
+                colors={colors}
                 onPress={() => void confirmItem(row.slug, row.patternName, `${row.shape} · ${row.modelNo}`)}
-                style={({ pressed }) => [
-                  styles.catalogRow,
-                  {
-                    backgroundColor: pressed ? colors.backgroundSelected : colors.surface,
-                    borderColor: colors.border,
-                  },
-                ]}>
-                <View style={styles.candidateCopy}>
-                  <Text style={[styles.bodyStrongText, { color: colors.text }]}>{row.patternName}</Text>
-                  <Text style={[styles.calloutText, { color: colors.textSecondary }]}>{row.shape} · {row.modelNo}</Text>
-                </View>
-                <Text style={[styles.bodyStrongText, { color: colors.accent }]}>Choose</Text>
-              </Pressable>
+              />
             ))}
             {catalogRows.length === 0 ? (
-              <Text style={[styles.calloutText, { color: colors.textSecondary }]}>No saved catalog items match that search.</Text>
+              <Text style={[styles.callout, { color: colors.textSecondary }]}>No saved catalog items match that search.</Text>
             ) : null}
           </View>
         )}
 
-        <View style={[styles.unknownCard, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
-          <Text accessibilityRole="header" style={[styles.headlineText, { color: colors.text }]}>Pattern not catalogued?</Text>
-          <Text style={[styles.calloutText, { color: colors.textSecondary }]}>Name it in your own words. A connection is required to create the catalog entry.</Text>
+        <Divider />
+
+        <View style={[styles.slab, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Label tone="tertiary">not catalogued</Label>
+          <Text accessibilityRole="header" style={[styles.headline, { color: colors.text }]}>
+            Name it yourself
+          </Text>
+          <Text style={[styles.callout, { color: colors.textSecondary }]}>
+            Name it in your own words. A connection is required to create the catalog entry.
+          </Text>
           <TextInput
             accessibilityLabel="Name the unknown pattern"
             accessibilityRole="text"
             autoCapitalize="words"
             onChangeText={setUnknownPatternName}
             placeholder="Pattern name"
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor={colors.textTertiary}
             returnKeyType="done"
-            style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+            style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
             value={unknownPatternName}
           />
           <ActionButton
@@ -940,13 +1391,20 @@ export default function ScanScreen() {
 
   if (phase === 'ownership') {
     return (
-      <Surface colors={colors} topInset={safeTop} bottomInset={surfaceBottom} queuedCount={queuedCount}>
-        <Text accessibilityRole="header" style={[styles.displayText, { color: colors.text }]}>{confirmedPatternName}</Text>
-        <Text style={[styles.bodyText, { color: colors.textSecondary }]}>{confirmedForm}</Text>
+      <Surface
+        colors={colors}
+        topInset={safeTop}
+        bottomInset={surfaceBottom}
+        queuedCount={queuedCount}
+        offline={isOffline}>
+        <ScreenHeader eyebrow="confirmed" title={confirmedPatternName} colors={colors} />
+        <Text style={[styles.label, { color: colors.textSecondary }]}>{confirmedForm}</Text>
         <Notice message={notice} colors={colors} />
         <Notice message={error} colors={colors} error />
-        <View style={[styles.ownershipCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text accessibilityRole="header" style={[styles.headlineText, { color: colors.text }]}>Add it to your collection</Text>
+        <View style={[styles.slab, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text accessibilityRole="header" style={[styles.headline, { color: colors.text }]}>
+            Add it to your collection
+          </Text>
           <View accessibilityRole="radiogroup" style={styles.toggleRow}>
             {(['have', 'want'] as const).map((status) => {
               const selected = ownershipStatus === status;
@@ -960,15 +1418,16 @@ export default function ScanScreen() {
                   style={({ pressed }) => [
                     styles.toggleButton,
                     {
-                      backgroundColor: pressed
-                        ? colors.backgroundSelected
-                        : selected
-                          ? colors.backgroundSelected
-                          : colors.backgroundElement,
+                      backgroundColor: pressed ? colors.backgroundSelected : colors.background,
+                      borderColor: selected ? colors.accent : colors.border,
                     },
                   ]}>
-                  <Text style={[styles.bodyStrongText, { color: selected ? colors.accent : colors.text }]}>
-                    {status === 'have' ? 'Have' : 'Want'} {selected ? '✓' : ''}
+                  {/* Selection carries a filled mark as well as a hue, so it survives color blindness. */}
+                  {selected ? (
+                    <View style={[styles.selectedMark, { backgroundColor: colors.accent }]} />
+                  ) : null}
+                  <Text style={[styles.buttonLabel, { color: selected ? colors.accent : colors.textSecondary }]}>
+                    {status === 'have' ? 'Have' : 'Want'}
                   </Text>
                 </Pressable>
               );
@@ -976,7 +1435,7 @@ export default function ScanScreen() {
           </View>
           {ownershipStatus === 'have' ? (
             <View style={styles.quantityRow}>
-              <Text style={[styles.bodyStrongText, { color: colors.text }]}>Quantity</Text>
+              <Label tone="secondary">quantity</Label>
               <View style={styles.stepper}>
                 <Pressable
                   accessibilityLabel="Decrease quantity"
@@ -986,14 +1445,16 @@ export default function ScanScreen() {
                   onPress={() => setQuantity((current) => Math.max(1, current - 1))}
                   style={({ pressed }) => [
                     styles.stepperButton,
-                    { backgroundColor: pressed ? colors.backgroundSelected : colors.backgroundElement },
+                    {
+                      backgroundColor: pressed ? colors.backgroundSelected : colors.background,
+                      borderColor: colors.border,
+                    },
                   ]}>
-                  <Text style={[styles.titleText, { color: quantity === 1 ? colors.textTertiary : colors.text }]}>−</Text>
+                  <Text style={[styles.numeral, { color: quantity === 1 ? colors.textTertiary : colors.text }]}>−</Text>
                 </Pressable>
                 <Text
                   accessibilityLabel={`Quantity ${quantity}`}
-                  style={[styles.titleText, styles.quantityValue, { color: colors.text }]}
-                >
+                  style={[styles.numeralLarge, styles.quantityValue, { color: colors.text }]}>
                   {quantity}
                 </Text>
                 <Pressable
@@ -1002,14 +1463,17 @@ export default function ScanScreen() {
                   onPress={() => setQuantity((current) => current + 1)}
                   style={({ pressed }) => [
                     styles.stepperButton,
-                    { backgroundColor: pressed ? colors.backgroundSelected : colors.backgroundElement },
+                    {
+                      backgroundColor: pressed ? colors.backgroundSelected : colors.background,
+                      borderColor: colors.border,
+                    },
                   ]}>
-                  <Text style={[styles.titleText, { color: colors.text }]}>+</Text>
+                  <Text style={[styles.numeral, { color: colors.text }]}>+</Text>
                 </Pressable>
               </View>
             </View>
           ) : (
-            <Text style={[styles.calloutText, { color: colors.textSecondary }]}>Want-list items do not need a quantity.</Text>
+            <Text style={[styles.callout, { color: colors.textSecondary }]}>Want-list items do not need a quantity.</Text>
           )}
           <ActionButton
             label={savingOwnership ? 'Saving to collection…' : 'Save to collection'}
@@ -1023,14 +1487,17 @@ export default function ScanScreen() {
   }
 
   return (
-    <Surface colors={colors} topInset={safeTop} bottomInset={surfaceBottom} queuedCount={queuedCount}>
-      <View style={[styles.savedCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Text accessibilityRole="header" style={[styles.displayText, { color: colors.text }]}>Saved</Text>
-        <Text style={[styles.bodyText, { color: colors.textSecondary }]}>
-          {confirmedPatternName} is now on your {ownershipStatus === 'have' ? 'shelf' : 'want list'}.
-        </Text>
-        <ActionButton label="Scan another piece" onPress={resetScan} colors={colors} />
-      </View>
+    <Surface
+      colors={colors}
+      topInset={safeTop}
+      bottomInset={surfaceBottom}
+      queuedCount={queuedCount}
+      offline={isOffline}>
+      <ScreenHeader eyebrow="saved" title={confirmedPatternName} colors={colors} />
+      <Text style={[styles.body, { color: colors.textSecondary }]}>
+        Now on your {ownershipStatus === 'have' ? 'shelf' : 'want list'}.
+      </Text>
+      <ActionButton label="Scan another piece" onPress={resetScan} colors={colors} />
     </Surface>
   );
 }
@@ -1046,106 +1513,177 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     width: '100%',
   },
-  displayText: {
-    ...Type.display,
-    fontFamily: Fonts.sans,
-  },
-  titleText: {
-    ...Type.title,
-    fontFamily: Fonts.sans,
-  },
-  headlineText: {
-    ...Type.headline,
-    fontFamily: Fonts.sans,
-  },
-  bodyText: {
-    ...Type.body,
-    fontFamily: Fonts.sans,
-  },
-  bodyStrongText: {
-    ...Type.bodyStrong,
-    fontFamily: Fonts.sans,
-  },
-  buttonText: {
-    ...Type.bodyStrong,
-    fontFamily: Fonts.sans,
-    textAlign: 'center',
-  },
-  calloutText: {
-    ...Type.callout,
-    fontFamily: Fonts.sans,
-  },
-  captionText: {
-    ...Type.caption,
-    fontFamily: Fonts.sans,
-  },
-  microText: {
-    ...Type.micro,
-    fontFamily: Fonts.sans,
-    textTransform: 'uppercase',
-  },
+
+  // --- type roles. Display face for titles, labels and numerals; system face for prose.
+  display: { ...Type.display },
+  title: { ...Type.title },
+  headline: { ...Type.headline },
+  label: { ...Type.label },
+  numeral: { ...Type.numeral },
+  numeralLarge: { ...Type.numeralLarge },
+  body: { ...Type.body },
+  callout: { ...Type.callout },
+  caption: { ...Type.caption },
+  buttonLabel: { ...Type.label, textAlign: 'center' },
+
+  header: { gap: Spacing.two },
+
   actionButton: {
     alignItems: 'center',
-    borderRadius: Radius.md,
     justifyContent: 'center',
     minHeight: HitTarget,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },
-  queueBadge: {
+  /** The single ceremonial fill. Pill is reserved for it. */
+  solidButton: { borderRadius: Radius.pill },
+  ghostButton: { borderRadius: Radius.sm, borderWidth: Rule },
+
+  queueStrip: {
+    alignItems: 'center',
     alignSelf: 'flex-start',
-    borderRadius: Radius.pill,
-    minHeight: HitTarget,
-    justifyContent: 'center',
-    overflow: 'hidden',
-    paddingHorizontal: Spacing.three,
-  },
-  framesRow: {
-    flexDirection: 'row',
-    gap: Spacing.three,
-  },
-  frameColumn: {
-    gap: Spacing.one,
-  },
-  frameImage: {
     borderRadius: Radius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: Rule,
+    flexDirection: 'row',
+    gap: Spacing.two,
+    minHeight: HitTarget,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  queueCopy: { gap: Spacing.half },
+
+  framesRow: { flexDirection: 'row', gap: Spacing.three },
+  frameColumn: { gap: Spacing.one },
+  frameImage: {
+    borderRadius: Radius.xs,
+    borderWidth: Rule,
     height: Spacing.six,
     width: Spacing.six,
   },
-  emptyFrame: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  emptyFrame: { alignItems: 'center', justifyContent: 'center' },
+
   notice: {
-    borderRadius: Radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: Radius.sm,
+    borderWidth: Rule,
+    gap: Spacing.one,
     padding: Spacing.three,
   },
-  permissionCard: {
-    ...Elevation.card,
-    borderRadius: Radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: Spacing.three,
-    padding: Spacing.four,
+
+  plateRow: { flexDirection: 'row', gap: Spacing.three },
+  plateColumn: { flex: 1, gap: Spacing.two },
+  plate: {
+    alignItems: 'center',
+    aspectRatio: 1,
+    borderRadius: Radius.sm,
+    borderWidth: Rule,
+    justifyContent: 'center',
   },
+
   progressRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: Spacing.two,
     minHeight: HitTarget,
   },
-  progressCard: {
-    ...Elevation.card,
-    alignItems: 'flex-start',
+
+  ledger: { gap: Spacing.three },
+  ledgerRow: { flexDirection: 'row', gap: Spacing.three },
+  ledgerMarker: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: Spacing.four,
+  },
+  ledgerTick: {
+    borderRadius: Radius.xs,
+    borderWidth: Rule,
+    height: Spacing.two,
+    width: Spacing.two,
+  },
+  ledgerCopy: { flex: 1, gap: Spacing.half },
+
+  confidenceBlock: { gap: Spacing.half, paddingTop: Spacing.half },
+  confidenceTrack: {
+    borderRadius: Radius.xs,
+    height: Spacing.half,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  confidenceFill: { height: '100%' },
+
+  stack: { gap: Spacing.two },
+
+  entry: {
+    borderWidth: Rule,
+    minHeight: HitTarget,
+  },
+  leadEntry: {
     borderRadius: Radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    gap: Spacing.two,
+    padding: Spacing.three,
+  },
+  rowEntry: {
+    alignItems: 'flex-start',
+    borderRadius: Radius.sm,
+    flexDirection: 'row',
     gap: Spacing.three,
-    padding: Spacing.four,
+    padding: Spacing.two,
   },
-  cameraOverlay: {
-    ...StyleSheet.absoluteFill,
+  leadRank: { position: 'absolute', right: Spacing.three, top: Spacing.three, zIndex: 1 },
+  rowRank: { minWidth: Spacing.four },
+  leadTile: { height: LEAD_TILE, width: '100%' },
+  indexTile: { height: INDEX_TILE, width: INDEX_TILE },
+  entryCopy: { flex: 1, gap: Spacing.one },
+
+  input: {
+    ...Type.body,
+    borderRadius: Radius.sm,
+    borderWidth: Rule,
+    minHeight: HitTarget,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
+
+  slab: {
+    borderRadius: Radius.lg,
+    borderWidth: Rule,
+    gap: Spacing.three,
+    padding: Spacing.three,
+  },
+
+  toggleRow: { flexDirection: 'row', gap: Spacing.two },
+  toggleButton: {
+    alignItems: 'center',
+    borderRadius: Radius.sm,
+    borderWidth: Rule,
+    flex: 1,
+    flexDirection: 'row',
+    gap: Spacing.two,
+    justifyContent: 'center',
+    minHeight: HitTarget,
+    paddingHorizontal: Spacing.three,
+  },
+  selectedMark: {
+    borderRadius: Radius.xs,
+    height: Spacing.two,
+    width: Spacing.two,
+  },
+  quantityRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  stepper: { alignItems: 'center', flexDirection: 'row', gap: Spacing.two },
+  stepperButton: {
+    alignItems: 'center',
+    borderRadius: Radius.sm,
+    borderWidth: Rule,
+    height: HitTarget,
+    justifyContent: 'center',
+    width: HitTarget,
+  },
+  quantityValue: { minWidth: HitTarget, textAlign: 'center' },
+
+  // --- the instrument. Bold on purpose; the archive resumes after the shutter.
   cameraOverlayContent: {
     flexGrow: 1,
     justifyContent: 'space-between',
@@ -1156,135 +1694,80 @@ const styles = StyleSheet.create({
   },
   cameraPrompt: {
     alignSelf: 'stretch',
-    borderRadius: Radius.lg,
+    borderRadius: Radius.sm,
+    borderWidth: Rule,
     gap: Spacing.two,
-    overflow: 'hidden',
     padding: Spacing.three,
   },
-  cameraBottom: {
+  reticleWrap: {
     alignItems: 'center',
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: Spacing.four,
+  },
+  reticle: {
+    aspectRatio: 1,
+    maxWidth: MaxContentWidth / 2,
+    width: '66%',
+  },
+  reticleCorner: {
+    height: Spacing.four,
+    position: 'absolute',
+    width: Spacing.four,
+  },
+  topLeft: { borderLeftWidth: Spacing.half, borderTopWidth: Spacing.half, left: 0, top: 0 },
+  topRight: { borderRightWidth: Spacing.half, borderTopWidth: Spacing.half, right: 0, top: 0 },
+  bottomLeft: { borderBottomWidth: Spacing.half, borderLeftWidth: Spacing.half, bottom: 0, left: 0 },
+  bottomRight: { borderBottomWidth: Spacing.half, borderRightWidth: Spacing.half, bottom: 0, right: 0 },
+  cameraDeck: {
+    alignItems: 'center',
+    borderTopWidth: Rule,
     gap: Spacing.two,
-    overflow: 'hidden',
     paddingHorizontal: Spacing.three,
     paddingTop: Spacing.three,
   },
-  scrimLayer: {
-    ...StyleSheet.absoluteFill,
-  },
   cameraNotice: {
     alignSelf: 'stretch',
-    borderRadius: Radius.md,
-    padding: Spacing.three,
+    paddingBottom: Spacing.two,
   },
-  shutter: {
-    borderRadius: Radius.pill,
-    borderWidth: Spacing.one,
-    height: Spacing.six,
-    width: Spacing.six,
-  },
-  cameraSecondaryButton: {
+  shutterRow: {
     alignItems: 'center',
-    borderRadius: Radius.pill,
-    justifyContent: 'center',
-    minHeight: HitTarget,
-    paddingHorizontal: Spacing.three,
-  },
-  stack: {
-    gap: Spacing.two,
-  },
-  candidateCard: {
-    ...Elevation.card,
-    alignItems: 'flex-start',
-    borderRadius: Radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: Spacing.three,
-    minHeight: HitTarget,
-    padding: Spacing.three,
-  },
-  rank: {
-    alignItems: 'center',
-    borderRadius: Radius.pill,
-    height: HitTarget,
-    justifyContent: 'center',
-    width: HitTarget,
-  },
-  candidateCopy: {
-    flex: 1,
-    gap: Spacing.one,
-  },
-  input: {
-    ...Type.body,
-    borderRadius: Radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    fontFamily: Fonts.sans,
-    minHeight: HitTarget,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  catalogRow: {
-    alignItems: 'center',
-    borderRadius: Radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: Spacing.three,
-    minHeight: HitTarget,
-    padding: Spacing.three,
-  },
-  unknownCard: {
-    borderRadius: Radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: Spacing.three,
-    marginTop: Spacing.three,
-    padding: Spacing.three,
-  },
-  ownershipCard: {
-    ...Elevation.card,
-    borderRadius: Radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: Spacing.three,
-    padding: Spacing.four,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  toggleButton: {
-    alignItems: 'center',
-    borderRadius: Radius.md,
-    flex: 1,
-    justifyContent: 'center',
-    minHeight: HitTarget,
-    paddingHorizontal: Spacing.three,
-  },
-  quantityRow: {
-    alignItems: 'center',
+    alignSelf: 'stretch',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  stepper: {
+  shutterSlot: {
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: Spacing.two,
+    justifyContent: 'center',
+    minHeight: HitTarget,
+    width: SHUTTER_SLOT,
   },
-  stepperButton: {
+  shutter: {
     alignItems: 'center',
     borderRadius: Radius.pill,
-    height: HitTarget,
+    borderWidth: Spacing.one,
+    height: SHUTTER,
     justifyContent: 'center',
-    width: HitTarget,
+    width: SHUTTER,
   },
-  quantityValue: {
-    minWidth: HitTarget,
-    textAlign: 'center',
+  shutterCore: {
+    borderRadius: Radius.pill,
+    height: SHUTTER_CORE,
+    width: SHUTTER_CORE,
   },
-  savedCard: {
-    ...Elevation.card,
-    borderRadius: Radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: Spacing.three,
-    padding: Spacing.four,
+  thumbWrap: { alignItems: 'center', gap: Spacing.half },
+  thumb: {
+    borderRadius: Radius.xs,
+    borderWidth: Rule,
+    height: THUMB,
+    width: THUMB,
+  },
+  cameraGhostButton: {
+    alignItems: 'center',
+    borderRadius: Radius.sm,
+    borderWidth: Rule,
+    justifyContent: 'center',
+    minHeight: HitTarget,
+    paddingHorizontal: Spacing.three,
   },
 });

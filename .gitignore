@@ -19,3 +19,6 @@ scripts/extracted*.json
 
 .DS_Store
 *.log
+
+# Browser-automation scratch from design QA runs.
+.playwright-mcp/

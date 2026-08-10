@@ -8,22 +8,44 @@
  *
  * Neutrals are warm (a yellow-shifted grey), not the blue-grey most default palettes
  * ship. Cool greys make milk glass photograph dingy next to them.
+ *
+ * --- Reference lock (2026-08-10 design pass, via refero-design) ---
+ *
+ * PRIMARY: Fonts In Use — "typographic archive on vellum". A specimen index: condensed
+ * display type, metadata stacked directly beneath its image, hairline rules instead of
+ * shadows, near-square geometry, color reserved for content. Backstamp *is* a specimen
+ * index — 379 items across 33 patterns and 30 forms — so the archive is not a costume.
+ *
+ * BORROWED, bounded:
+ *   Palmer          -> warm canvas ground; an object floats with its own shadow, the
+ *                      surface under it casts none. Ghost-first controls.
+ *   F. M. Ricci     -> the accent is ceremonial. It appears as a hairline outline, and
+ *                      as a solid fill at most once per screen.
+ *
+ * ROLE RULES — moving a token outside its role breaks the lock:
+ *   Display face  = titles, labels, numerals. Never body copy, never prose.
+ *   Accent        = interactive and ceremonial. Never a background field.
+ *   Rarity colors = rank, and only rank.
+ *   Colorway hex  = the specimen swatch in `colorways.ts`. Never UI chrome.
+ *
+ * REJECTED (these are what "unfinished" looked like): pillowy cards on drop shadows,
+ * radius >= 12 on chrome, hierarchy carried by font size alone.
  */
 
 import '@/global.css';
 
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 export const Colors = {
   light: {
     text: '#14120F',              // warm near-black, never pure #000
     textSecondary: '#6B6660',
     textTertiary: '#9A948B',
-    background: '#FBFAF7',        // milk glass
-    surface: '#FFFFFF',
-    backgroundElement: '#F2EFE9',
-    backgroundSelected: '#E7E2D8',
-    border: '#E6E2DA',
+    background: '#F6F4EC',        // vellum, not white — the archive's paper ground
+    surface: '#FDFCF7',
+    backgroundElement: '#EDEAE0',
+    backgroundSelected: '#E2DDD0',
+    border: '#DCD7C9',            // hairline rules do the work shadows used to
     accent: '#2E8B84',            // Butterprint turquoise, muted to survive as UI
     accentText: '#FFFFFF',
     have: '#2E8B84',
@@ -39,7 +61,7 @@ export const Colors = {
     surface: '#1C1A18',
     backgroundElement: '#232120',
     backgroundSelected: '#2E2B27',
-    border: '#2E2B27',
+    border: '#332F2A',
     accent: '#5FBDB4',
     accentText: '#0E1918',
     have: '#5FBDB4',
@@ -72,42 +94,96 @@ export const RarityColors = {
   },
 } as const;
 
-export const Fonts = Platform.select({
-  ios: {
-    sans: 'system-ui',
-    serif: 'ui-serif',
-    rounded: 'ui-rounded',
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
-  },
+/**
+ * Two families, two jobs.
+ *
+ * `display` is Oswald, subset to Latin and instanced to two static weights (~23KB
+ * each). It is the condensed, architectural voice the archive reference carries in
+ * Relay Cond — Oswald is that reference's own named substitute, not a taste pick.
+ * It sets titles, small caps labels, and numerals. It never sets prose: condensed
+ * faces cost reading speed at body sizes, and body copy is where Dynamic Type and
+ * font scaling actually matter.
+ *
+ * `sans` stays the platform's own face for everything readable — SF Pro on iOS,
+ * Roboto on Android — so body text keeps the scaling behaviour users have already
+ * configured, at zero bundle cost.
+ */
+export const FontAssets = {
+  'Oswald-Regular': require('@/assets/fonts/Oswald-Regular.ttf'),
+  'Oswald-SemiBold': require('@/assets/fonts/Oswald-SemiBold.ttf'),
+} as const;
+
+const platformSans = Platform.select({
+  ios: 'system-ui',
+  web: 'var(--font-display)',
+  default: 'normal',
 })!;
 
+export const Fonts = {
+  display: 'Oswald-SemiBold',
+  displayLight: 'Oswald-Regular',
+  sans: platformSans,
+  mono: Platform.select({ ios: 'ui-monospace', web: 'var(--font-mono)', default: 'monospace' })!,
+} as const;
+
 /**
- * System fonts on purpose. SF Pro on iOS and Roboto on Android are what each
- * platform's users already read at speed, they ship Dynamic Type and font scaling
- * for free, and they cost zero bundle bytes. A custom face here would be decoration
- * paid for in accessibility.
+ * Display roles are condensed and tracked; text roles are the system face at normal
+ * tracking. Keeping tracking off body copy is deliberate — it is a display trait in
+ * every reference that uses it, and it costs legibility when it migrates.
+ *
+ * 11px is the floor. The archive reference sets captions at 10px on a desktop
+ * monitor; a phone held at arm's length in a thrift aisle is not that.
  */
 export const Type = {
-  display: { fontSize: 34, lineHeight: 40, fontWeight: '700' },
-  title: { fontSize: 24, lineHeight: 30, fontWeight: '700' },
-  headline: { fontSize: 19, lineHeight: 24, fontWeight: '600' },
-  body: { fontSize: 16, lineHeight: 22, fontWeight: '400' },
-  bodyStrong: { fontSize: 16, lineHeight: 22, fontWeight: '600' },
-  callout: { fontSize: 15, lineHeight: 20, fontWeight: '400' },
-  caption: { fontSize: 13, lineHeight: 18, fontWeight: '400' },
-  micro: { fontSize: 11, lineHeight: 14, fontWeight: '600' },
+  /** Screen titles. */
+  display: {
+    fontFamily: Fonts.display,
+    fontSize: 36,
+    lineHeight: 40,
+    letterSpacing: 0.2,
+  },
+  /** Section and item titles. */
+  title: {
+    fontFamily: Fonts.display,
+    fontSize: 25,
+    lineHeight: 28,
+    letterSpacing: 0.2,
+  },
+  /** Card titles, section headers. */
+  headline: {
+    fontFamily: Fonts.display,
+    fontSize: 19,
+    lineHeight: 23,
+    letterSpacing: 0.3,
+  },
+  /** Uppercase metadata labels — the specimen index's spine. */
+  label: {
+    fontFamily: Fonts.display,
+    fontSize: 12,
+    lineHeight: 15,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+  },
+  /** Model numbers, prices, counts. Tabular where it matters. */
+  numeral: {
+    fontFamily: Fonts.display,
+    fontSize: 17,
+    lineHeight: 21,
+    letterSpacing: 0.4,
+  },
+  numeralLarge: {
+    fontFamily: Fonts.display,
+    fontSize: 28,
+    lineHeight: 32,
+    letterSpacing: 0.4,
+  },
+
+  // --- text roles: system face, normal tracking, untouched scaling ---
+  body: { fontFamily: Fonts.sans, fontSize: 16, lineHeight: 22, fontWeight: '400' },
+  bodyStrong: { fontFamily: Fonts.sans, fontSize: 16, lineHeight: 22, fontWeight: '600' },
+  callout: { fontFamily: Fonts.sans, fontSize: 15, lineHeight: 20, fontWeight: '400' },
+  caption: { fontFamily: Fonts.sans, fontSize: 13, lineHeight: 18, fontWeight: '400' },
+  micro: { fontFamily: Fonts.sans, fontSize: 11, lineHeight: 14, fontWeight: '600' },
 } as const;
 
 /** 4pt grid. `three` (16) is the default screen gutter. */
@@ -121,27 +197,41 @@ export const Spacing = {
   six: 64,
 } as const;
 
+/**
+ * Low and near-square. The archive reference sets 2px; this raises it to 4 for touch
+ * without turning chrome pillowy. `pill` survives for exactly two things — the one
+ * primary action on a screen, and rank chips — so roundness reads as emphasis
+ * instead of as the default.
+ */
 export const Radius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
+  xs: 2,
+  sm: 4,
+  md: 4,
+  lg: 8,
+  xl: 8,
   pill: 999,
 } as const;
 
+/** A hairline rule. Separation is drawn, not lit. */
+export const Rule = StyleSheet.hairlineWidth;
+
 /**
- * iOS draws shadows, Android draws elevation. Spread these rather than writing
- * shadow properties inline, or one platform silently gets nothing.
+ * Elevation is for objects and sheets, not for cards.
+ *
+ * `object` is the soft shadow a physical piece casts on the shelf — it belongs to the
+ * specimen tile and to nothing else. Cards separate with `Rule` and a surface tint.
+ * Spread these rather than writing shadow properties inline, or one platform silently
+ * gets nothing.
  */
 export const Elevation = {
-  card: Platform.select({
+  object: Platform.select({
     ios: {
       shadowColor: '#000',
-      shadowOpacity: 0.07,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 5 },
     },
-    android: { elevation: 2 },
+    android: { elevation: 3 },
     default: {},
   })!,
   sheet: Platform.select({
@@ -154,6 +244,22 @@ export const Elevation = {
     android: { elevation: 12 },
     default: {},
   })!,
+} as const;
+
+/**
+ * Motion is confirmation, not decoration: it says a thing happened and where it went.
+ * Durations stay under a fifth of a second so nothing waits on an animation. Anything
+ * longer than `settle` needs a reason.
+ */
+export const Motion = {
+  press: 90,
+  enter: 160,
+  settle: 240,
+  /** Standard ease-out. Fast start, soft landing — reads as physical. */
+  easing: [0.22, 1, 0.36, 1] as const,
+  /** How far a card lifts into place on first paint. */
+  enterOffset: 8,
+  pressScale: 0.98,
 } as const;
 
 /** Apple HIG and Material both land on 44dp as the floor for a tappable target. */

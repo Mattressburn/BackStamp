@@ -1,7 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -11,7 +11,6 @@ import {
   StyleSheet,
   Switch,
   Text,
-  useColorScheme,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,11 +25,11 @@ import {
 } from '@/api';
 import {
   BottomTabInset,
-  Colors,
-  Elevation,
   HitTarget,
   MaxContentWidth,
+  Motion,
   Radius,
+  Rule,
   Spacing,
   Type,
 } from '@/constants/theme';
@@ -43,6 +42,8 @@ import {
   syncCatalog,
   type Settings,
 } from '@/db';
+import { Divider, Label, useColors, useScheme } from '@/features/collection/collection-ui';
+import { BRAND } from '@shared/branding';
 import type { AuthProvider, PhotoVisibility, UserItem } from '@shared/types';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -62,8 +63,8 @@ async function pushLocalCollection(items: readonly UserItem[]): Promise<number> 
 
 // CONTRACT: app.json must enable Sign in with Apple and declare Google OAuth client IDs.
 export default function SettingsScreen() {
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const colors = Colors[scheme];
+  const scheme = useScheme();
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [catalogVersion, setCatalogVersion] = useState(0);
@@ -227,7 +228,7 @@ export default function SettingsScreen() {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         {error ? (
-          <Text style={[styles.notice, { color: colors.danger, borderColor: colors.border }]}>{error}</Text>
+          <Notice tone="error">{error}</Notice>
         ) : (
           <ActivityIndicator
             color={colors.accent}
@@ -245,34 +246,42 @@ export default function SettingsScreen() {
       contentContainerStyle={[
         styles.content,
         {
-          paddingTop: insets.top + Spacing.three,
-          paddingBottom: insets.bottom + BottomTabInset + Spacing.four,
+          paddingTop: insets.top + Spacing.four,
+          paddingBottom: insets.bottom + BottomTabInset + Spacing.five,
         },
       ]}>
-      <View>
-        <Text style={[styles.eyebrow, { color: colors.accent }]}>PRIVATE BY DEFAULT</Text>
-        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
+      {/* The one screen the wordmark is allowed to sit on. Name comes from branding. */}
+      <View style={styles.masthead}>
+        <Label tone="tertiary">Settings</Label>
+        <Text style={[styles.wordmark, { color: colors.text }]}>{BRAND.name}</Text>
+        <Label tone="accent">Private by default</Label>
       </View>
 
-      <SettingsSection title="Account and sync" colors={colors}>
-        <Text style={[styles.status, { color: signedIn ? colors.have : colors.textSecondary }]}>
-          {signedIn ? 'Signed in' : 'Not signed in'}
-        </Text>
-        <Text style={[styles.body, { color: colors.textSecondary }]}>
-          We store the provider’s subject ID and nothing else—no email, name, or profile. Your collection syncs as item slugs, have/want status, and counts only.
-        </Text>
+      <Section title="Account and sync">
+        <View style={styles.metaRow}>
+          <Label tone="tertiary">Status</Label>
+          <Text style={[styles.state, { color: signedIn ? colors.have : colors.textSecondary }]}>
+            {signedIn ? 'Signed in' : 'Not signed in'}
+          </Text>
+        </View>
+
+        <Fact term="Stored">
+          The provider’s subject ID and nothing else — no email, no name, no profile.
+        </Fact>
+        <Fact term="Synced">
+          Your collection syncs as item slugs, have/want status, and counts only.
+        </Fact>
 
         {!signedIn && googleClientId && (
           <GoogleSignInButton
             clientId={googleClientId}
-            colors={colors}
             disabled={busy}
             onIdentityToken={handleGoogleIdentity}
             onError={setError}
           />
         )}
         {!signedIn && !googleClientId && (
-          <DisabledProviderButton label="Continue with Google" colors={colors} />
+          <Fact term="Google">Not configured in this build, so Google sign-in is unavailable here.</Fact>
         )}
 
         {!signedIn && appleAvailable && (
@@ -293,12 +302,12 @@ export default function SettingsScreen() {
 
         {signedIn && (
           <>
+            {/* The one solid accent fill and the one pill on this screen. */}
             <ActionButton
               label={busy ? 'Syncing…' : 'Sync collection'}
               onPress={() => void handleCollectionSync()}
-              colors={colors}
               disabled={busy}
-              secondary
+              primary
             />
             <Pressable
               onPress={() => void handleSignOut()}
@@ -306,18 +315,23 @@ export default function SettingsScreen() {
               accessibilityRole="button"
               accessibilityLabel="Sign out"
               accessibilityState={{ disabled: busy }}
-              style={({ pressed }) => [styles.signOut, pressed && { backgroundColor: colors.backgroundElement }]}>
-              <Text style={[styles.signOutText, { color: colors.danger }]}>Sign out</Text>
+              style={({ pressed }) => [
+                styles.signOut,
+                pressed && { backgroundColor: colors.backgroundElement },
+              ]}>
+              <Text style={[styles.signOutText, { color: busy ? colors.textTertiary : colors.danger }]}>
+                Sign out
+              </Text>
             </Pressable>
           </>
         )}
-      </SettingsSection>
+      </Section>
 
-      <SettingsSection title="Training data" colors={colors}>
+      <Section title="Training data">
         <View style={styles.settingRow}>
           <View style={styles.settingCopy}>
             <Text style={[styles.settingTitle, { color: colors.text }]}>Help improve identification</Text>
-            <Text style={[styles.body, { color: colors.textSecondary }]}>
+            <Text style={[styles.copy, { color: colors.textSecondary }]}>
               When on, confirmed scans and photos are kept to improve identification later. Default is off.
             </Text>
           </View>
@@ -332,77 +346,145 @@ export default function SettingsScreen() {
             accessibilityState={{ checked: settings.trainingOptIn }}
           />
         </View>
-      </SettingsSection>
+      </Section>
 
-      <SettingsSection title="Default photo visibility" colors={colors}>
-        {VISIBILITIES.map((visibility) => {
-          const selected = settings.defaultPhotoVisibility === visibility;
-          return (
-            <Pressable
-              key={visibility}
-              onPress={() => void updateSettings({ defaultPhotoVisibility: visibility })}
-              accessibilityRole="radio"
-              accessibilityLabel={`Use ${visibility} as default photo visibility`}
-              accessibilityState={{ selected }}
-              style={({ pressed }) => [
-                styles.visibilityChoice,
-                { borderColor: selected ? colors.accent : colors.border },
-                selected && { backgroundColor: colors.backgroundSelected },
-                pressed && { backgroundColor: colors.backgroundElement },
-              ]}>
-              <View style={styles.settingCopy}>
-                <Text style={[styles.visibilityTitle, { color: colors.text }]}>{visibility}</Text>
-                <Text style={[styles.body, { color: colors.textSecondary }]}>{visibilityCopy(visibility)}</Text>
-              </View>
-              <Text style={[styles.radioMark, { color: selected ? colors.accent : colors.textTertiary }]}>
-                {selected ? '●' : '○'}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </SettingsSection>
+      <Section title="Default photo visibility" flush>
+        <View accessibilityRole="radiogroup">
+          {VISIBILITIES.map((visibility, index) => {
+            const selected = settings.defaultPhotoVisibility === visibility;
+            return (
+              <Fragment key={visibility}>
+                {index > 0 && <Divider />}
+                <Pressable
+                  onPress={() => void updateSettings({ defaultPhotoVisibility: visibility })}
+                  accessibilityRole="radio"
+                  accessibilityLabel={`Use ${visibility} as default photo visibility`}
+                  accessibilityState={{ selected }}
+                  style={({ pressed }) => [
+                    styles.choice,
+                    {
+                      // A continuous index rail down the group, one entry marked.
+                      borderLeftColor: selected ? colors.accent : colors.border,
+                      backgroundColor: selected
+                        ? colors.backgroundSelected
+                        : pressed ? colors.backgroundElement : colors.surface,
+                    },
+                  ]}>
+                  <View style={styles.choiceHead}>
+                    <Text
+                      style={[styles.choiceTitle, { color: selected ? colors.text : colors.textSecondary }]}>
+                      {visibility}
+                    </Text>
+                    {selected && <Label tone="accent">Selected</Label>}
+                  </View>
+                  <Text style={[styles.copy, { color: colors.textSecondary }]}>{visibilityCopy(visibility)}</Text>
+                </Pressable>
+              </Fragment>
+            );
+          })}
+        </View>
+      </Section>
 
-      <SettingsSection title="Catalog" colors={colors}>
-        <Text style={[styles.body, { color: colors.textSecondary }]}>Offline catalog version {catalogVersion}</Text>
+      <Section title="Catalog">
+        <View style={styles.metaRow}>
+          <Label tone="tertiary">Offline catalog version</Label>
+          <Text style={[styles.numeral, { color: colors.text }]}>{catalogVersion}</Text>
+        </View>
         <ActionButton
           label={busy ? 'Updating…' : 'Update catalog'}
           onPress={() => void handleCatalogSync()}
-          colors={colors}
           disabled={busy}
         />
-      </SettingsSection>
+      </Section>
 
-      <SettingsSection title="Export" colors={colors}>
-        <Text style={[styles.body, { color: colors.textSecondary }]}>
+      <Section title="Export">
+        <Text style={[styles.copy, { color: colors.textSecondary }]}>
           Export your local collection entries, including condition and notes, without an account identifier.
         </Text>
-        <ActionButton
-          label="Export collection"
-          onPress={() => void handleExport()}
-          colors={colors}
-        />
-      </SettingsSection>
+        <ActionButton label="Export collection" onPress={() => void handleExport()} />
+      </Section>
 
-      {message && <Text style={[styles.notice, { color: colors.have, borderColor: colors.border }]}>{message}</Text>}
-      {error && <Text style={[styles.notice, { color: colors.danger, borderColor: colors.border }]}>{error}</Text>}
+      {message && <Notice tone="ok">{message}</Notice>}
+      {error && <Notice tone="error">{error}</Notice>}
     </ScrollView>
+  );
+}
+
+/**
+ * A section is a label over a hairline-ruled band, not a card. The band carries a
+ * surface tint as well as the rules, because a hairline alone is close to invisible on
+ * the dark ground.
+ */
+function Section({
+  title,
+  children,
+  flush = false,
+}: {
+  title: string;
+  children: React.ReactNode;
+  flush?: boolean;
+}) {
+  const colors = useColors();
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHead}>
+        <Label>{title}</Label>
+      </View>
+      <View
+        style={[
+          styles.sectionBody,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+          flush ? null : styles.sectionBodyPadded,
+        ]}>
+        {children}
+      </View>
+    </View>
+  );
+}
+
+/** An index entry: the term in the display face, the claim in readable prose beneath it. */
+function Fact({ term, children }: { term: string; children: React.ReactNode }) {
+  const colors = useColors();
+  return (
+    <View style={styles.fact}>
+      <Label tone="tertiary">{term}</Label>
+      <Text style={[styles.copy, { color: colors.textSecondary }]}>{children}</Text>
+    </View>
+  );
+}
+
+function Notice({ tone, children }: { tone: 'ok' | 'error'; children: React.ReactNode }) {
+  const colors = useColors();
+  return (
+    <View
+      accessibilityLiveRegion="polite"
+      style={[
+        styles.notice,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          borderLeftColor: tone === 'error' ? colors.danger : colors.have,
+        },
+      ]}>
+      <Text style={[styles.copy, { color: tone === 'error' ? colors.danger : colors.text }]}>{children}</Text>
+    </View>
   );
 }
 
 function GoogleSignInButton({
   clientId,
-  colors,
   disabled,
   onIdentityToken,
   onError,
 }: {
   clientId: string;
-  colors: (typeof Colors)['light'] | (typeof Colors)['dark'];
   disabled: boolean;
   onIdentityToken: (token: string) => void;
   onError: (message: string) => void;
 }) {
+  const colors = useColors();
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({ clientId });
+  const blocked = disabled || !request;
 
   useEffect(() => {
     if (response?.type !== 'success') return;
@@ -414,32 +496,23 @@ function GoogleSignInButton({
   return (
     <Pressable
       onPress={() => void promptAsync()}
-      disabled={disabled || !request}
+      disabled={blocked}
       accessibilityRole="button"
       accessibilityLabel="Continue with Google"
-      accessibilityState={{ disabled: disabled || !request }}
+      accessibilityState={{ disabled: blocked }}
       style={({ pressed }) => [
         styles.providerButton,
-        { borderColor: colors.border, backgroundColor: pressed ? colors.backgroundElement : colors.surface },
+        {
+          borderColor: colors.border,
+          backgroundColor: pressed ? colors.backgroundSelected : colors.backgroundElement,
+          transform: [{ scale: pressed ? Motion.pressScale : 1 }],
+        },
       ]}>
-      <Text style={[styles.providerMark, { color: colors.accent }]}>G</Text>
-      <Text style={[styles.providerText, { color: colors.text }]}>Continue with Google</Text>
+      <Text style={[styles.providerMark, { color: blocked ? colors.textTertiary : colors.accent }]}>G</Text>
+      <Text style={[styles.providerText, { color: blocked ? colors.textTertiary : colors.text }]}>
+        Continue with Google
+      </Text>
     </Pressable>
-  );
-}
-
-function DisabledProviderButton({
-  label,
-  colors,
-}: {
-  label: string;
-  colors: (typeof Colors)['light'] | (typeof Colors)['dark'];
-}) {
-  return (
-    <View style={[styles.providerButton, { borderColor: colors.border, backgroundColor: colors.backgroundElement }]}>
-      <Text style={[styles.providerText, { color: colors.textTertiary }]}>{label}</Text>
-      <Text style={[styles.unavailable, { color: colors.textTertiary }]}>Not configured</Text>
-    </View>
   );
 }
 
@@ -449,36 +522,28 @@ function visibilityCopy(visibility: PhotoVisibility): string {
   return 'Never published, for pieces you do not want anyone to know you own.';
 }
 
-function SettingsSection({
-  title,
-  children,
-  colors,
-}: {
-  title: string;
-  children: React.ReactNode;
-  colors: (typeof Colors)['light'] | (typeof Colors)['dark'];
-}) {
-  return (
-    <View style={[styles.section, { backgroundColor: colors.surface, ...Elevation.card }]}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
-      {children}
-    </View>
-  );
-}
-
+/**
+ * Ghost by default. `primary` is the pill, and the screen gets exactly one — anything
+ * else turns the accent into chrome.
+ */
 function ActionButton({
   label,
   onPress,
-  colors,
   disabled = false,
-  secondary = false,
+  primary = false,
 }: {
   label: string;
   onPress: () => void;
-  colors: (typeof Colors)['light'] | (typeof Colors)['dark'];
   disabled?: boolean;
-  secondary?: boolean;
+  primary?: boolean;
 }) {
+  const colors = useColors();
+  // Ghost rests on `backgroundElement`, not `surface`: the section band is already
+  // surface, and a hairline border alone is close to invisible on the dark ground.
+  const fill = primary
+    ? disabled ? colors.backgroundSelected : colors.accent
+    : colors.backgroundElement;
+
   return (
     <Pressable
       onPress={onPress}
@@ -488,48 +553,95 @@ function ActionButton({
       accessibilityState={{ disabled }}
       style={({ pressed }) => [
         styles.actionButton,
+        primary ? styles.actionPrimary : styles.actionGhost,
         {
-          borderColor: secondary ? colors.border : colors.accent,
-          backgroundColor: secondary
-            ? pressed ? colors.backgroundSelected : colors.backgroundElement
-            : pressed ? colors.have : colors.accent,
+          borderColor: disabled ? colors.border : primary ? colors.accent : colors.border,
+          backgroundColor: !primary && pressed ? colors.backgroundSelected : fill,
+          transform: [{ scale: pressed ? Motion.pressScale : 1 }],
         },
       ]}>
-      <Text style={[styles.actionText, { color: secondary ? colors.text : colors.accentText }]}>{label}</Text>
+      <Text
+        style={[
+          styles.actionText,
+          { color: disabled ? colors.textTertiary : primary ? colors.accentText : colors.text },
+        ]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.three },
   content: {
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
-    paddingHorizontal: Spacing.three,
-    gap: Spacing.three,
+    gap: Spacing.four,
   },
-  eyebrow: { ...Type.micro, letterSpacing: Spacing.half },
-  title: { ...Type.display },
-  section: { borderRadius: Radius.lg, padding: Spacing.three, gap: Spacing.three },
-  sectionTitle: { ...Type.headline },
-  body: { ...Type.body },
-  status: { ...Type.bodyStrong },
+
+  masthead: { paddingHorizontal: Spacing.three, gap: Spacing.one },
+  wordmark: { ...Type.display },
+
+  section: { gap: Spacing.two },
+  sectionHead: { paddingHorizontal: Spacing.three },
+  sectionBody: { borderTopWidth: Rule, borderBottomWidth: Rule },
+  sectionBodyPadded: { padding: Spacing.three, gap: Spacing.three },
+
+  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three },
+  state: { ...Type.label },
+  numeral: { ...Type.numeral },
+
+  fact: { gap: Spacing.one },
+  copy: { ...Type.body },
+
   settingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   settingCopy: { flex: 1, gap: Spacing.one },
   settingTitle: { ...Type.bodyStrong },
   switch: { minWidth: HitTarget, minHeight: HitTarget },
-  visibilityChoice: { minHeight: HitTarget, borderWidth: Spacing.half, borderRadius: Radius.md, padding: Spacing.three, flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
-  visibilityTitle: { ...Type.bodyStrong, textTransform: 'capitalize' },
-  radioMark: { ...Type.headline },
-  providerButton: { minHeight: HitTarget, borderWidth: Spacing.half, borderRadius: Radius.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three },
-  providerMark: { ...Type.bodyStrong },
+
+  choice: {
+    minHeight: HitTarget,
+    borderLeftWidth: Spacing.half,
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    gap: Spacing.one,
+  },
+  choiceHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  choiceTitle: { ...Type.label },
+
+  providerButton: {
+    minHeight: HitTarget,
+    borderWidth: Rule,
+    borderRadius: Radius.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+  },
+  providerMark: { ...Type.numeral },
   providerText: { ...Type.bodyStrong },
-  unavailable: { ...Type.micro, marginLeft: 'auto' },
   appleButton: { width: '100%', height: HitTarget },
-  signOut: { minHeight: HitTarget, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
+
+  signOut: { minHeight: HitTarget, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center' },
   signOutText: { ...Type.bodyStrong },
-  actionButton: { minHeight: HitTarget, borderWidth: Spacing.half, borderRadius: Radius.pill, paddingHorizontal: Spacing.four, alignItems: 'center', justifyContent: 'center' },
+
+  actionButton: {
+    minHeight: HitTarget,
+    borderWidth: Rule,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionPrimary: { borderRadius: Radius.pill, paddingHorizontal: Spacing.four },
+  actionGhost: { borderRadius: Radius.sm, paddingHorizontal: Spacing.three },
   actionText: { ...Type.bodyStrong },
-  notice: { ...Type.callout, borderWidth: Spacing.half, borderRadius: Radius.md, padding: Spacing.three },
+
+  notice: {
+    alignSelf: 'stretch',
+    borderTopWidth: Rule,
+    borderBottomWidth: Rule,
+    borderLeftWidth: Spacing.half,
+    padding: Spacing.three,
+  },
 });

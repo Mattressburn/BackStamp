@@ -61,7 +61,7 @@ cd app && npx tsc --noEmit                                          # app types
 # Tests need the tsx loader: tsconfig path aliases (@shared/*) and NodeNext's
 # .js-extension imports are both invisible to bare `node --test`.
 cd backend && node --import tsx --test "src/**/*.test.ts"           # 23 tests
-cd app     && node --import tsx --test "src/features/**/*.test.ts"  #  5 tests
+cd app     && node --import tsx --test "src/**/*.test.ts"           # 13 tests
 cd scripts && node --import tsx --test "*.test.ts"                  #  4 tests
 cd scripts && node --import tsx build-catalog.ts                    # validates data/catalog.json
 

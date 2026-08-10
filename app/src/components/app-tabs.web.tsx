@@ -1,26 +1,40 @@
-import { Tabs, TabList, TabTrigger, TabSlot, TabTriggerSlotProps, TabListProps } from 'expo-router/ui';
-import { Pressable, View, StyleSheet } from 'react-native';
+import {
+  TabList,
+  Tabs,
+  TabSlot,
+  TabTrigger,
+  type TabListProps,
+  type TabTriggerSlotProps,
+} from 'expo-router/ui';
+import { Pressable, StyleSheet, Text, useColorScheme, View } from 'react-native';
 
-import { ThemedText } from './themed-text';
-import { ThemedView } from './themed-view';
-
+import {
+  Colors,
+  HitTarget,
+  MaxContentWidth,
+  Radius,
+  Rule,
+  Spacing,
+  Type,
+} from '@/constants/theme';
 import { BRAND } from '@shared/branding';
-import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 
 // Web counterpart to app-tabs.tsx. The native file uses NativeTabs, which has no web
 // implementation, so the two have to be kept in step by hand — same three routes.
+//
+// It reads as a masthead rather than a floating pill: wordmark left, tabs right, one
+// hairline rule underneath. The archive reference puts navigation in a thin band at
+// the top of the page and lets the content below carry every bit of the color.
 
-/** Pill height plus its surrounding padding. */
-const WEB_TAB_BAR_HEIGHT = 68;
+/** Masthead height plus its rule, so screens can be pushed clear of it. */
+const WEB_TAB_BAR_HEIGHT = 60;
+
 export default function AppTabs() {
   return (
     <Tabs>
-      {/* The web tab bar floats at the top rather than sitting at the bottom as it
-          does on device, so screens need to be pushed clear of it. Native reads its
-          equivalent from BottomTabInset and safe-area insets, which are 0 on web. */}
       <TabSlot style={{ height: '100%', paddingTop: WEB_TAB_BAR_HEIGHT }} />
       <TabList asChild>
-        <CustomTabList>
+        <Masthead>
           <TabTrigger name="scan" href="/" asChild>
             <TabButton>Scan</TabButton>
           </TabTrigger>
@@ -30,67 +44,81 @@ export default function AppTabs() {
           <TabTrigger name="settings" href="/settings" asChild>
             <TabButton>Settings</TabButton>
           </TabTrigger>
-        </CustomTabList>
+        </Masthead>
       </TabList>
     </Tabs>
   );
 }
 
 export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
+  const colors = Colors[useColorScheme() === 'dark' ? 'dark' : 'light'];
+
   return (
-    <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
-      <ThemedView
-        type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
-        style={styles.tabButtonView}>
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
-          {children}
-        </ThemedText>
-      </ThemedView>
+    <Pressable
+      {...props}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: isFocused }}
+      style={({ pressed }) => [
+        styles.tabButton,
+        { borderBottomColor: isFocused ? colors.accent : 'transparent' },
+        pressed && { backgroundColor: colors.backgroundElement },
+      ]}>
+      <Text style={[styles.tabLabel, { color: isFocused ? colors.text : colors.textSecondary }]}>
+        {children}
+      </Text>
     </Pressable>
   );
 }
 
-export function CustomTabList(props: TabListProps) {
+export function Masthead(props: TabListProps) {
+  const colors = Colors[useColorScheme() === 'dark' ? 'dark' : 'light'];
+
   return (
-    <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        <ThemedText type="smallBold" style={styles.brandText}>
-          {BRAND.name}
-        </ThemedText>
-        {props.children}
-      </ThemedView>
+    <View
+      {...props}
+      style={[styles.band, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+      <View style={styles.inner}>
+        <Text style={[styles.wordmark, { color: colors.text }]}>{BRAND.name}</Text>
+        <View style={styles.tabs}>{props.children}</View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  tabListContainer: {
+  band: {
     position: 'absolute',
     width: '100%',
-    padding: Spacing.three,
-    justifyContent: 'center',
+    height: WEB_TAB_BAR_HEIGHT,
+    borderBottomWidth: Rule,
     alignItems: 'center',
     flexDirection: 'row',
   },
-  innerContainer: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Radius.pill,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexGrow: 1,
-    gap: Spacing.two,
+  inner: {
+    width: '100%',
     maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    marginHorizontal: 'auto',
+    paddingHorizontal: Spacing.three,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: '100%',
   },
-  brandText: {
+  wordmark: {
+    ...Type.label,
+    fontSize: 16,
+    letterSpacing: 2.4,
     marginRight: 'auto',
   },
-  pressed: {
-    opacity: 0.7,
-  },
-  tabButtonView: {
-    paddingVertical: Spacing.one,
+  tabs: { flexDirection: 'row', alignItems: 'stretch', height: '100%' },
+  tabButton: {
+    minHeight: HitTarget,
     paddingHorizontal: Spacing.three,
-    borderRadius: Radius.md,
+    borderBottomWidth: Spacing.half,
+    borderTopLeftRadius: Radius.xs,
+    borderTopRightRadius: Radius.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  tabLabel: { ...Type.label },
 });
