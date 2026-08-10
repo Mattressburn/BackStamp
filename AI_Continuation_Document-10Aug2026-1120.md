@@ -1,18 +1,18 @@
 # PROJECT CONTINUATION DOCUMENT
-## Session 2 — 10 August 2026
+## Session 2, 10 August 2026
 
 ### 1. PROJECT IDENTITY
 
-- **Project Name:** Backstamp (repo directory is still `~/Documents/Projects/PyDex` — deliberately not renamed)
+- **Project Name:** Backstamp (repo directory is still `~/Documents/Projects/PyDex`, deliberately not renamed)
 - **What This Project Is:** An iOS and Android app for vintage Pyrex collectors. Photograph a dish, the app identifies the pattern and form, shows what comparable pieces sell for, and tracks what you own and what you're hunting.
-- **Primary Objective:** A collector can scan a dish in a thrift store, get a correct identification, see a real price range, and add it to a have/want list — offline-tolerant, because that is where scanning actually happens.
-- **Strategic Intent:** Every confirmed or corrected scan is a labeled training example. The LLM-vision identifier is not a stopgap around a custom model — it is the mechanism that builds the dataset for one. Nothing is trained yet; the logging exists so the option is real later.
+- **Primary Objective:** A collector can scan a dish in a thrift store, get a correct identification, see a real price range, and add it to a have/want list. Offline-tolerant, because that is where scanning actually happens.
+- **Strategic Intent:** Every confirmed or corrected scan is a labeled training example. The LLM-vision identifier is not a stopgap around a custom model. It is the mechanism that builds the dataset for one. Nothing is trained yet; the logging exists so the option is real later.
 - **Business model (stated by the user this session):** a free app carrying one small advert, with a single one-off payment to remove it. Not a subscription. This matters legally: it is commercial, so noncommercial-educational fair-use carve-outs do not apply to us.
 - **Hard Constraints:**
   - The name lives **only** in `shared/branding.ts`. Never hardcode it.
   - **Pinned to Expo SDK 56.** The App Store build of Expo Go refuses a project newer than itself.
   - **`item = pattern × form`.** Price and ownership attach to the item, never the pattern.
-  - **Never render a bare price** — sold and asking prices are different claims and always carry a source label. `PriceFigure` in `collection-ui.tsx` exists to make this structurally impossible.
+  - **Never render a bare price.** Sold and asking prices are different claims and always carry a source label. `PriceFigure` in `collection-ui.tsx` exists to make this structurally impossible.
   - **A colorway swatch is not a photograph** and must always be labelled as one. Same reasoning as the price rule.
   - EXIF stripped server-side; auth stores the provider subject ID and nothing else; sync carries slugs and counts only; AI placeholder images are generated from a written description, never image-to-image.
   - **The design reference lock** in the header of `app/src/constants/theme.ts` is now a hard constraint. Read it before any visual change.
@@ -22,16 +22,16 @@
 
 ### 2. WHAT EXISTS RIGHT NOW
 
-**What is built and working** (verified this session — both typechecks clean, 40 tests pass, iOS bundle exports, all four screens rendered in a browser in light and dark):
+**What is built and working** (verified this session, both typechecks clean, 40 tests pass, iOS bundle exports, all four screens rendered in a browser in light and dark):
 
 - **Backend** (Hono on Node 26, built-in `node:sqlite`): `/identify`, `/catalog`, `/items/:slug`, `/price/:slug`, `/price/batch`, `/scans`, `/collection`, `/photos`, `/patterns/unknown`, `/auth/session`. Unchanged this session.
-- **EXIF stripping** — hand-written JPEG segment walker. Unchanged.
-- **Pricing** — `PriceSource` interface, SoldComps primary and eBay Browse fallback, weekly caching. Unchanged.
-- **App** — all four screens rebuilt this session against the design lock. Scan (permission, viewfinder, staged wait, results, browse, uncatalogued), Collection (two-column specimen grid, ledger), Item detail (hero, placard, spec table), Settings (archive index of privacy terms).
-- **Design token layer** — `app/src/constants/theme.ts`, rewritten. Carries the reference lock, role rules, `Rule` hairline, `Motion`, `FontAssets`.
-- **Colorway swatches** — `app/src/constants/colorways.ts`. All 33 catalog patterns resolve, so all 379 items render in real color with no photography.
-- **Catalog** — 379 items across 33 patterns and 30 forms. Data unchanged this session.
-- **Repo is on GitHub** — https://github.com/Mattressburn/BackStamp, branch `master`.
+- **EXIF stripping**: hand-written JPEG segment walker. Unchanged.
+- **Pricing**: `PriceSource` interface, SoldComps primary and eBay Browse fallback, weekly caching. Unchanged.
+- **App**: all four screens rebuilt this session against the design lock. Scan (permission, viewfinder, staged wait, results, browse, uncatalogued), Collection (two-column specimen grid, ledger), Item detail (hero, placard, spec table), Settings (archive index of privacy terms).
+- **Design token layer**: `app/src/constants/theme.ts`, rewritten. Carries the reference lock, role rules, `Rule` hairline, `Motion`, `FontAssets`.
+- **Colorway swatches**: `app/src/constants/colorways.ts`. All 33 catalog patterns resolve, so all 379 items render in real color with no photography.
+- **Catalog**: 379 items across 33 patterns and 30 forms. Data unchanged this session.
+- **Repo is on GitHub**: https://github.com/Mattressburn/BackStamp, branch `master`.
 
 **What is partially built:**
 
@@ -51,7 +51,7 @@
 
 - Rate limiting on `/identify`.
 - EAS build configuration; no store submission path exercised.
-- Model training (deliberate — logging only).
+- Model training (deliberate, logging only).
 - A real trademark search on "Backstamp".
 - Any fix to the catalog's known data defects (see §5).
 
@@ -66,7 +66,7 @@
 ```
 shared/types.ts                      single source of truth, both sides import @shared/types
 shared/branding.ts                   the app name, in exactly one place
-app/src/constants/theme.ts           design tokens AND the reference lock — read the header
+app/src/constants/theme.ts           design tokens AND the reference lock, read the header
 app/src/constants/colorways.ts       prose colorway -> figure/ground hex; pure, no RN imports
 app/src/constants/colorways.test.ts  8 tests, incl. "every catalog pattern parses"
 app/src/features/collection/collection-ui.tsx   shared primitives every screen uses
@@ -88,13 +88,13 @@ data/catalog.json                    379 items
 
 ---
 
-### 4. RECENT WORK — WHAT JUST HAPPENED (HIGH PRIORITY)
+### 4. RECENT WORK: WHAT JUST HAPPENED (HIGH PRIORITY)
 
 **Worked on:** the design polish pass, plus research into the Corning Museum of Glass as a data source.
 
 Sequence: pushed the repo to GitHub → invoked `refero-design` and researched with the live Refero MCP (5 style searches, 4 full style references, iOS screen searches, one capture-to-result flow) → wrote the shared contracts myself → dispatched 4 agents in parallel on disjoint screens → integrated, QA'd in a browser in both themes, committed → researched CMoG → drafted a permission email.
 
-**Decisions and why — do not undo these without reading the reasoning:**
+**Decisions and why, do not undo these without reading the reasoning:**
 
 - **Contracts before agents, again.** `theme.ts`, `colorways.ts`, `collection-ui.tsx`, tab icons and font loading were finished and typechecking before any agent started. That is why four screens composed instead of colliding. Same discipline as session 1.
 - **Fonts In Use as the primary reference, not an averaged blend.** Three references conflicted. The skill's rule is to pick one dominant direction and preserve its sharp traits rather than average to a safe middle. The archive won because Backstamp *is* a specimen index, so the structure earns its place.
@@ -104,7 +104,7 @@ Sequence: pushed the repo to GitHub → invoked `refero-design` and researched w
 - **The swatch is labelled, always.** A generated stand-in that reads as a photo of the dish is a claim the catalog cannot support. Same principle as the bare-price rule.
 - **`colorways.ts` imports nothing.** Its neutral fallback hexes are written out rather than read from `theme.ts`, so the module stays free of `react-native` and is testable under plain node.
 - **The stamp ink is contrast-aware.** Grounds run from ivory to near-black ("black with brown rings"), so a fixed ink disappears at one end. It follows the ground's luma.
-- **The ledger does not use `PriceFigure`.** A collection total is a sum of medians that can span both price sources; `PriceFigure` renders a quoted low–high from one. Forcing it would have printed a fabricated sample size. The local replacement takes `source` as a required prop, so the never-bare-price rule still holds.
+- **The ledger does not use `PriceFigure`.** A collection total is a sum of medians that can span both price sources; `PriceFigure` renders a quoted low to high from one. Forcing it would have printed a fabricated sample size. The local replacement takes `source` as a required prop, so the never-bare-price rule still holds.
 - **CMoG is a reference, not a source.** Decided on evidence, not caution: it has no model numbers, so it cannot produce items under `item = pattern × form`. Its robots.txt disallows ClaudeBot and declares `ai-train=no`. Its terms restrict commercial use and its fair-use carve-out is noncommercial-educational, which does not cover us.
 - **Did not install the suggested `agent-reach` tool.** It was not needed, and installing bot-challenge-evasion tooling against a site whose robots.txt names ClaudeBot would have been indefensible.
 
@@ -161,13 +161,13 @@ Sequence: pushed the repo to GitHub → invoked `refero-design` and researched w
 
 ### 6. HOW TO THINK ABOUT THIS PROJECT
 
-**1. Core pattern and why.** `item = pattern × form` is the spine and everything joins on `item.slug`. Collectors do not own "Butterprint", they own a Butterprint 444 Cinderella bowl, a different object at a different price from a Butterprint 501 refrigerator dish. The second pattern is **honest labelling**: the app never shows a figure without saying what kind of claim it is. That principle now has three enforcers in code — `PriceFigure` for prices, the swatch mark for colorway art, and the `AiApproximationBadge` for generated images. When you add a new kind of claim, add its label in the same breath.
+**1. Core pattern and why.** `item = pattern × form` is the spine and everything joins on `item.slug`. Collectors do not own "Butterprint", they own a Butterprint 444 Cinderella bowl, a different object at a different price from a Butterprint 501 refrigerator dish. The second pattern is **honest labelling**: the app never shows a figure without saying what kind of claim it is. That principle now has three enforcers in code: `PriceFigure` for prices, the swatch mark for colorway art, and the `AiApproximationBadge` for generated images. When you add a new kind of claim, add its label in the same breath.
 
 The design has a third pattern now: **tokens carry roles**. A token used outside its role is the failure mode that would quietly dissolve the whole direction back into generic app design, which is exactly where it started.
 
-**2. Most common mistake a new person would make.** Treating a passing `tsc` as evidence the app works. `tsc` reads tsconfig `paths`; Metro does not. Run `npx expo export --platform ios` after touching `shared/` or `data/`. The design-specific version of this mistake: treating a light-mode screenshot as evidence the design works. Hairline rules carry the entire visual system and they are the first thing that would vanish on a dark ground. Check both, always. A screenshot taken during a Metro hot reload also lies — one was misread this session before the DOM was queried directly.
+**2. Most common mistake a new person would make.** Treating a passing `tsc` as evidence the app works. `tsc` reads tsconfig `paths`; Metro does not. Run `npx expo export --platform ios` after touching `shared/` or `data/`. The design-specific version of this mistake: treating a light-mode screenshot as evidence the design works. Hairline rules carry the entire visual system and they are the first thing that would vanish on a dark ground. Check both, always. A screenshot taken during a Metro hot reload also lies. One was misread this session before the DOM was queried directly.
 
-**3. What looks refactorable but should NOT be touched.** The four privacy measures, for the reasons in session 1's document — they are what make the anonymous option true rather than decorative. Do not simplify `PriceSource` to one implementation; the fallback exists because the primary is a free tier that will run out. And do not "clean up" the reference lock comment in `theme.ts` into something shorter. It is the only thing standing between this design and the next session averaging it back toward defaults, which is the specific way research-led design dies.
+**3. What looks refactorable but should NOT be touched.** The four privacy measures, for the reasons in session 1's document, they are what make the anonymous option true rather than decorative. Do not simplify `PriceSource` to one implementation; the fallback exists because the primary is a free tier that will run out. And do not "clean up" the reference lock comment in `theme.ts` into something shorter. It is the only thing standing between this design and the next session averaging it back toward defaults, which is the specific way research-led design dies.
 
 ---
 
@@ -176,7 +176,7 @@ The design has a third pattern now: **tokens carry roles**. A token used outside
 - Do NOT refactor stable, working systems without being asked.
 - Do NOT redesign architecture unless explicitly instructed.
 - Preserve existing naming conventions (`item.slug` = `{patternId}-{modelNo}`).
-- Maintain previously chosen tradeoffs — they were chosen for reasons documented above.
+- Maintain previously chosen tradeoffs, they were chosen for reasons documented above.
 - **Do NOT upgrade Expo past SDK 56** without checking `npm view expo dist-tags`.
 - **Do NOT hardcode the app name** anywhere but `shared/branding.ts`.
 - **Do NOT weaken the four privacy measures.**
@@ -195,11 +195,11 @@ The design has a third pattern now: **tokens carry roles**. A token used outside
 | Section | Confidence | Note |
 |---|---|---|
 | 1. Project identity | ✅ HIGH | Business model stated by user this session |
-| 2. What exists — "working" | ✅ HIGH | Typechecks, 40 tests, iOS export, browser render in both themes, all run this session |
-| 2. What exists — "blocked" | ✅ HIGH | `item/[slug]` web fallback confirmed empirically, not inferred |
+| 2. What exists: "working" | ✅ HIGH | Typechecks, 40 tests, iOS export, browser render in both themes, all run this session |
+| 2. What exists: "blocked" | ✅ HIGH | `item/[slug]` web fallback confirmed empirically, not inferred |
 | 3. Architecture | ✅ HIGH | Design layer written and verified this session |
 | 4. Recent work | ✅ HIGH | This session |
-| 5. Known bugs — Snowflake and date deltas | ✅ HIGH | Derived from CMoG comparison this session |
+| 5. Known bugs: Snowflake and date deltas | ✅ HIGH | Derived from CMoG comparison this session |
 | 5. Assumptions | ❓ LOW | **Explicitly the unverified list** |
 | CMoG constraints | ✅ HIGH | robots.txt verified directly; terms quoted from source |
 | Design on a real phone | ❓ LOW | **Never run on a device. Motion never seen running.** |
