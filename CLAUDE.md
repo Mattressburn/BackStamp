@@ -47,6 +47,13 @@ pattern's documented prose colorway into the two colors it names, so a piece wit
 photo still arrives wearing its real colors. It must always be labelled as a swatch —
 same reasoning as never rendering a bare price.
 
+**Do not ingest the Corning Museum Pyrex Pattern Library.** `pyrex.cmog.org` is the
+obvious place to fix the catalog and it is off limits as a source: its robots.txt
+disallows ClaudeBot and declares `ai-train=no, use=reference`, its terms restrict
+commercial use, and it carries no model numbers anyway, so it cannot produce items.
+Read it as a reference and restate facts in our own words. A permission request was
+drafted 2026-08-10 and had not been answered.
+
 ## Commands
 
 ```bash
@@ -67,3 +74,13 @@ invisible to bare `node --test`. Run the Expo export after touching `shared/` or
 evidence the app bundles.
 
 There is no iOS Simulator on Linux. Physical phone via Expo Go, or the web preview.
+
+The web preview only routes tab screens, so `/item/[slug]` silently falls back to Scan —
+confirmed, not folklore. To see that screen in a browser, add a temporary fourth
+`TabTrigger` for it in `app-tabs.web.tsx`, shoot it, then revert. Check dark mode the
+same way (`page.emulateMedia({ colorScheme: 'dark' })`); the hairline rules that carry
+the whole design are the first thing that would fail there.
+
+Git has no configured identity in this repo. History is authored `Claude
+<noreply@anthropic.com>` via `GIT_AUTHOR_NAME`/`GIT_AUTHOR_EMAIL` env vars on the commit
+command. Match that rather than writing a global git config.
