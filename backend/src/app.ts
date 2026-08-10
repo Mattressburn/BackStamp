@@ -1,0 +1,485 @@
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
+
+import { Hono, type Context, type Next } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
+
+import type {
+  ApiErrorCode,
+  ApiResult,
+  AuthProvider,
+  IdentifyRequest,
+  ItemDetail,
+  PhotoVisibility,
+  ScanGuess,
+  Session,
+  UserItem,
+} from '@shared/types.js';
+
+import { createSession, IdentityTokenError, verifyIdentityToken, verifySession } from './auth.js';
+import { BackendDatabase } from './db.js';
+import { configuredImageGenerator, type ImageGenerator } from './image-generator.js';
+import { Identifier } from './identify.js';
+import { PriceService } from './pricing.js';
+import { stripExif } from './photos/strip-exif.js';
+
+type BackendEnv = { Variables: { session: Omit<Session, 'token'> } };
+type ErrorStatus = 400 | 401 | 404 | 429 | 500 | 502;
+
+export interface AppOptions {
+  db: BackendDatabase;
+  photoDir: string;
+  sessionSecret?: string;
+  identifier?: Identifier;
+  imageGenerator?: ImageGenerator;
+  prices?: PriceService;
+}
+
+class ApiRouteError extends Error {
+  constructor(
+    readonly code: ApiErrorCode,
+    readonly status: ErrorStatus,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+const success = <T>(data: T): ApiResult<T> => ({ ok: true, data });
+
+const failure = (error: string, code: ApiErrorCode): ApiResult<never> => ({
+  ok: false,
+  error,
+  code,
+});
+
+function record(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new ApiRouteError('bad_request', 400, 'Expected a JSON object');
+  }
+  return value as Record<string, unknown>;
+}
+
+async function body(c: Context<BackendEnv>): Promise<Record<string, unknown>> {
+  try {
+    return record(await c.req.json<unknown>());
+  } catch (error) {
+    if (error instanceof ApiRouteError) throw error;
+    throw new ApiRouteError('bad_request', 400, 'Invalid JSON body');
+  }
+}
+
+function requiredString(value: unknown, field: string, maxLength = 2_000): string {
+  if (typeof value !== 'string' || !value.trim() || value.length > maxLength) {
+    throw new ApiRouteError('bad_request', 400, `Invalid ${field}`);
+  }
+  return value.trim();
+}
+
+function nullableString(value: unknown, field: string): string | null {
+  if (value === null) return null;
+  return requiredString(value, field);
+}
+
+function visibility(value: unknown): PhotoVisibility {
+  if (value !== 'attributed' && value !== 'anonymous' && value !== 'private') {
+    throw new ApiRouteError('bad_request', 400, 'Invalid visibility');
+  }
+  return value;
+}
+
+function guess(value: unknown): ScanGuess {
+  const input = record(value);
+  const itemSlug = requiredString(input.itemSlug, 'guess itemSlug', 200);
+  const confidence = input.confidence;
+  if (typeof confidence !== 'number' || !Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+    throw new ApiRouteError('bad_request', 400, 'Invalid guess confidence');
+  }
+  return {
+    itemSlug,
+    confidence,
+    reasoning: requiredString(input.reasoning, 'guess reasoning', 1_000),
+  };
+}
+
+const MAX_JPEG_BYTES = 15 * 1024 * 1024;
+const MAX_JPEG_BASE64_CHARS = Math.ceil((MAX_JPEG_BYTES * 4) / 3) + 4;
+const PRICE_BATCH_CONCURRENCY = 4;
+const jsonLimit = (maxSize: number) =>
+  bodyLimit({
+    maxSize,
+    onError: (c) => c.json(failure('Request body is too large', 'bad_request'), 413),
+  });
+
+function jpegFromBase64(value: string): Buffer {
+  const encoded = value.startsWith('data:image/jpeg;base64,') ? value.slice(23) : value;
+  if (!encoded || encoded.length > MAX_JPEG_BASE64_CHARS || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)) {
+    throw new ApiRouteError('bad_request', 400, 'Invalid JPEG');
+  }
+  const padded = encoded.padEnd(Math.ceil(encoded.length / 4) * 4, '=');
+  const jpeg = Buffer.from(padded, 'base64');
+  if (jpeg.length === 0 || jpeg.length > MAX_JPEG_BYTES) {
+    throw new ApiRouteError('bad_request', 400, 'Invalid JPEG');
+  }
+  try {
+    return stripExif(jpeg);
+  } catch {
+    throw new ApiRouteError('bad_request', 400, 'Invalid JPEG');
+  }
+}
+
+function optionalJpeg(value: unknown): Buffer | null {
+  if (typeof value !== 'string') return null;
+  try {
+    return jpegFromBase64(value);
+  } catch {
+    return null;
+  }
+}
+
+function collectionItem(value: unknown, db: BackendDatabase): UserItem {
+  const input = record(value);
+  const itemSlug = requiredString(input.itemSlug, 'itemSlug', 200);
+  if (!db.getItem(itemSlug)) throw new ApiRouteError('not_found', 404, `Item not found: ${itemSlug}`);
+  if (input.status !== 'have' && input.status !== 'want') {
+    throw new ApiRouteError('bad_request', 400, 'Invalid collection status');
+  }
+  if (!Number.isSafeInteger(input.quantity) || (input.quantity as number) < 0) {
+    throw new ApiRouteError('bad_request', 400, 'Invalid collection quantity');
+  }
+  if (input.status === 'want' && input.quantity !== 0) {
+    throw new ApiRouteError('bad_request', 400, 'Want-list quantity must be zero');
+  }
+  return {
+    itemSlug,
+    status: input.status,
+    quantity: input.quantity as number,
+    condition: null,
+    notes: null,
+    updatedAt: typeof input.updatedAt === 'string' ? input.updatedAt : new Date().toISOString(),
+  };
+}
+
+export function createApp(options: AppOptions): Hono<BackendEnv> {
+  const app = new Hono<BackendEnv>();
+  const identifier = options.identifier ?? new Identifier();
+  const imageGenerator = options.imageGenerator ?? configuredImageGenerator();
+  const prices = options.prices ?? new PriceService(options.db);
+  const sessionSecret = options.sessionSecret ?? process.env.SESSION_SECRET ?? '';
+  const sessionConfigured = Buffer.byteLength(sessionSecret) >= 32;
+
+  const sessionFrom = (c: Context<BackendEnv>): Omit<Session, 'token'> | null => {
+    const authorization = c.req.header('Authorization');
+    if (!sessionConfigured || !authorization?.startsWith('Bearer ')) return null;
+    return verifySession(authorization.slice(7), sessionSecret);
+  };
+
+  const requireAuth = async (c: Context<BackendEnv>, next: Next): Promise<Response | void> => {
+    if (!sessionConfigured) {
+      return c.json(failure('Authentication is not configured', 'internal'), 500);
+    }
+    const session = sessionFrom(c);
+    if (!session) return c.json(failure('Authentication required', 'unauthorized'), 401);
+    c.set('session', session);
+    await next();
+  };
+
+  app.onError((error, c) => {
+    if (error instanceof ApiRouteError) return c.json(failure(error.message, error.code), error.status);
+    console.error(error instanceof Error ? error.message : 'Unknown backend error');
+    return c.json(failure('Internal server error', 'internal'), 500);
+  });
+  app.notFound((c) => c.json(failure('Route not found', 'not_found'), 404));
+
+  app.post('/identify', jsonLimit(6 * MAX_JPEG_BASE64_CHARS + 10_000), async (c) => {
+    const input = await body(c);
+    if (!Array.isArray(input.photos) || input.photos.length === 0 || input.photos.length > 6) {
+      throw new ApiRouteError('bad_request', 400, 'photos must contain 1 to 6 JPEGs');
+    }
+    const photos = input.photos.map((photo) =>
+      jpegFromBase64(requiredString(photo, 'photo', MAX_JPEG_BASE64_CHARS)).toString('base64'),
+    );
+    if (typeof input.hasBaseShot !== 'boolean') {
+      throw new ApiRouteError('bad_request', 400, 'Invalid hasBaseShot');
+    }
+    const request: IdentifyRequest = { photos, hasBaseShot: input.hasBaseShot };
+    try {
+      return c.json(success(await identifier.identify(request, options.db.getCatalog())));
+    } catch {
+      throw new ApiRouteError('upstream_failed', 502, 'Identification is unavailable');
+    }
+  });
+
+  app.get('/catalog', (c) => {
+    const sinceText = c.req.query('since') ?? '0';
+    const since = Number(sinceText);
+    if (!Number.isSafeInteger(since) || since < 0) {
+      throw new ApiRouteError('bad_request', 400, 'Invalid catalog version');
+    }
+    const catalog = options.db.getCatalog();
+    return c.json(
+      success(
+        since === catalog.version
+          ? { version: catalog.version, patterns: [], forms: [], items: [] }
+          : catalog,
+      ),
+    );
+  });
+
+  app.get('/items/:slug', async (c) => {
+    const item = options.db.getItem(c.req.param('slug'));
+    if (!item) throw new ApiRouteError('not_found', 404, 'Item not found');
+    const pattern = options.db.getPattern(item.patternId);
+    const form = options.db.getForm(item.formId);
+    if (!pattern || !form) throw new Error('Catalog relation is missing');
+    const detail: ItemDetail = {
+      ...item,
+      pattern,
+      form,
+      photos: options.db.getPhotos(item.slug, sessionFrom(c)?.userId ?? null),
+      price: await prices.fetch(item),
+    };
+    return c.json(success(detail));
+  });
+
+  app.get('/price/:slug', async (c) => {
+    const item = options.db.getItem(c.req.param('slug'));
+    if (!item) throw new ApiRouteError('not_found', 404, 'Item not found');
+    return c.json(success(await prices.fetch(item)));
+  });
+
+  app.post('/price/batch', jsonLimit(25_000), async (c) => {
+    const input = await body(c);
+    if (!Array.isArray(input.slugs) || input.slugs.length > 100) {
+      throw new ApiRouteError('bad_request', 400, 'slugs must be an array of at most 100 items');
+    }
+    const slugs = [...new Set(input.slugs.map((slug) => requiredString(slug, 'slug', 200)))];
+    const items = slugs.map((slug) => {
+      const item = options.db.getItem(slug);
+      if (!item) throw new ApiRouteError('not_found', 404, `Item not found: ${slug}`);
+      return item;
+    });
+    const quotes = [];
+    for (let offset = 0; offset < items.length; offset += PRICE_BATCH_CONCURRENCY) {
+      const batch = await Promise.all(
+        items.slice(offset, offset + PRICE_BATCH_CONCURRENCY).map((item) => prices.fetch(item)),
+      );
+      quotes.push(...batch.filter((quote) => quote !== null));
+    }
+    return c.json(success(quotes));
+  });
+
+  app.post('/scans', jsonLimit(6 * MAX_JPEG_BASE64_CHARS + 25_000), async (c) => {
+    const input = await body(c);
+    if (
+      !Array.isArray(input.photos) ||
+      input.photos.length > 6 ||
+      input.photos.some((photo) => typeof photo !== 'string' || photo.length > MAX_JPEG_BASE64_CHARS) ||
+      !Array.isArray(input.guesses) ||
+      input.guesses.length > 3
+    ) {
+      throw new ApiRouteError('bad_request', 400, 'Invalid scan');
+    }
+    const guesses = input.guesses.map(guess);
+    for (const candidate of guesses) {
+      if (!options.db.getItem(candidate.itemSlug)) {
+        throw new ApiRouteError('bad_request', 400, `Unknown guess slug: ${candidate.itemSlug}`);
+      }
+    }
+    const confirmedItemSlug = nullableString(input.confirmedItemSlug, 'confirmedItemSlug');
+    if (confirmedItemSlug && !options.db.getItem(confirmedItemSlug)) {
+      throw new ApiRouteError('bad_request', 400, 'Unknown confirmed item');
+    }
+    if (
+      typeof input.consentedToTraining !== 'boolean' ||
+      (input.llmWasRight !== null && typeof input.llmWasRight !== 'boolean')
+    ) {
+      throw new ApiRouteError('bad_request', 400, 'Invalid scan labels');
+    }
+    if ((confirmedItemSlug === null) !== (input.llmWasRight === null)) {
+      throw new ApiRouteError('bad_request', 400, 'Confirmed item and llmWasRight must be labeled together');
+    }
+    if (input.llmWasRight === true && !guesses.some((candidate) => candidate.itemSlug === confirmedItemSlug)) {
+      throw new ApiRouteError(
+        'bad_request',
+        400,
+        'Confirmed item must match a guess when llmWasRight is true',
+      );
+    }
+
+    const id = randomUUID();
+    let photoRef: string | null = null;
+    if (input.consentedToTraining) {
+      // api.ts encodes to base64 at send time and sends an empty array when the user
+      // has not opted in, so this branch only ever sees photos we are allowed to keep.
+      const photo = optionalJpeg(input.photos[0]);
+      if (photo) {
+        await mkdir(options.photoDir, { recursive: true });
+        photoRef = `scan-${id}.jpg`;
+        await writeFile(join(options.photoDir, photoRef), photo, { flag: 'wx' });
+      }
+    }
+    try {
+      options.db.addScan({
+        id,
+        userId: sessionFrom(c)?.userId ?? null,
+        photoRef,
+        guessesJson: JSON.stringify(guesses),
+        confirmedItemSlug,
+        llmWasRight: input.llmWasRight as boolean | null,
+        consentedToTraining: input.consentedToTraining,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      if (photoRef) await rm(join(options.photoDir, photoRef), { force: true });
+      throw error;
+    }
+    return c.json(success({ id }));
+  });
+
+  app.get('/collection', requireAuth, (c) =>
+    c.json(success(options.db.getCollection(c.get('session').userId))),
+  );
+
+  app.put('/collection', requireAuth, jsonLimit(5_000_000), async (c) => {
+    const input = await body(c);
+    if (!Array.isArray(input.items) || input.items.length > 10_000) {
+      throw new ApiRouteError('bad_request', 400, 'Invalid collection');
+    }
+    // CONTRACT: UserItem includes condition, notes, and updatedAt, but the privacy contract
+    // permits sync storage of only user_id, item_slug, status, and quantity.
+    const items = input.items.map((item) => collectionItem(item, options.db));
+    if (new Set(items.map((item) => item.itemSlug)).size !== items.length) {
+      throw new ApiRouteError('bad_request', 400, 'Duplicate collection item');
+    }
+    return c.json(success(options.db.replaceCollection(c.get('session').userId, items)));
+  });
+
+  app.post('/photos', requireAuth, jsonLimit(MAX_JPEG_BASE64_CHARS + 10_000), async (c) => {
+    const input = await body(c);
+    const itemSlug = requiredString(input.itemSlug, 'itemSlug', 200);
+    if (!options.db.getItem(itemSlug)) throw new ApiRouteError('not_found', 404, 'Item not found');
+    const photo = jpegFromBase64(requiredString(input.photo, 'photo', MAX_JPEG_BASE64_CHARS));
+    const photoVisibility = visibility(input.visibility);
+    const id = randomUUID();
+    const fileRef = `${id}.jpg`;
+    await mkdir(options.photoDir, { recursive: true });
+    await writeFile(join(options.photoDir, fileRef), photo, { flag: 'wx' });
+    try {
+      options.db.addPhoto({
+        id,
+        itemSlug,
+        fileRef,
+        visibility: photoVisibility,
+        approved: false,
+        isAiPlaceholder: false,
+        uploaderId: c.get('session').userId,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      await rm(join(options.photoDir, fileRef), { force: true });
+      throw error;
+    }
+    // CONTRACT: attributed uploads cannot expose a handle until the client supplies one;
+    // auth intentionally stores no name or profile.
+    return c.json(success({ id }));
+  });
+
+  app.get('/photo-files/:id', async (c) => {
+    const photo = options.db.photoFile(c.req.param('id'), sessionFrom(c)?.userId ?? null);
+    if (!photo) throw new ApiRouteError('not_found', 404, 'Photo not found');
+    try {
+      return c.body(await readFile(join(options.photoDir, photo.fileRef)), 200, {
+        'Content-Type': 'image/jpeg',
+        'Cache-Control': photo.publiclyCacheable
+          ? 'public, max-age=604800, immutable'
+          : 'private, no-store',
+      });
+    } catch {
+      throw new ApiRouteError('not_found', 404, 'Photo not found');
+    }
+  });
+
+  app.post('/patterns/unknown', jsonLimit(MAX_JPEG_BASE64_CHARS + 25_000), async (c) => {
+    const input = await body(c);
+    const patternName = requiredString(input.patternName, 'patternName', 100);
+    const description = requiredString(input.description, 'description');
+    const formId = nullableString(input.formId, 'formId');
+    visibility(input.visibility);
+    if (input.photo !== null && typeof input.photo !== 'string') {
+      throw new ApiRouteError('bad_request', 400, 'Invalid photo');
+    }
+    const sourcePhoto = optionalJpeg(input.photo)?.toString('base64') ?? null;
+    let writtenDescription = description;
+    try {
+      writtenDescription = await identifier.describePattern(sourcePhoto, description);
+    } catch {
+      // The user's description is sufficient when vision description is unavailable.
+    }
+    let created: { slug: string };
+    try {
+      created = options.db.createUnknownPattern({ patternName, formId, description: writtenDescription });
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Form not found') {
+        throw new ApiRouteError('not_found', 404, 'Form not found');
+      }
+      throw error;
+    }
+
+    try {
+      const generated = await imageGenerator.generate(writtenDescription);
+      if (generated) {
+        const photo = stripExif(generated);
+        const id = randomUUID();
+        const fileRef = `${id}.jpg`;
+        await mkdir(options.photoDir, { recursive: true });
+        await writeFile(join(options.photoDir, fileRef), photo, { flag: 'wx' });
+        try {
+          options.db.addPhoto({
+            id,
+            itemSlug: created.slug,
+            fileRef,
+            visibility: 'anonymous',
+            approved: true,
+            isAiPlaceholder: true,
+            uploaderId: null,
+            createdAt: new Date().toISOString(),
+          });
+        } catch (error) {
+          await rm(join(options.photoDir, fileRef), { force: true });
+          throw error;
+        }
+      }
+    } catch {
+      // The null generator and provider failures leave a valid catalog entry without art.
+    }
+    return c.json(success(created));
+  });
+
+  app.post('/auth/session', jsonLimit(25_000), async (c) => {
+    const input = await body(c);
+    if (input.provider !== 'google' && input.provider !== 'apple') {
+      throw new ApiRouteError('bad_request', 400, 'Invalid auth provider');
+    }
+    const provider: AuthProvider = input.provider;
+    const identityToken = requiredString(input.identityToken, 'identityToken', 20_000);
+    if (!sessionConfigured) {
+      throw new ApiRouteError('internal', 500, 'Authentication is not configured');
+    }
+    try {
+      const subject = await verifyIdentityToken(provider, identityToken);
+      return c.json(success(createSession(provider, subject, sessionSecret)));
+    } catch (error) {
+      if (error instanceof IdentityTokenError && error.kind === 'configuration') {
+        throw new ApiRouteError('internal', 500, 'Authentication is not configured');
+      }
+      if (error instanceof IdentityTokenError && error.kind === 'upstream') {
+        throw new ApiRouteError('upstream_failed', 502, 'Identity provider is unavailable');
+      }
+      throw new ApiRouteError('unauthorized', 401, 'Invalid identity token');
+    }
+  });
+
+  return app;
+}

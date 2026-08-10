@@ -1,0 +1,21 @@
+node_modules/
+
+# Secrets. .env.example is committed; .env never is.
+.env
+.env.local
+*.env
+
+# Runtime state: SQLite, uploaded photos, Expo caches, build output.
+backend/data/
+app/.expo/
+dist/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Book digitizer working files — page scans and raw extractions are not source.
+scripts/pages/
+scripts/extracted*.json
+
+.DS_Store
+*.log

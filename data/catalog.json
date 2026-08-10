@@ -1,0 +1,3578 @@
+{
+  "patterns": [
+    {
+      "id": "primary-colors",
+      "name": "Primary Colors",
+      "yearsStart": 1945,
+      "yearsEnd": 1968,
+      "colorway": "yellow, green, red, and blue",
+      "rarity": "common",
+      "notes": "The original four-bowl set uses a fixed color for each size."
+    },
+    {
+      "id": "snowflake-turquoise",
+      "name": "Snowflake",
+      "yearsStart": 1956,
+      "yearsEnd": 1967,
+      "colorway": "turquoise and white",
+      "rarity": "uncommon",
+      "notes": "This record covers the coordinated turquoise colorway, not the charcoal version."
+    },
+    {
+      "id": "pink-daisy",
+      "name": "Pink Daisy",
+      "yearsStart": 1956,
+      "yearsEnd": 1962,
+      "colorway": "white on pink",
+      "rarity": "uncommon",
+      "notes": null
+    },
+    {
+      "id": "butterprint",
+      "name": "Butterprint",
+      "yearsStart": 1957,
+      "yearsEnd": 1968,
+      "colorway": "turquoise and white",
+      "rarity": "common",
+      "notes": "The standard line alternates turquoise-on-white and white-on-turquoise pieces."
+    },
+    {
+      "id": "gooseberry-pink",
+      "name": "Gooseberry",
+      "yearsStart": 1957,
+      "yearsEnd": 1966,
+      "colorway": "pink and white",
+      "rarity": "uncommon",
+      "notes": "This record covers the standard pink colorway; black and yellow variants are separate collectibles."
+    },
+    {
+      "id": "atomic-eyes",
+      "name": "Atomic Eyes",
+      "yearsStart": 1958,
+      "yearsEnd": 1958,
+      "colorway": "turquoise on white",
+      "rarity": "rare",
+      "notes": "Collector name for the Hot N Cold chip-and-dip set."
+    },
+    {
+      "id": "balloons",
+      "name": "Balloons",
+      "yearsStart": 1958,
+      "yearsEnd": 1958,
+      "colorway": "white on turquoise",
+      "rarity": "rare",
+      "notes": "Collector name for the promotional Cinderella chip-and-dip set."
+    },
+    {
+      "id": "lucky-in-love",
+      "name": "Lucky in Love",
+      "yearsStart": 1959,
+      "yearsEnd": 1959,
+      "colorway": "green and pink on white",
+      "rarity": "grail",
+      "notes": "A very limited promotional casserole."
+    },
+    {
+      "id": "frost-garland",
+      "name": "Frost Garland",
+      "yearsStart": 1962,
+      "yearsEnd": 1962,
+      "colorway": "white on turquoise",
+      "rarity": "rare",
+      "notes": "Also sold as the Deluxe Hostess Casserole."
+    },
+    {
+      "id": "pink-stems",
+      "name": "Pink Stems",
+      "yearsStart": 1962,
+      "yearsEnd": 1962,
+      "colorway": "white on pink",
+      "rarity": "grail",
+      "notes": "Collector name; the original retail name is not known."
+    },
+    {
+      "id": "sandalwood",
+      "name": "Sandalwood",
+      "yearsStart": 1961,
+      "yearsEnd": 1963,
+      "colorway": "tan and white",
+      "rarity": "hard-to-find",
+      "notes": null
+    },
+    {
+      "id": "early-american",
+      "name": "Early American",
+      "yearsStart": 1962,
+      "yearsEnd": 1971,
+      "colorway": "brown and gold on white or brown",
+      "rarity": "common",
+      "notes": "Set pieces alternate brown screen print and gold decoration by model."
+    },
+    {
+      "id": "town-and-country",
+      "name": "Town and Country",
+      "yearsStart": 1963,
+      "yearsEnd": 1967,
+      "colorway": "brown, orange, yellow, and white",
+      "rarity": "common",
+      "notes": null
+    },
+    {
+      "id": "terra",
+      "name": "Terra",
+      "yearsStart": 1964,
+      "yearsEnd": 1965,
+      "colorway": "black with brown rings",
+      "rarity": "hard-to-find",
+      "notes": "The standard line omitted the 402 bowl and 473 casserole."
+    },
+    {
+      "id": "foulard-blue",
+      "name": "Foulard",
+      "yearsStart": 1965,
+      "yearsEnd": 1965,
+      "colorway": "blue",
+      "rarity": "hard-to-find",
+      "notes": "The matching carafe is unnumbered and is not represented as an item."
+    },
+    {
+      "id": "rainbow-stripes",
+      "name": "Rainbow Stripes",
+      "yearsStart": 1965,
+      "yearsEnd": 1967,
+      "colorway": "pink, tan, blue, and yellow stripes on white",
+      "rarity": "uncommon",
+      "notes": "The regular nesting set used models 401 through 403; no 404 was produced."
+    },
+    {
+      "id": "blue-stripe",
+      "name": "Blue Stripe",
+      "yearsStart": 1966,
+      "yearsEnd": 1966,
+      "colorway": "pale blue bars on medium blue",
+      "rarity": "hard-to-find",
+      "notes": "Often called Barcode by collectors."
+    },
+    {
+      "id": "verde",
+      "name": "Verde",
+      "yearsStart": 1967,
+      "yearsEnd": 1972,
+      "colorway": "graduated avocado greens",
+      "rarity": "common",
+      "notes": "Most decoration appears on casserole lids rather than bowl bodies."
+    },
+    {
+      "id": "daisy",
+      "name": "Daisy",
+      "yearsStart": 1968,
+      "yearsEnd": 1973,
+      "colorway": "yellow and orange",
+      "rarity": "common",
+      "notes": "Many casseroles are solid-color bodies paired with decorated lids."
+    },
+    {
+      "id": "dots",
+      "name": "Dots",
+      "yearsStart": 1968,
+      "yearsEnd": 1973,
+      "colorway": "orange, yellow, blue, and green on white",
+      "rarity": "uncommon",
+      "notes": "Each bowl size has its own dot color; the 404 was added after the smaller bowls."
+    },
+    {
+      "id": "horizon-blue",
+      "name": "Horizon Blue",
+      "yearsStart": 1969,
+      "yearsEnd": 1972,
+      "colorway": "blue on white with solid blue accents",
+      "rarity": "common",
+      "notes": null
+    },
+    {
+      "id": "friendship",
+      "name": "Friendship",
+      "yearsStart": 1971,
+      "yearsEnd": 1974,
+      "colorway": "red and orange on white",
+      "rarity": "common",
+      "notes": null
+    },
+    {
+      "id": "butterfly-gold",
+      "name": "Butterfly Gold",
+      "yearsStart": 1972,
+      "yearsEnd": 1979,
+      "colorway": "gold and white",
+      "rarity": "common",
+      "notes": "This record covers the first version introduced in 1972."
+    },
+    {
+      "id": "spring-blossom-green",
+      "name": "Spring Blossom Green",
+      "yearsStart": 1972,
+      "yearsEnd": 1979,
+      "colorway": "avocado green and white",
+      "rarity": "common",
+      "notes": "This record covers the first version, commonly nicknamed Crazy Daisy."
+    },
+    {
+      "id": "snowflake-blue",
+      "name": "Snowflake Blue",
+      "yearsStart": 1972,
+      "yearsEnd": null,
+      "colorway": "blue and white",
+      "rarity": "common",
+      "notes": "Often called Snowflake Garland; published end dates differ by one year."
+    },
+    {
+      "id": "old-town-blue",
+      "name": "Old Town Blue",
+      "yearsStart": 1972,
+      "yearsEnd": null,
+      "colorway": "dark blue on white",
+      "rarity": "common",
+      "notes": "This was a tabletop line; published end dates differ by one year."
+    },
+    {
+      "id": "old-orchard",
+      "name": "Old Orchard",
+      "yearsStart": 1974,
+      "yearsEnd": 1978,
+      "colorway": "brown on orange",
+      "rarity": "common",
+      "notes": null
+    },
+    {
+      "id": "homestead-blue",
+      "name": "Homestead",
+      "yearsStart": 1976,
+      "yearsEnd": 1980,
+      "colorway": "dark blue on speckled beige",
+      "rarity": "common",
+      "notes": "This record covers the original blue version, not the later brown revision."
+    },
+    {
+      "id": "woodland",
+      "name": "Woodland",
+      "yearsStart": 1978,
+      "yearsEnd": 1983,
+      "colorway": "white on brown and tan",
+      "rarity": "common",
+      "notes": null
+    },
+    {
+      "id": "autumn-harvest",
+      "name": "Autumn Harvest",
+      "yearsStart": 1979,
+      "yearsEnd": 1986,
+      "colorway": "ivory wheat on rust and orange",
+      "rarity": "common",
+      "notes": null
+    },
+    {
+      "id": "forest-fancies",
+      "name": "Forest Fancies",
+      "yearsStart": 1981,
+      "yearsEnd": 1986,
+      "colorway": "brown on speckled beige",
+      "rarity": "uncommon",
+      "notes": null
+    },
+    {
+      "id": "shenandoah",
+      "name": "Shenandoah",
+      "yearsStart": 1981,
+      "yearsEnd": 1986,
+      "colorway": "green on pale yellow",
+      "rarity": "uncommon",
+      "notes": null
+    },
+    {
+      "id": "colonial-mist",
+      "name": "Colonial Mist",
+      "yearsStart": 1983,
+      "yearsEnd": 1986,
+      "colorway": "blue and white",
+      "rarity": "uncommon",
+      "notes": null
+    }
+  ],
+  "forms": [
+    {
+      "id": "023-round-casserole",
+      "modelNo": "023",
+      "family": "casserole",
+      "shape": "Round casserole",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "024-round-casserole",
+      "modelNo": "024",
+      "family": "casserole",
+      "shape": "Round casserole",
+      "capacityQt": 2,
+      "dimensions": null
+    },
+    {
+      "id": "043-oval-casserole",
+      "modelNo": "043",
+      "family": "casserole",
+      "shape": "Oval casserole",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "045-oval-casserole",
+      "modelNo": "045",
+      "family": "casserole",
+      "shape": "Oval casserole",
+      "capacityQt": 2.5,
+      "dimensions": null
+    },
+    {
+      "id": "053-oval-open-baker",
+      "modelNo": "053",
+      "family": "baking-dish",
+      "shape": "Oval open baker",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "063-divided-dish",
+      "modelNo": "063",
+      "family": "divided-dish",
+      "shape": "Oval divided serving dish",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "401-mixing-bowl",
+      "modelNo": "401",
+      "family": "mixing-bowl",
+      "shape": "Round mixing bowl",
+      "capacityQt": 0.75,
+      "dimensions": null
+    },
+    {
+      "id": "402-mixing-bowl",
+      "modelNo": "402",
+      "family": "mixing-bowl",
+      "shape": "Round mixing bowl",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "403-mixing-bowl",
+      "modelNo": "403",
+      "family": "mixing-bowl",
+      "shape": "Round mixing bowl",
+      "capacityQt": 2.5,
+      "dimensions": null
+    },
+    {
+      "id": "404-mixing-bowl",
+      "modelNo": "404",
+      "family": "mixing-bowl",
+      "shape": "Round mixing bowl",
+      "capacityQt": 4,
+      "dimensions": null
+    },
+    {
+      "id": "441-cinderella-bowl",
+      "modelNo": "441",
+      "family": "cinderella-bowl",
+      "shape": "Cinderella mixing bowl",
+      "capacityQt": 0.75,
+      "dimensions": null
+    },
+    {
+      "id": "442-cinderella-bowl",
+      "modelNo": "442",
+      "family": "cinderella-bowl",
+      "shape": "Cinderella mixing bowl",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "443-cinderella-bowl",
+      "modelNo": "443",
+      "family": "cinderella-bowl",
+      "shape": "Cinderella mixing bowl",
+      "capacityQt": 2.5,
+      "dimensions": null
+    },
+    {
+      "id": "444-cinderella-bowl",
+      "modelNo": "444",
+      "family": "cinderella-bowl",
+      "shape": "Cinderella mixing bowl",
+      "capacityQt": 4,
+      "dimensions": null
+    },
+    {
+      "id": "471-cinderella-casserole",
+      "modelNo": "471",
+      "family": "casserole",
+      "shape": "Cinderella round casserole",
+      "capacityQt": 0.5,
+      "dimensions": null
+    },
+    {
+      "id": "472-cinderella-casserole",
+      "modelNo": "472",
+      "family": "casserole",
+      "shape": "Cinderella round casserole",
+      "capacityQt": 0.75,
+      "dimensions": null
+    },
+    {
+      "id": "473-cinderella-casserole",
+      "modelNo": "473",
+      "family": "casserole",
+      "shape": "Cinderella round casserole",
+      "capacityQt": 1,
+      "dimensions": null
+    },
+    {
+      "id": "474-cinderella-casserole",
+      "modelNo": "474",
+      "family": "casserole",
+      "shape": "Cinderella round casserole",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "475-cinderella-casserole",
+      "modelNo": "475",
+      "family": "casserole",
+      "shape": "Cinderella round casserole",
+      "capacityQt": 2.5,
+      "dimensions": null
+    },
+    {
+      "id": "501-refrigerator-dish",
+      "modelNo": "501",
+      "family": "refrigerator-dish",
+      "shape": "Refrigerator dish",
+      "capacityQt": 0.375,
+      "dimensions": null
+    },
+    {
+      "id": "502-refrigerator-dish",
+      "modelNo": "502",
+      "family": "refrigerator-dish",
+      "shape": "Refrigerator dish",
+      "capacityQt": 0.75,
+      "dimensions": null
+    },
+    {
+      "id": "503-refrigerator-dish",
+      "modelNo": "503",
+      "family": "refrigerator-dish",
+      "shape": "Refrigerator dish",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "548-space-saver-casserole",
+      "modelNo": "548",
+      "family": "casserole",
+      "shape": "Space Saver casserole",
+      "capacityQt": 1.25,
+      "dimensions": null
+    },
+    {
+      "id": "575-space-saver-casserole",
+      "modelNo": "575",
+      "family": "casserole",
+      "shape": "Space Saver casserole",
+      "capacityQt": 2,
+      "dimensions": null
+    },
+    {
+      "id": "664-round-casserole",
+      "modelNo": "664",
+      "family": "casserole",
+      "shape": "Large round casserole",
+      "capacityQt": 4,
+      "dimensions": null
+    },
+    {
+      "id": "700-pixie-casserole",
+      "modelNo": "700",
+      "family": "casserole",
+      "shape": "Pixie casserole",
+      "capacityQt": 0.3125,
+      "dimensions": null
+    },
+    {
+      "id": "913-loaf-pan",
+      "modelNo": "913",
+      "family": "baking-dish",
+      "shape": "Loaf pan",
+      "capacityQt": 1.5,
+      "dimensions": "8.5 x 4.5 in"
+    },
+    {
+      "id": "922-square-baking-dish",
+      "modelNo": "922",
+      "family": "baking-dish",
+      "shape": "Square baking dish",
+      "capacityQt": 2,
+      "dimensions": "8 x 8 in"
+    },
+    {
+      "id": "933-rectangular-baking-dish",
+      "modelNo": "933",
+      "family": "baking-dish",
+      "shape": "Rectangular baking dish",
+      "capacityQt": 3,
+      "dimensions": "13.5 x 8.75 in"
+    },
+    {
+      "id": "1410-mug",
+      "modelNo": "1410",
+      "family": "mug",
+      "shape": "Opalware mug",
+      "capacityQt": null,
+      "dimensions": null
+    }
+  ],
+  "items": [
+    {
+      "slug": "primary-colors-401",
+      "patternId": "primary-colors",
+      "formId": "401-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Primary Colors 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "primary-colors-402",
+      "patternId": "primary-colors",
+      "formId": "402-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Primary Colors 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "primary-colors-403",
+      "patternId": "primary-colors",
+      "formId": "403-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Primary Colors 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "primary-colors-404",
+      "patternId": "primary-colors",
+      "formId": "404-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Primary Colors 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-turquoise-043",
+      "patternId": "snowflake-turquoise",
+      "formId": "043-oval-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Turquoise Snowflake 043 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-turquoise-045",
+      "patternId": "snowflake-turquoise",
+      "formId": "045-oval-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Turquoise Snowflake 045 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-turquoise-053",
+      "patternId": "snowflake-turquoise",
+      "formId": "053-oval-open-baker",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Turquoise Snowflake 053 Oval Open Baker",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-turquoise-063",
+      "patternId": "snowflake-turquoise",
+      "formId": "063-divided-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Turquoise Snowflake 063 Divided Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-turquoise-548",
+      "patternId": "snowflake-turquoise",
+      "formId": "548-space-saver-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Turquoise Snowflake 548 Space Saver Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-turquoise-575",
+      "patternId": "snowflake-turquoise",
+      "formId": "575-space-saver-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Turquoise Snowflake 575 Space Saver Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "pink-daisy-043",
+      "patternId": "pink-daisy",
+      "formId": "043-oval-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Pink Daisy 043 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "pink-daisy-045",
+      "patternId": "pink-daisy",
+      "formId": "045-oval-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Pink Daisy 045 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "pink-daisy-053",
+      "patternId": "pink-daisy",
+      "formId": "053-oval-open-baker",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Pink Daisy 053 Oval Open Baker",
+      "userSubmitted": false
+    },
+    {
+      "slug": "pink-daisy-063",
+      "patternId": "pink-daisy",
+      "formId": "063-divided-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Pink Daisy 063 Divided Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "pink-daisy-548",
+      "patternId": "pink-daisy",
+      "formId": "548-space-saver-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Pink Daisy 548 Space Saver Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "pink-daisy-575",
+      "patternId": "pink-daisy",
+      "formId": "575-space-saver-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Pink Daisy 575 Space Saver Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-401",
+      "patternId": "butterprint",
+      "formId": "401-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-402",
+      "patternId": "butterprint",
+      "formId": "402-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-403",
+      "patternId": "butterprint",
+      "formId": "403-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-404",
+      "patternId": "butterprint",
+      "formId": "404-mixing-bowl",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-441",
+      "patternId": "butterprint",
+      "formId": "441-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-442",
+      "patternId": "butterprint",
+      "formId": "442-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-443",
+      "patternId": "butterprint",
+      "formId": "443-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-444",
+      "patternId": "butterprint",
+      "formId": "444-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-471",
+      "patternId": "butterprint",
+      "formId": "471-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-472",
+      "patternId": "butterprint",
+      "formId": "472-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-473",
+      "patternId": "butterprint",
+      "formId": "473-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-474",
+      "patternId": "butterprint",
+      "formId": "474-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-475",
+      "patternId": "butterprint",
+      "formId": "475-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-501",
+      "patternId": "butterprint",
+      "formId": "501-refrigerator-dish",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-502",
+      "patternId": "butterprint",
+      "formId": "502-refrigerator-dish",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterprint-503",
+      "patternId": "butterprint",
+      "formId": "503-refrigerator-dish",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Butterprint Amish 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "gooseberry-pink-441",
+      "patternId": "gooseberry-pink",
+      "formId": "441-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Pink Gooseberry 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "gooseberry-pink-442",
+      "patternId": "gooseberry-pink",
+      "formId": "442-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Pink Gooseberry 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "gooseberry-pink-443",
+      "patternId": "gooseberry-pink",
+      "formId": "443-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Pink Gooseberry 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "gooseberry-pink-444",
+      "patternId": "gooseberry-pink",
+      "formId": "444-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Pink Gooseberry 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "gooseberry-pink-471",
+      "patternId": "gooseberry-pink",
+      "formId": "471-cinderella-casserole",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Pink Gooseberry 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "gooseberry-pink-472",
+      "patternId": "gooseberry-pink",
+      "formId": "472-cinderella-casserole",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Pink Gooseberry 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "gooseberry-pink-473",
+      "patternId": "gooseberry-pink",
+      "formId": "473-cinderella-casserole",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Pink Gooseberry 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "gooseberry-pink-474",
+      "patternId": "gooseberry-pink",
+      "formId": "474-cinderella-casserole",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Pink Gooseberry 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "gooseberry-pink-475",
+      "patternId": "gooseberry-pink",
+      "formId": "475-cinderella-casserole",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Pink Gooseberry 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "gooseberry-pink-501",
+      "patternId": "gooseberry-pink",
+      "formId": "501-refrigerator-dish",
+      "rarity": "rare",
+      "ebayQuery": "Vintage Pyrex Pink Gooseberry 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "gooseberry-pink-502",
+      "patternId": "gooseberry-pink",
+      "formId": "502-refrigerator-dish",
+      "rarity": "rare",
+      "ebayQuery": "Vintage Pyrex Pink Gooseberry 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "gooseberry-pink-503",
+      "patternId": "gooseberry-pink",
+      "formId": "503-refrigerator-dish",
+      "rarity": "rare",
+      "ebayQuery": "Vintage Pyrex Pink Gooseberry 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "atomic-eyes-401",
+      "patternId": "atomic-eyes",
+      "formId": "401-mixing-bowl",
+      "rarity": "rare",
+      "ebayQuery": "Vintage Pyrex Atomic Eyes Hot N Cold 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "atomic-eyes-403",
+      "patternId": "atomic-eyes",
+      "formId": "403-mixing-bowl",
+      "rarity": "rare",
+      "ebayQuery": "Vintage Pyrex Atomic Eyes Hot N Cold 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "balloons-441",
+      "patternId": "balloons",
+      "formId": "441-cinderella-bowl",
+      "rarity": "rare",
+      "ebayQuery": "Vintage Pyrex Balloons Chip Dip 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "balloons-444",
+      "patternId": "balloons",
+      "formId": "444-cinderella-bowl",
+      "rarity": "rare",
+      "ebayQuery": "Vintage Pyrex Balloons Chip Dip 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "lucky-in-love-473",
+      "patternId": "lucky-in-love",
+      "formId": "473-cinderella-casserole",
+      "rarity": "grail",
+      "ebayQuery": "Vintage Pyrex Lucky in Love 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "frost-garland-023",
+      "patternId": "frost-garland",
+      "formId": "023-round-casserole",
+      "rarity": "rare",
+      "ebayQuery": "Vintage Pyrex Frost Garland Deluxe Hostess 023 Round Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "pink-stems-043",
+      "patternId": "pink-stems",
+      "formId": "043-oval-casserole",
+      "rarity": "grail",
+      "ebayQuery": "Vintage Pyrex Pink Stems 043 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "sandalwood-441",
+      "patternId": "sandalwood",
+      "formId": "441-cinderella-bowl",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Sandalwood 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "sandalwood-442",
+      "patternId": "sandalwood",
+      "formId": "442-cinderella-bowl",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Sandalwood 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "sandalwood-443",
+      "patternId": "sandalwood",
+      "formId": "443-cinderella-bowl",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Sandalwood 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "sandalwood-444",
+      "patternId": "sandalwood",
+      "formId": "444-cinderella-bowl",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Sandalwood 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "sandalwood-471",
+      "patternId": "sandalwood",
+      "formId": "471-cinderella-casserole",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Sandalwood 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "sandalwood-472",
+      "patternId": "sandalwood",
+      "formId": "472-cinderella-casserole",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Sandalwood 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "sandalwood-473",
+      "patternId": "sandalwood",
+      "formId": "473-cinderella-casserole",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Sandalwood 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "sandalwood-501",
+      "patternId": "sandalwood",
+      "formId": "501-refrigerator-dish",
+      "rarity": "rare",
+      "ebayQuery": "Vintage Pyrex Sandalwood 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "sandalwood-502",
+      "patternId": "sandalwood",
+      "formId": "502-refrigerator-dish",
+      "rarity": "rare",
+      "ebayQuery": "Vintage Pyrex Sandalwood 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "sandalwood-503",
+      "patternId": "sandalwood",
+      "formId": "503-refrigerator-dish",
+      "rarity": "rare",
+      "ebayQuery": "Vintage Pyrex Sandalwood 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-401",
+      "patternId": "early-american",
+      "formId": "401-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Early American 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-402",
+      "patternId": "early-american",
+      "formId": "402-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Early American 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-403",
+      "patternId": "early-american",
+      "formId": "403-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Early American 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-404",
+      "patternId": "early-american",
+      "formId": "404-mixing-bowl",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Early American 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-441",
+      "patternId": "early-american",
+      "formId": "441-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Early American 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-442",
+      "patternId": "early-american",
+      "formId": "442-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Early American 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-443",
+      "patternId": "early-american",
+      "formId": "443-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Early American 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-444",
+      "patternId": "early-american",
+      "formId": "444-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Early American 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-471",
+      "patternId": "early-american",
+      "formId": "471-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Early American 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-472",
+      "patternId": "early-american",
+      "formId": "472-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Early American 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-473",
+      "patternId": "early-american",
+      "formId": "473-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Early American 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-474",
+      "patternId": "early-american",
+      "formId": "474-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Early American 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-475",
+      "patternId": "early-american",
+      "formId": "475-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Early American 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-043",
+      "patternId": "early-american",
+      "formId": "043-oval-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Early American 043 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-045",
+      "patternId": "early-american",
+      "formId": "045-oval-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Early American 045 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-063",
+      "patternId": "early-american",
+      "formId": "063-divided-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Early American 063 Divided Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-501",
+      "patternId": "early-american",
+      "formId": "501-refrigerator-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Early American 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-502",
+      "patternId": "early-american",
+      "formId": "502-refrigerator-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Early American 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "early-american-503",
+      "patternId": "early-american",
+      "formId": "503-refrigerator-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Early American 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-401",
+      "patternId": "town-and-country",
+      "formId": "401-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Town Country 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-402",
+      "patternId": "town-and-country",
+      "formId": "402-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Town Country 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-403",
+      "patternId": "town-and-country",
+      "formId": "403-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Town Country 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-441",
+      "patternId": "town-and-country",
+      "formId": "441-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Town Country 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-442",
+      "patternId": "town-and-country",
+      "formId": "442-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Town Country 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-443",
+      "patternId": "town-and-country",
+      "formId": "443-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Town Country 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-444",
+      "patternId": "town-and-country",
+      "formId": "444-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Town Country 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-471",
+      "patternId": "town-and-country",
+      "formId": "471-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Town Country 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-472",
+      "patternId": "town-and-country",
+      "formId": "472-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Town Country 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-473",
+      "patternId": "town-and-country",
+      "formId": "473-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Town Country 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-474",
+      "patternId": "town-and-country",
+      "formId": "474-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Town Country 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-475",
+      "patternId": "town-and-country",
+      "formId": "475-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Town Country 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-043",
+      "patternId": "town-and-country",
+      "formId": "043-oval-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Town Country 043 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-045",
+      "patternId": "town-and-country",
+      "formId": "045-oval-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Town Country 045 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-063",
+      "patternId": "town-and-country",
+      "formId": "063-divided-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Town Country 063 Divided Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-501",
+      "patternId": "town-and-country",
+      "formId": "501-refrigerator-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Town Country 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-502",
+      "patternId": "town-and-country",
+      "formId": "502-refrigerator-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Town Country 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "town-and-country-503",
+      "patternId": "town-and-country",
+      "formId": "503-refrigerator-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Town Country 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "terra-401",
+      "patternId": "terra",
+      "formId": "401-mixing-bowl",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Terra 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "terra-403",
+      "patternId": "terra",
+      "formId": "403-mixing-bowl",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Terra 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "terra-404",
+      "patternId": "terra",
+      "formId": "404-mixing-bowl",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Terra 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "terra-471",
+      "patternId": "terra",
+      "formId": "471-cinderella-casserole",
+      "rarity": "rare",
+      "ebayQuery": "Vintage Pyrex Terra 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "terra-472",
+      "patternId": "terra",
+      "formId": "472-cinderella-casserole",
+      "rarity": "rare",
+      "ebayQuery": "Vintage Pyrex Terra 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "terra-474",
+      "patternId": "terra",
+      "formId": "474-cinderella-casserole",
+      "rarity": "rare",
+      "ebayQuery": "Vintage Pyrex Terra 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "terra-475",
+      "patternId": "terra",
+      "formId": "475-cinderella-casserole",
+      "rarity": "rare",
+      "ebayQuery": "Vintage Pyrex Terra 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "foulard-blue-1410",
+      "patternId": "foulard-blue",
+      "formId": "1410-mug",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Blue Foulard 1410 Mug",
+      "userSubmitted": false
+    },
+    {
+      "slug": "rainbow-stripes-401",
+      "patternId": "rainbow-stripes",
+      "formId": "401-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Rainbow Stripes 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "rainbow-stripes-402",
+      "patternId": "rainbow-stripes",
+      "formId": "402-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Rainbow Stripes 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "rainbow-stripes-403",
+      "patternId": "rainbow-stripes",
+      "formId": "403-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Rainbow Stripes 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "blue-stripe-471",
+      "patternId": "blue-stripe",
+      "formId": "471-cinderella-casserole",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Blue Stripe Barcode 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "blue-stripe-472",
+      "patternId": "blue-stripe",
+      "formId": "472-cinderella-casserole",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Blue Stripe Barcode 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "blue-stripe-473",
+      "patternId": "blue-stripe",
+      "formId": "473-cinderella-casserole",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Blue Stripe Barcode 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "blue-stripe-474",
+      "patternId": "blue-stripe",
+      "formId": "474-cinderella-casserole",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Blue Stripe Barcode 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "blue-stripe-475",
+      "patternId": "blue-stripe",
+      "formId": "475-cinderella-casserole",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Blue Stripe Barcode 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-401",
+      "patternId": "verde",
+      "formId": "401-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-402",
+      "patternId": "verde",
+      "formId": "402-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-403",
+      "patternId": "verde",
+      "formId": "403-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-404",
+      "patternId": "verde",
+      "formId": "404-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-441",
+      "patternId": "verde",
+      "formId": "441-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-442",
+      "patternId": "verde",
+      "formId": "442-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-443",
+      "patternId": "verde",
+      "formId": "443-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-444",
+      "patternId": "verde",
+      "formId": "444-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-471",
+      "patternId": "verde",
+      "formId": "471-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-472",
+      "patternId": "verde",
+      "formId": "472-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-473",
+      "patternId": "verde",
+      "formId": "473-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-474",
+      "patternId": "verde",
+      "formId": "474-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-475",
+      "patternId": "verde",
+      "formId": "475-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-043",
+      "patternId": "verde",
+      "formId": "043-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 043 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-045",
+      "patternId": "verde",
+      "formId": "045-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 045 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-063",
+      "patternId": "verde",
+      "formId": "063-divided-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Verde 063 Divided Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-501",
+      "patternId": "verde",
+      "formId": "501-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-502",
+      "patternId": "verde",
+      "formId": "502-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-503",
+      "patternId": "verde",
+      "formId": "503-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Verde 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "verde-024",
+      "patternId": "verde",
+      "formId": "024-round-casserole",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Verde 024 Round Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-401",
+      "patternId": "daisy",
+      "formId": "401-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-402",
+      "patternId": "daisy",
+      "formId": "402-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-403",
+      "patternId": "daisy",
+      "formId": "403-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-404",
+      "patternId": "daisy",
+      "formId": "404-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-441",
+      "patternId": "daisy",
+      "formId": "441-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-442",
+      "patternId": "daisy",
+      "formId": "442-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-443",
+      "patternId": "daisy",
+      "formId": "443-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-444",
+      "patternId": "daisy",
+      "formId": "444-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-471",
+      "patternId": "daisy",
+      "formId": "471-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-472",
+      "patternId": "daisy",
+      "formId": "472-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-473",
+      "patternId": "daisy",
+      "formId": "473-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-474",
+      "patternId": "daisy",
+      "formId": "474-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-475",
+      "patternId": "daisy",
+      "formId": "475-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-043",
+      "patternId": "daisy",
+      "formId": "043-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 043 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-045",
+      "patternId": "daisy",
+      "formId": "045-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 045 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-063",
+      "patternId": "daisy",
+      "formId": "063-divided-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Daisy 063 Divided Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-501",
+      "patternId": "daisy",
+      "formId": "501-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-502",
+      "patternId": "daisy",
+      "formId": "502-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-503",
+      "patternId": "daisy",
+      "formId": "503-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-700",
+      "patternId": "daisy",
+      "formId": "700-pixie-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Daisy 700 Pixie Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-913",
+      "patternId": "daisy",
+      "formId": "913-loaf-pan",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 913 Loaf Pan",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-922",
+      "patternId": "daisy",
+      "formId": "922-square-baking-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 922 Square Baking Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "daisy-933",
+      "patternId": "daisy",
+      "formId": "933-rectangular-baking-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Daisy 933 Baking Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "dots-401",
+      "patternId": "dots",
+      "formId": "401-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex New Dot Dots 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "dots-402",
+      "patternId": "dots",
+      "formId": "402-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex New Dot Dots 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "dots-403",
+      "patternId": "dots",
+      "formId": "403-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex New Dot Dots 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "dots-404",
+      "patternId": "dots",
+      "formId": "404-mixing-bowl",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex New Dot Dots 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-401",
+      "patternId": "horizon-blue",
+      "formId": "401-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-402",
+      "patternId": "horizon-blue",
+      "formId": "402-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-403",
+      "patternId": "horizon-blue",
+      "formId": "403-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-441",
+      "patternId": "horizon-blue",
+      "formId": "441-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-442",
+      "patternId": "horizon-blue",
+      "formId": "442-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-443",
+      "patternId": "horizon-blue",
+      "formId": "443-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-444",
+      "patternId": "horizon-blue",
+      "formId": "444-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-471",
+      "patternId": "horizon-blue",
+      "formId": "471-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-472",
+      "patternId": "horizon-blue",
+      "formId": "472-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-473",
+      "patternId": "horizon-blue",
+      "formId": "473-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-474",
+      "patternId": "horizon-blue",
+      "formId": "474-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-475",
+      "patternId": "horizon-blue",
+      "formId": "475-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-043",
+      "patternId": "horizon-blue",
+      "formId": "043-oval-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 043 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-045",
+      "patternId": "horizon-blue",
+      "formId": "045-oval-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 045 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-063",
+      "patternId": "horizon-blue",
+      "formId": "063-divided-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 063 Divided Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-501",
+      "patternId": "horizon-blue",
+      "formId": "501-refrigerator-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-502",
+      "patternId": "horizon-blue",
+      "formId": "502-refrigerator-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "horizon-blue-503",
+      "patternId": "horizon-blue",
+      "formId": "503-refrigerator-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Horizon Blue 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-401",
+      "patternId": "friendship",
+      "formId": "401-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-402",
+      "patternId": "friendship",
+      "formId": "402-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-403",
+      "patternId": "friendship",
+      "formId": "403-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-404",
+      "patternId": "friendship",
+      "formId": "404-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-441",
+      "patternId": "friendship",
+      "formId": "441-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-442",
+      "patternId": "friendship",
+      "formId": "442-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-443",
+      "patternId": "friendship",
+      "formId": "443-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-444",
+      "patternId": "friendship",
+      "formId": "444-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-471",
+      "patternId": "friendship",
+      "formId": "471-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-472",
+      "patternId": "friendship",
+      "formId": "472-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-473",
+      "patternId": "friendship",
+      "formId": "473-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-474",
+      "patternId": "friendship",
+      "formId": "474-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-475",
+      "patternId": "friendship",
+      "formId": "475-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-043",
+      "patternId": "friendship",
+      "formId": "043-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 043 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-045",
+      "patternId": "friendship",
+      "formId": "045-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 045 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-063",
+      "patternId": "friendship",
+      "formId": "063-divided-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Friendship 063 Divided Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-501",
+      "patternId": "friendship",
+      "formId": "501-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-502",
+      "patternId": "friendship",
+      "formId": "502-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-503",
+      "patternId": "friendship",
+      "formId": "503-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Friendship 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-024",
+      "patternId": "friendship",
+      "formId": "024-round-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Friendship 024 Round Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-700",
+      "patternId": "friendship",
+      "formId": "700-pixie-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Friendship 700 Pixie Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "friendship-933",
+      "patternId": "friendship",
+      "formId": "933-rectangular-baking-dish",
+      "rarity": "hard-to-find",
+      "ebayQuery": "Vintage Pyrex Friendship 933 Baking Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-401",
+      "patternId": "butterfly-gold",
+      "formId": "401-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-402",
+      "patternId": "butterfly-gold",
+      "formId": "402-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-403",
+      "patternId": "butterfly-gold",
+      "formId": "403-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-404",
+      "patternId": "butterfly-gold",
+      "formId": "404-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-441",
+      "patternId": "butterfly-gold",
+      "formId": "441-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-442",
+      "patternId": "butterfly-gold",
+      "formId": "442-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-443",
+      "patternId": "butterfly-gold",
+      "formId": "443-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-444",
+      "patternId": "butterfly-gold",
+      "formId": "444-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-471",
+      "patternId": "butterfly-gold",
+      "formId": "471-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-472",
+      "patternId": "butterfly-gold",
+      "formId": "472-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-473",
+      "patternId": "butterfly-gold",
+      "formId": "473-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-474",
+      "patternId": "butterfly-gold",
+      "formId": "474-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-475",
+      "patternId": "butterfly-gold",
+      "formId": "475-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-043",
+      "patternId": "butterfly-gold",
+      "formId": "043-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 043 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-045",
+      "patternId": "butterfly-gold",
+      "formId": "045-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 045 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-063",
+      "patternId": "butterfly-gold",
+      "formId": "063-divided-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 063 Divided Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-501",
+      "patternId": "butterfly-gold",
+      "formId": "501-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-502",
+      "patternId": "butterfly-gold",
+      "formId": "502-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-503",
+      "patternId": "butterfly-gold",
+      "formId": "503-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-664",
+      "patternId": "butterfly-gold",
+      "formId": "664-round-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 664 4 Qt Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-024",
+      "patternId": "butterfly-gold",
+      "formId": "024-round-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 024 Round Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "butterfly-gold-1410",
+      "patternId": "butterfly-gold",
+      "formId": "1410-mug",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 1410 Mug",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-401",
+      "patternId": "spring-blossom-green",
+      "formId": "401-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-402",
+      "patternId": "spring-blossom-green",
+      "formId": "402-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-403",
+      "patternId": "spring-blossom-green",
+      "formId": "403-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-404",
+      "patternId": "spring-blossom-green",
+      "formId": "404-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-441",
+      "patternId": "spring-blossom-green",
+      "formId": "441-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-442",
+      "patternId": "spring-blossom-green",
+      "formId": "442-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-443",
+      "patternId": "spring-blossom-green",
+      "formId": "443-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-444",
+      "patternId": "spring-blossom-green",
+      "formId": "444-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-471",
+      "patternId": "spring-blossom-green",
+      "formId": "471-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-472",
+      "patternId": "spring-blossom-green",
+      "formId": "472-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-473",
+      "patternId": "spring-blossom-green",
+      "formId": "473-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-474",
+      "patternId": "spring-blossom-green",
+      "formId": "474-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-475",
+      "patternId": "spring-blossom-green",
+      "formId": "475-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-043",
+      "patternId": "spring-blossom-green",
+      "formId": "043-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 043 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-045",
+      "patternId": "spring-blossom-green",
+      "formId": "045-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 045 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-063",
+      "patternId": "spring-blossom-green",
+      "formId": "063-divided-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 063 Divided Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-501",
+      "patternId": "spring-blossom-green",
+      "formId": "501-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-502",
+      "patternId": "spring-blossom-green",
+      "formId": "502-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-503",
+      "patternId": "spring-blossom-green",
+      "formId": "503-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-664",
+      "patternId": "spring-blossom-green",
+      "formId": "664-round-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 664 4 Qt Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-024",
+      "patternId": "spring-blossom-green",
+      "formId": "024-round-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 024 Round Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "spring-blossom-green-1410",
+      "patternId": "spring-blossom-green",
+      "formId": "1410-mug",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green Crazy Daisy 1410 Mug",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-401",
+      "patternId": "snowflake-blue",
+      "formId": "401-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-402",
+      "patternId": "snowflake-blue",
+      "formId": "402-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-403",
+      "patternId": "snowflake-blue",
+      "formId": "403-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-404",
+      "patternId": "snowflake-blue",
+      "formId": "404-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-441",
+      "patternId": "snowflake-blue",
+      "formId": "441-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-442",
+      "patternId": "snowflake-blue",
+      "formId": "442-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-443",
+      "patternId": "snowflake-blue",
+      "formId": "443-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-444",
+      "patternId": "snowflake-blue",
+      "formId": "444-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-471",
+      "patternId": "snowflake-blue",
+      "formId": "471-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-472",
+      "patternId": "snowflake-blue",
+      "formId": "472-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-473",
+      "patternId": "snowflake-blue",
+      "formId": "473-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-474",
+      "patternId": "snowflake-blue",
+      "formId": "474-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-475",
+      "patternId": "snowflake-blue",
+      "formId": "475-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-043",
+      "patternId": "snowflake-blue",
+      "formId": "043-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 043 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-045",
+      "patternId": "snowflake-blue",
+      "formId": "045-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 045 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-063",
+      "patternId": "snowflake-blue",
+      "formId": "063-divided-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 063 Divided Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-501",
+      "patternId": "snowflake-blue",
+      "formId": "501-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-502",
+      "patternId": "snowflake-blue",
+      "formId": "502-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-503",
+      "patternId": "snowflake-blue",
+      "formId": "503-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-664",
+      "patternId": "snowflake-blue",
+      "formId": "664-round-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 664 4 Qt Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "snowflake-blue-024",
+      "patternId": "snowflake-blue",
+      "formId": "024-round-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Snowflake Blue Garland 024 Round Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-town-blue-1410",
+      "patternId": "old-town-blue",
+      "formId": "1410-mug",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Town Blue 1410 Mug",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-401",
+      "patternId": "old-orchard",
+      "formId": "401-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-402",
+      "patternId": "old-orchard",
+      "formId": "402-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-403",
+      "patternId": "old-orchard",
+      "formId": "403-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-404",
+      "patternId": "old-orchard",
+      "formId": "404-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-441",
+      "patternId": "old-orchard",
+      "formId": "441-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-442",
+      "patternId": "old-orchard",
+      "formId": "442-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-443",
+      "patternId": "old-orchard",
+      "formId": "443-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-444",
+      "patternId": "old-orchard",
+      "formId": "444-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-471",
+      "patternId": "old-orchard",
+      "formId": "471-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-472",
+      "patternId": "old-orchard",
+      "formId": "472-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-473",
+      "patternId": "old-orchard",
+      "formId": "473-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-474",
+      "patternId": "old-orchard",
+      "formId": "474-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-475",
+      "patternId": "old-orchard",
+      "formId": "475-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-043",
+      "patternId": "old-orchard",
+      "formId": "043-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 043 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-045",
+      "patternId": "old-orchard",
+      "formId": "045-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 045 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-063",
+      "patternId": "old-orchard",
+      "formId": "063-divided-dish",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Old Orchard 063 Divided Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-501",
+      "patternId": "old-orchard",
+      "formId": "501-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-502",
+      "patternId": "old-orchard",
+      "formId": "502-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-503",
+      "patternId": "old-orchard",
+      "formId": "503-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Old Orchard 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "old-orchard-664",
+      "patternId": "old-orchard",
+      "formId": "664-round-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Old Orchard 664 4 Qt Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-401",
+      "patternId": "homestead-blue",
+      "formId": "401-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-402",
+      "patternId": "homestead-blue",
+      "formId": "402-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-403",
+      "patternId": "homestead-blue",
+      "formId": "403-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-404",
+      "patternId": "homestead-blue",
+      "formId": "404-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-441",
+      "patternId": "homestead-blue",
+      "formId": "441-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-442",
+      "patternId": "homestead-blue",
+      "formId": "442-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-443",
+      "patternId": "homestead-blue",
+      "formId": "443-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-444",
+      "patternId": "homestead-blue",
+      "formId": "444-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-471",
+      "patternId": "homestead-blue",
+      "formId": "471-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-472",
+      "patternId": "homestead-blue",
+      "formId": "472-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-473",
+      "patternId": "homestead-blue",
+      "formId": "473-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-474",
+      "patternId": "homestead-blue",
+      "formId": "474-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-475",
+      "patternId": "homestead-blue",
+      "formId": "475-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-501",
+      "patternId": "homestead-blue",
+      "formId": "501-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-502",
+      "patternId": "homestead-blue",
+      "formId": "502-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-503",
+      "patternId": "homestead-blue",
+      "formId": "503-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "homestead-blue-1410",
+      "patternId": "homestead-blue",
+      "formId": "1410-mug",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Homestead Blue 1410 Mug",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-401",
+      "patternId": "woodland",
+      "formId": "401-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-402",
+      "patternId": "woodland",
+      "formId": "402-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-403",
+      "patternId": "woodland",
+      "formId": "403-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-404",
+      "patternId": "woodland",
+      "formId": "404-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-441",
+      "patternId": "woodland",
+      "formId": "441-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-442",
+      "patternId": "woodland",
+      "formId": "442-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-443",
+      "patternId": "woodland",
+      "formId": "443-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-444",
+      "patternId": "woodland",
+      "formId": "444-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-471",
+      "patternId": "woodland",
+      "formId": "471-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-472",
+      "patternId": "woodland",
+      "formId": "472-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-473",
+      "patternId": "woodland",
+      "formId": "473-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-474",
+      "patternId": "woodland",
+      "formId": "474-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-475",
+      "patternId": "woodland",
+      "formId": "475-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-043",
+      "patternId": "woodland",
+      "formId": "043-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 043 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-045",
+      "patternId": "woodland",
+      "formId": "045-oval-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 045 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-501",
+      "patternId": "woodland",
+      "formId": "501-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-502",
+      "patternId": "woodland",
+      "formId": "502-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-503",
+      "patternId": "woodland",
+      "formId": "503-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "woodland-1410",
+      "patternId": "woodland",
+      "formId": "1410-mug",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Woodland Brown 1410 Mug",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-401",
+      "patternId": "autumn-harvest",
+      "formId": "401-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-402",
+      "patternId": "autumn-harvest",
+      "formId": "402-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-403",
+      "patternId": "autumn-harvest",
+      "formId": "403-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-404",
+      "patternId": "autumn-harvest",
+      "formId": "404-mixing-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-441",
+      "patternId": "autumn-harvest",
+      "formId": "441-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-442",
+      "patternId": "autumn-harvest",
+      "formId": "442-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-443",
+      "patternId": "autumn-harvest",
+      "formId": "443-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-444",
+      "patternId": "autumn-harvest",
+      "formId": "444-cinderella-bowl",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-471",
+      "patternId": "autumn-harvest",
+      "formId": "471-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-472",
+      "patternId": "autumn-harvest",
+      "formId": "472-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-473",
+      "patternId": "autumn-harvest",
+      "formId": "473-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-474",
+      "patternId": "autumn-harvest",
+      "formId": "474-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-475",
+      "patternId": "autumn-harvest",
+      "formId": "475-cinderella-casserole",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-043",
+      "patternId": "autumn-harvest",
+      "formId": "043-oval-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 043 Oval Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-501",
+      "patternId": "autumn-harvest",
+      "formId": "501-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 501 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-502",
+      "patternId": "autumn-harvest",
+      "formId": "502-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 502 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "autumn-harvest-503",
+      "patternId": "autumn-harvest",
+      "formId": "503-refrigerator-dish",
+      "rarity": "common",
+      "ebayQuery": "Vintage Pyrex Autumn Harvest Wheat 503 Refrigerator Dish",
+      "userSubmitted": false
+    },
+    {
+      "slug": "forest-fancies-401",
+      "patternId": "forest-fancies",
+      "formId": "401-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Forest Fancies Mushroom 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "forest-fancies-402",
+      "patternId": "forest-fancies",
+      "formId": "402-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Forest Fancies Mushroom 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "forest-fancies-403",
+      "patternId": "forest-fancies",
+      "formId": "403-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Forest Fancies Mushroom 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "forest-fancies-404",
+      "patternId": "forest-fancies",
+      "formId": "404-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Forest Fancies Mushroom 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "forest-fancies-441",
+      "patternId": "forest-fancies",
+      "formId": "441-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Forest Fancies Mushroom 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "forest-fancies-442",
+      "patternId": "forest-fancies",
+      "formId": "442-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Forest Fancies Mushroom 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "forest-fancies-443",
+      "patternId": "forest-fancies",
+      "formId": "443-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Forest Fancies Mushroom 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "forest-fancies-444",
+      "patternId": "forest-fancies",
+      "formId": "444-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Forest Fancies Mushroom 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "forest-fancies-471",
+      "patternId": "forest-fancies",
+      "formId": "471-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Forest Fancies Mushroom 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "forest-fancies-472",
+      "patternId": "forest-fancies",
+      "formId": "472-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Forest Fancies Mushroom 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "forest-fancies-473",
+      "patternId": "forest-fancies",
+      "formId": "473-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Forest Fancies Mushroom 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "forest-fancies-474",
+      "patternId": "forest-fancies",
+      "formId": "474-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Forest Fancies Mushroom 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "forest-fancies-475",
+      "patternId": "forest-fancies",
+      "formId": "475-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Forest Fancies Mushroom 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "shenandoah-401",
+      "patternId": "shenandoah",
+      "formId": "401-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Shenandoah 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "shenandoah-402",
+      "patternId": "shenandoah",
+      "formId": "402-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Shenandoah 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "shenandoah-403",
+      "patternId": "shenandoah",
+      "formId": "403-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Shenandoah 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "shenandoah-404",
+      "patternId": "shenandoah",
+      "formId": "404-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Shenandoah 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "shenandoah-441",
+      "patternId": "shenandoah",
+      "formId": "441-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Shenandoah 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "shenandoah-442",
+      "patternId": "shenandoah",
+      "formId": "442-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Shenandoah 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "shenandoah-443",
+      "patternId": "shenandoah",
+      "formId": "443-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Shenandoah 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "shenandoah-444",
+      "patternId": "shenandoah",
+      "formId": "444-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Shenandoah 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "shenandoah-471",
+      "patternId": "shenandoah",
+      "formId": "471-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Shenandoah 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "shenandoah-472",
+      "patternId": "shenandoah",
+      "formId": "472-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Shenandoah 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "shenandoah-473",
+      "patternId": "shenandoah",
+      "formId": "473-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Shenandoah 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "shenandoah-474",
+      "patternId": "shenandoah",
+      "formId": "474-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Shenandoah 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "shenandoah-475",
+      "patternId": "shenandoah",
+      "formId": "475-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Shenandoah 475 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "colonial-mist-401",
+      "patternId": "colonial-mist",
+      "formId": "401-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Colonial Mist 401 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "colonial-mist-402",
+      "patternId": "colonial-mist",
+      "formId": "402-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Colonial Mist 402 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "colonial-mist-403",
+      "patternId": "colonial-mist",
+      "formId": "403-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Colonial Mist 403 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "colonial-mist-404",
+      "patternId": "colonial-mist",
+      "formId": "404-mixing-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Colonial Mist 404 Mixing Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "colonial-mist-441",
+      "patternId": "colonial-mist",
+      "formId": "441-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Colonial Mist 441 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "colonial-mist-442",
+      "patternId": "colonial-mist",
+      "formId": "442-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Colonial Mist 442 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "colonial-mist-443",
+      "patternId": "colonial-mist",
+      "formId": "443-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Colonial Mist 443 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "colonial-mist-444",
+      "patternId": "colonial-mist",
+      "formId": "444-cinderella-bowl",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Colonial Mist 444 Cinderella Bowl",
+      "userSubmitted": false
+    },
+    {
+      "slug": "colonial-mist-471",
+      "patternId": "colonial-mist",
+      "formId": "471-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Colonial Mist 471 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "colonial-mist-472",
+      "patternId": "colonial-mist",
+      "formId": "472-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Colonial Mist 472 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "colonial-mist-473",
+      "patternId": "colonial-mist",
+      "formId": "473-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Colonial Mist 473 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "colonial-mist-474",
+      "patternId": "colonial-mist",
+      "formId": "474-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Colonial Mist 474 Cinderella Casserole",
+      "userSubmitted": false
+    },
+    {
+      "slug": "colonial-mist-475",
+      "patternId": "colonial-mist",
+      "formId": "475-cinderella-casserole",
+      "rarity": "uncommon",
+      "ebayQuery": "Vintage Pyrex Colonial Mist 475 Cinderella Casserole",
+      "userSubmitted": false
+    }
+  ],
+  "version": 1
+}
