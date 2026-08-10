@@ -8,7 +8,7 @@
  * that.
  *
  * After seeding, a background refresh picks up anything added server-side. A failed
- * refresh is not an error — the bundled copy is already a working catalog.
+ * refresh is not an error, the bundled copy is already a working catalog.
  */
 
 import catalog from '@data/catalog.json';
@@ -33,7 +33,7 @@ async function run(): Promise<void> {
   }
 }
 
-/** Idempotent — safe to call from every screen that needs a populated catalog. */
+/** Idempotent, safe to call from every screen that needs a populated catalog. */
 export function bootstrap(): Promise<void> {
   started ??= run().catch(() => {
     // A failed refresh leaves the bundled catalog in place; let the next call retry.

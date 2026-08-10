@@ -1,13 +1,16 @@
 /**
- * The specimen placard.
+ * The card for one piece.
  *
- * One object, presented large, with its record stacked beneath it — the museum-label
- * treatment the archive reference uses. Rules instead of shadows; the only shadow on
- * the screen belongs to the specimen tile, because a physical dish casts one and a
- * panel of text does not. The accent is ceremonial: hairline outlines everywhere, and
- * a single solid fill on the one thing that changes what you own.
+ * Harvest File screens 6 and 12. The record is a single raised index card, hero, name,
+ * price, two spec chips, pulled out of the drawer, with a "card n of m" tab above it
+ * telling you where it sits in the file. Everything the prototype did not draw (the
+ * quantity stepper, condition, notes, your own photograph) is filed on plainer cards
+ * below it, so the record stays the thing that reads first.
+ *
+ * Separation is the printed offset under each card. There is no blur anywhere.
  */
 
+import { useNetInfo } from '@react-native-community/netinfo';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -30,57 +33,69 @@ import Animated, { Easing, FadeInDown, useReducedMotion } from 'react-native-rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fetchItem, getToken, uploadPhoto } from '@/api';
+import { parseColorway } from '@/constants/colorways';
 import {
-  Colors,
-  Elevation,
   HitTarget,
   MaxContentWidth,
   Motion,
+  OnAccent,
   Radius,
-  Rule,
   Spacing,
   Type,
 } from '@/constants/theme';
 import {
+  getCollection,
   getForm,
   getPattern,
   getSettings,
   getUserItem,
+  listQueuedScans,
   removeFromCollection,
   searchCatalog,
   setOwnership,
 } from '@/db';
 import {
+  cardLabel,
+  cardPosition,
+  offlineNotice,
+  type CardPosition,
+} from '@/features/collection/card-position';
+import {
+  Card,
+  CircleButton,
   Divider,
   Label,
+  PhotoPlaceholder,
+  PressButton,
   PriceFigure,
-  priceSourceLabel,
-  RarityBadge,
+  RarityPill,
+  SpecChip,
   SpecimenTile,
   useColors,
+  useScheme,
 } from '@/features/collection/collection-ui';
 import type {
   Condition,
   ItemDetail,
-  OwnershipStatus,
   Photo,
   PhotoVisibility,
   UserItem,
 } from '@shared/types';
 
-const money = new Intl.NumberFormat(undefined, {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-});
 const CONDITIONS: Condition[] = ['mint', 'excellent', 'good', 'fair', 'damaged'];
 const VISIBILITIES: PhotoVisibility[] = ['attributed', 'anonymous', 'private'];
+
+/** The prototype's hero proportion. Wider than square, so the dish sits in a drawer slot. */
+const HERO_ASPECT = 1.4;
+/** The prototype's card padding, and the width of the star button beside the primary. */
+const CARD_PAD = Spacing.three + Spacing.half; // 18
+const STAR_WIDTH = 58;
 
 const ENTER_EASING = Easing.bezier(...Motion.easing);
 
 /**
  * Content arrives with a short fade and rise. `useReducedMotion` drops the animation
- * entirely rather than shortening it — a user who asked for no motion means none.
+ * entirely rather than shortening it, a user who asked for no motion means none.
  */
 function Enter({
   step = 0,
@@ -110,18 +125,27 @@ function Enter({
 }
 
 // CONTRACT: app.json must declare the expo-camera permission used by photo uploads.
+// CONTRACT: components/app-tabs.tsx should hide the tab bar on /item/[slug], handoff
+// screens 6 and 12 draw none, and the pinned footer below is padded for a bare screen
+// edge. If the bar stays, this screen's footer needs `BottomTabInset` added to it.
 export default function ItemDetailScreen() {
   const params = useLocalSearchParams<{ slug: string | string[] }>();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const photoSize = Math.min(
-    width - (Spacing.three * 2),
-    MaxContentWidth - (Spacing.three * 2),
-  );
+  const netInfo = useNetInfo();
+  // `isConnected` is null until the first probe, so only an explicit false is offline.
+  // Same predicate the scan screen uses; the two must not disagree about the word.
+  const offline = netInfo.isConnected === false || netInfo.isInternetReachable === false;
+
+  const heroWidth = Math.min(width, MaxContentWidth) - Spacing.gutter * 2;
+  const heroHeight = Math.round(heroWidth / HERO_ASPECT);
+
   const [detail, setDetail] = useState<ItemDetail | null>(null);
   const [ownership, setUserItem] = useState<UserItem | null>(null);
+  const [position, setPosition] = useState<CardPosition | null>(null);
+  const [queuedCount, setQueuedCount] = useState(0);
   const [notes, setNotes] = useState('');
   const [visibility, setVisibility] = useState<PhotoVisibility>('private');
   const [loading, setLoading] = useState(true);
@@ -150,8 +174,10 @@ export default function ItemDetailScreen() {
       }
 
       try {
-        const [userItem, settings, rows, token] = await Promise.all([
+        const [userItem, collection, queued, settings, rows, token] = await Promise.all([
           getUserItem(slug),
+          getCollection(),
+          listQueuedScans(),
           getSettings(),
           searchCatalog('', Number.MAX_SAFE_INTEGER),
           getToken(),
@@ -160,6 +186,8 @@ export default function ItemDetailScreen() {
         if (cancelled) return;
 
         setUserItem(userItem);
+        setPosition(cardPosition(collection, slug));
+        setQueuedCount(queued.length);
         setNotes(userItem?.notes ?? '');
         setVisibility(settings.defaultPhotoVisibility);
         setPhotoToken(token);
@@ -205,96 +233,95 @@ export default function ItemDetailScreen() {
     return () => { cancelled = true; };
   }, [slug]);
 
+  /**
+   * Filing a piece bumps its `updated_at`, and the file is ordered by that, so the card
+   * number changes on every save. Re-read it here or the label quietly goes stale.
+   */
   async function reloadOwnership() {
     if (!slug) return;
-    const next = await getUserItem(slug);
+    const [next, collection] = await Promise.all([getUserItem(slug), getCollection()]);
     setUserItem(next);
+    setPosition(cardPosition(collection, slug));
     setNotes(next?.notes ?? '');
   }
 
-  async function chooseStatus(status: OwnershipStatus) {
-    if (!slug) return;
+  async function save(work: () => Promise<void>, failure: string) {
     setSaving(true);
     setSaveError(null);
     try {
-      await setOwnership(
-        slug,
-        status,
-        status === 'have' ? Math.max(1, ownership?.quantity ?? 1) : 0,
-        ownership?.condition ?? null,
-        notes.trim() || null,
-      );
+      await work();
       await reloadOwnership();
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'Could not update your collection.');
+      setSaveError(error instanceof Error ? error.message : failure);
     } finally {
       setSaving(false);
     }
+  }
+
+  // CONTRACT: shared/types.ts gives `UserItem` one `status`, so have and want are
+  // mutually exclusive, but the footer draws them as two independent controls. Starring
+  // an owned piece therefore moves it off the have list and drops its quantity. If the
+  // handoff means them to be independent, `UserItem` needs a separate `wanted` flag and
+  // `db.ts#setOwnership` a way to set it.
+  async function file() {
+    if (!slug) return;
+    const quantity = ownership?.status === 'have' ? ownership.quantity + 1 : 1;
+    await save(
+      () => setOwnership(slug, 'have', quantity, ownership?.condition ?? null, notes.trim() || null),
+      'Could not update your collection.',
+    );
+  }
+
+  async function toggleWant() {
+    if (!slug) return;
+    const wanted = ownership?.status === 'want';
+    await save(
+      async () => {
+        if (wanted) {
+          await removeFromCollection(slug);
+        } else {
+          await setOwnership(slug, 'want', 0, null, notes.trim() || null);
+        }
+      },
+      'Could not update your want list.',
+    );
   }
 
   async function changeQuantity(delta: number) {
     if (!slug || ownership?.status !== 'have') return;
     const quantity = Math.max(1, ownership.quantity + delta);
     if (quantity === ownership.quantity) return;
-    setSaving(true);
-    setSaveError(null);
-    try {
-      await setOwnership(slug, 'have', quantity, ownership.condition, notes.trim() || null);
-      await reloadOwnership();
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'Could not update quantity.');
-    } finally {
-      setSaving(false);
-    }
+    await save(
+      () => setOwnership(slug, 'have', quantity, ownership.condition, notes.trim() || null),
+      'Could not update quantity.',
+    );
   }
 
   async function chooseCondition(condition: Condition) {
     if (!slug || ownership?.status !== 'have') return;
-    setSaving(true);
-    setSaveError(null);
-    try {
-      await setOwnership(slug, 'have', ownership.quantity, condition, notes.trim() || null);
-      await reloadOwnership();
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'Could not update condition.');
-    } finally {
-      setSaving(false);
-    }
+    await save(
+      () => setOwnership(slug, 'have', ownership.quantity, condition, notes.trim() || null),
+      'Could not update condition.',
+    );
   }
 
   async function saveNotes() {
     if (!slug || !ownership) return;
-    setSaving(true);
-    setSaveError(null);
-    try {
-      await setOwnership(
+    await save(
+      () => setOwnership(
         slug,
         ownership.status,
         ownership.quantity,
         ownership.condition,
         notes.trim() || null,
-      );
-      await reloadOwnership();
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'Could not save notes.');
-    } finally {
-      setSaving(false);
-    }
+      ),
+      'Could not save notes.',
+    );
   }
 
   async function removeItem() {
     if (!slug) return;
-    setSaving(true);
-    setSaveError(null);
-    try {
-      await removeFromCollection(slug);
-      setUserItem(null);
-      setNotes('');
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : 'Could not remove this piece.');
-    } finally {
-      setSaving(false);
-    }
+    await save(() => removeFromCollection(slug), 'Could not remove this piece.');
   }
 
   if (loading) {
@@ -316,263 +343,281 @@ export default function ItemDetailScreen() {
         styles.missing,
         { backgroundColor: colors.background, paddingTop: insets.top + Spacing.three },
       ]}>
-        <Text style={[styles.patternName, { color: colors.text }]}>Piece unavailable</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Piece unavailable</Text>
         <Text style={[styles.body, { color: colors.textSecondary }]}>
           It is not in the offline catalog, and the network copy could not be loaded.
         </Text>
-        <ActionButton label="Go back" onPress={() => router.back()} />
+        <PressButton tone="quiet" onPress={() => router.back()}>Go back</PressButton>
       </View>
     );
   }
 
-  const years = formatYears(detail.pattern.yearsStart, detail.pattern.yearsEnd);
-  const specs: { label: string; value: string; numeral?: boolean }[] = [
-    { label: 'Production', value: years },
-    { label: 'Colorway', value: detail.pattern.colorway ?? 'Not documented' },
-    { label: 'Form', value: detail.form.shape },
-    { label: 'Model number', value: detail.form.modelNo, numeral: true },
-    ...(detail.form.capacityQt !== null
-      ? [{ label: 'Capacity', value: `${detail.form.capacityQt} qt`, numeral: true }]
-      : []),
-    ...(detail.form.dimensions ? [{ label: 'Dimensions', value: detail.form.dimensions }] : []),
-  ];
+  const owned = ownership?.status === 'have' ? ownership.quantity : 0;
+  const wanted = ownership?.status === 'want';
+  const name = detail.pattern.name;
 
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[
-        styles.content,
-        {
-          paddingTop: insets.top + Spacing.two,
-          paddingBottom: insets.bottom + Spacing.six,
-        },
-      ]}>
-      <Pressable
-        onPress={() => router.back()}
-        accessibilityRole="button"
-        accessibilityLabel="Go back"
-        style={({ pressed }) => [
-          styles.backButton,
-          { borderColor: colors.border },
-          pressed && {
-            backgroundColor: colors.backgroundElement,
-            transform: [{ scale: Motion.pressScale }],
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+      <ScrollView
+        style={styles.grow}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: insets.top + Spacing.two,
+            // Clears the pinned footer, measured rather than guessed: a `PressButton` is
+            // its line box plus `Spacing.three` top and bottom, then the footer's own
+            // padding and the home indicator.
+            paddingBottom:
+              insets.bottom
+              + Type.bodyStrong.lineHeight + Spacing.three * 2
+              + Spacing.three + Spacing.four,
           },
         ]}>
-        <Text style={[styles.backText, { color: colors.textSecondary }]}>‹ Back</Text>
-      </Pressable>
-
-      <Enter step={0}>
-        <Hero detail={detail} photoToken={photoToken} size={photoSize} />
-      </Enter>
-
-      <Enter step={1} style={styles.placard}>
-        <RarityBadge rarity={detail.rarity} />
-        <Text style={[styles.patternName, { color: colors.text }]}>{detail.pattern.name}</Text>
-        <View style={styles.placardMeta}>
-          <Text style={[styles.formName, { color: colors.textSecondary }]}>{detail.form.shape}</Text>
-          <View style={styles.modelLine}>
-            <Label tone="secondary">model</Label>
-            <Text style={[styles.modelNo, { color: colors.text }]}>{detail.form.modelNo}</Text>
-          </View>
+        <View style={styles.cardTab}>
+          <CircleButton onPress={() => router.back()} accessibilityLabel="Back to the file">
+            ‹
+          </CircleButton>
+          <Label tone="tertiary">{cardLabel(position)}</Label>
         </View>
-      </Enter>
 
-      {networkError && (
-        <Text style={[styles.offlineNote, { color: colors.textSecondary, borderColor: colors.border }]}>
-          Showing the offline catalog. Refresh unavailable: {networkError}
-        </Text>
-      )}
-
-      <Enter step={2}>
-        <Section title="Specification">
-          <View style={styles.specTable}>
-            <Divider />
-            {specs.map((spec) => (
-              <Spec key={spec.label} label={spec.label} value={spec.value} numeral={spec.numeral} />
-            ))}
+        {offline && (
+          <View style={[styles.banner, { backgroundColor: colors.spice }]} accessibilityRole="alert">
+            <View style={[styles.bannerDot, { backgroundColor: colors.want }]} />
+            <Text style={[styles.bannerText, { color: OnAccent.text }]}>
+              {offlineNotice(queuedCount)}
+            </Text>
           </View>
-          {detail.pattern.notes && (
-            <Text style={[styles.body, { color: colors.textSecondary }]}>{detail.pattern.notes}</Text>
-          )}
-        </Section>
-      </Enter>
+        )}
 
-      <Enter step={3}>
-        <Section title="Current price range">
-          <PriceFigure quote={detail.price} size="large" />
-          {detail.price ? (
-            <Text style={[styles.body, { color: colors.textSecondary }]}>
-              Median {money.format(detail.price.median)} — {priceSourceLabel(detail.price.source)}.
-            </Text>
-          ) : (
-            <Text style={[styles.body, { color: colors.textSecondary }]}>
-              No comparable prices yet. This piece is excluded from collection totals.
-            </Text>
-          )}
-        </Section>
-      </Enter>
+        <Enter step={0}>
+          <Card raised style={styles.recordCard}>
+            <Hero
+              detail={detail}
+              photoToken={photoToken}
+              width={heroWidth}
+              height={heroHeight}
+            />
+            <View style={styles.record}>
+              <Text style={[styles.title, { color: colors.text }]}>{name}</Text>
+              <Text style={[styles.caption, { color: colors.textSecondary }]}>
+                {describe(detail)}
+              </Text>
+              <View style={styles.priceSlot}>
+                <PriceFigure
+                  quote={detail.price}
+                  size="large"
+                  block
+                  emptyNote={
+                    offline
+                      ? "No comparables in the last 90 days. We'll check again when you're back online."
+                      : 'No comparables in the last 90 days. This piece is excluded from collection totals.'
+                  }
+                />
+              </View>
+              <View style={styles.chipRow}>
+                <SpecChip label="Model" value={detail.form.modelNo} />
+                <SpecChip label="You own" value={String(owned)} />
+              </View>
+            </View>
+          </Card>
+        </Enter>
 
-      <Enter step={4}>
-        <Section title="Your collection" tinted>
-          {/* The one solid fill on this screen. Everything else is a hairline outline. */}
-          <View style={[styles.segment, { borderColor: colors.border }]}>
-            {(['have', 'want'] as const).map((status, index) => {
-              const selected = ownership?.status === status;
-              return (
+        {networkError && !offline && (
+          <Text style={[styles.caption, { color: colors.textSecondary }]}>
+            Showing the copy on this phone. The catalog could not be refreshed: {networkError}
+          </Text>
+        )}
+
+        {/* Everything below here the prototype was silent about. It keeps working. */}
+        <Enter step={1}>
+          <Card style={styles.panel}>
+            <Label>Your copy</Label>
+
+            {ownership?.status === 'have' ? (
+              <>
+                <View style={styles.fieldRow}>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Quantity</Text>
+                  <View style={styles.stepper}>
+                    <CircleButton
+                      onPress={() => void changeQuantity(-1)}
+                      accessibilityLabel={`Decrease quantity of ${name}`}>
+                      −
+                    </CircleButton>
+                    <Text
+                      accessibilityLabel={`${ownership.quantity} owned`}
+                      style={[styles.quantity, { color: colors.text }]}>
+                      {ownership.quantity}
+                    </Text>
+                    <CircleButton
+                      onPress={() => void changeQuantity(1)}
+                      accessibilityLabel={`Increase quantity of ${name}`}>
+                      +
+                    </CircleButton>
+                  </View>
+                </View>
+
+                <Divider />
+
+                <View style={styles.field}>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Condition</Text>
+                  <View style={styles.chipWrap}>
+                    {CONDITIONS.map((condition) => {
+                      const selected = ownership.condition === condition;
+                      return (
+                        <Pressable
+                          key={condition}
+                          onPress={() => void chooseCondition(condition)}
+                          disabled={saving}
+                          hitSlop={Spacing.two}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Set condition to ${condition}`}
+                          accessibilityState={{ selected, disabled: saving }}
+                          style={({ pressed }) => [
+                            styles.filterChip,
+                            {
+                              backgroundColor: selected ? colors.accent : colors.backgroundElement,
+                            },
+                            pressed && { transform: [{ translateY: Motion.pressTranslate }] },
+                          ]}>
+                          <Text
+                            style={[
+                              styles.filterChipText,
+                              { color: selected ? colors.accentText : colors.textSecondary },
+                            ]}>
+                            {condition}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              </>
+            ) : (
+              <Text style={[styles.body, { color: colors.textSecondary }]}>
+                {wanted
+                  ? 'On your want list. File it and you can record how many you have and what shape they are in.'
+                  : 'Not filed yet. File it and you can record how many you have and what shape they are in.'}
+              </Text>
+            )}
+
+            {ownership && (
+              <>
+                <Divider />
+                <View style={styles.field}>
+                  <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Notes</Text>
+                  <TextInput
+                    value={notes}
+                    onChangeText={setNotes}
+                    editable={!saving}
+                    multiline
+                    placeholder="Where you found it, lid details, repairs…"
+                    placeholderTextColor={colors.textTertiary}
+                    accessibilityLabel={`Notes for ${name}`}
+                    style={[styles.notes, { color: colors.text, backgroundColor: colors.background }]}
+                  />
+                  <Text style={[styles.footnote, { color: colors.textTertiary }]}>
+                    Notes and condition stay on this phone. Sync carries slugs and counts only.
+                  </Text>
+                </View>
+                <PressButton
+                  tone="quiet"
+                  onPress={() => void saveNotes()}
+                  disabled={saving || notes.trim() === (ownership.notes ?? '')}
+                  accessibilityLabel={`Save notes for ${name}`}>
+                  Save notes
+                </PressButton>
                 <Pressable
-                  key={status}
-                  onPress={() => void chooseStatus(status)}
+                  onPress={() => void removeItem()}
                   disabled={saving}
                   accessibilityRole="button"
-                  accessibilityLabel={`Mark ${detail.pattern.name} as ${status === 'have' ? 'owned' : 'wanted'}`}
-                  accessibilityState={{ selected, disabled: saving }}
-                  style={({ pressed }) => [
-                    styles.segmentButton,
-                    index > 0 && { borderLeftWidth: Rule, borderLeftColor: colors.border },
-                    selected && { backgroundColor: status === 'have' ? colors.have : colors.want },
-                    pressed && !selected && { backgroundColor: colors.backgroundSelected },
-                  ]}>
-                  <Text style={[
-                    styles.segmentText,
-                    { color: selected ? colors.accentText : colors.textSecondary },
-                  ]}>
-                    {status === 'have' ? 'Have' : 'Want'}
+                  accessibilityLabel={`Remove ${name} from your file`}
+                  accessibilityState={{ disabled: saving }}
+                  style={styles.removeButton}>
+                  <Text style={[styles.removeText, { color: colors.danger }]}>
+                    Remove from my file
                   </Text>
                 </Pressable>
-              );
-            })}
-          </View>
+              </>
+            )}
 
-          {ownership?.status === 'have' && (
-            <>
-              <View style={styles.fieldRow}>
-                <Label tone="secondary">Quantity</Label>
-                <View style={[styles.stepper, { borderColor: colors.border }]}>
-                  <Pressable
-                    onPress={() => void changeQuantity(-1)}
-                    disabled={saving || ownership.quantity <= 1}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Decrease quantity of ${detail.pattern.name}`}
-                    accessibilityState={{ disabled: saving || ownership.quantity <= 1 }}
-                    style={({ pressed }) => [styles.stepperButton, pressed && { backgroundColor: colors.backgroundSelected }]}>
-                    <Text style={[styles.stepperSymbol, { color: ownership.quantity <= 1 ? colors.textTertiary : colors.text }]}>−</Text>
-                  </Pressable>
-                  <Text
-                    accessibilityLabel={`${ownership.quantity} owned`}
-                    style={[styles.quantity, { color: colors.text, borderColor: colors.border }]}>
-                    {ownership.quantity}
-                  </Text>
-                  <Pressable
-                    onPress={() => void changeQuantity(1)}
-                    disabled={saving}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Increase quantity of ${detail.pattern.name}`}
-                    accessibilityState={{ disabled: saving }}
-                    style={({ pressed }) => [styles.stepperButton, pressed && { backgroundColor: colors.backgroundSelected }]}>
-                    <Text style={[styles.stepperSymbol, { color: colors.text }]}>+</Text>
-                  </Pressable>
-                </View>
-              </View>
+            {saveError && <Text style={[styles.error, { color: colors.danger }]}>{saveError}</Text>}
+          </Card>
+        </Enter>
 
-              <Label tone="secondary">Condition</Label>
-              <View style={styles.choiceWrap}>
-                {CONDITIONS.map((condition) => {
-                  const selected = ownership.condition === condition;
-                  return (
-                    <Pressable
-                      key={condition}
-                      onPress={() => void chooseCondition(condition)}
-                      disabled={saving}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Set condition to ${condition}`}
-                      accessibilityState={{ selected, disabled: saving }}
-                      style={({ pressed }) => [
-                        styles.choice,
-                        { borderColor: selected ? colors.accent : colors.border },
-                        selected && { backgroundColor: colors.backgroundSelected },
-                        pressed && { backgroundColor: colors.backgroundElement },
-                      ]}>
-                      <Text style={[styles.choiceText, { color: selected ? colors.text : colors.textSecondary }]}>
-                        {condition}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </>
-          )}
+        <Enter step={2}>
+          <PhotoUpload
+            itemSlug={detail.slug}
+            patternName={name}
+            visibility={visibility}
+            onVisibilityChange={setVisibility}
+            onUploaded={refreshRemote}
+          />
+        </Enter>
+      </ScrollView>
 
-          {ownership && (
-            <>
-              <Label tone="secondary">Notes</Label>
-              <TextInput
-                value={notes}
-                onChangeText={setNotes}
-                editable={!saving}
-                multiline
-                placeholder="Where you found it, lid details, repairs…"
-                placeholderTextColor={colors.textTertiary}
-                accessibilityLabel={`Notes for ${detail.pattern.name}`}
-                style={[
-                  styles.notes,
-                  { color: colors.text, backgroundColor: colors.background, borderColor: colors.border },
-                ]}
-              />
-              <ActionButton
-                label="Save notes"
-                onPress={() => void saveNotes()}
-                disabled={saving || notes.trim() === (ownership.notes ?? '')}
-              />
-              <Pressable
-                onPress={() => void removeItem()}
-                disabled={saving}
-                accessibilityRole="button"
-                accessibilityLabel={`Remove ${detail.pattern.name} from collection`}
-                accessibilityState={{ disabled: saving }}
-                style={({ pressed }) => [styles.removeButton, pressed && { backgroundColor: colors.backgroundElement }]}>
-                <Text style={[styles.removeText, { color: colors.danger }]}>Remove from collection</Text>
-              </Pressable>
-            </>
-          )}
-          {saveError && <Text style={[styles.error, { color: colors.danger }]}>{saveError}</Text>}
-        </Section>
-      </Enter>
-
-      <Enter step={5}>
-        <PhotoUpload
-          itemSlug={detail.slug}
-          patternName={detail.pattern.name}
-          visibility={visibility}
-          onVisibilityChange={setVisibility}
-          onUploaded={refreshRemote}
-        />
-      </Enter>
-    </ScrollView>
+      <View
+        style={[
+          styles.footer,
+          { backgroundColor: colors.background, paddingBottom: insets.bottom + Spacing.four },
+        ]}>
+        {/* CONTRACT: PressButton in collection-ui.tsx overrides a caller's
+            `accessibilityState`, so neither control below can announce `selected`. The
+            state is spelled into the label meanwhile. Merging the two would fix it. */}
+        <PressButton
+          tone="primary"
+          onPress={() => void file()}
+          disabled={saving}
+          style={styles.fileButton}
+          accessibilityLabel={
+            owned > 0
+              ? `${name} is in your file, ${owned} owned. Add another.`
+              : `Put ${name} in my file`
+          }>
+          {owned > 0 ? 'Add another' : 'In my file'}
+        </PressButton>
+        <PressButton
+          tone="quiet"
+          onPress={() => void toggleWant()}
+          disabled={saving}
+          style={styles.starButton}
+          accessibilityLabel={
+            wanted ? `${name} is on your want list. Take it off.` : `Add ${name} to my want list`
+          }>
+          <Text style={[styles.star, { color: wanted ? colors.want : colors.spice }]}>★</Text>
+        </PressButton>
+      </View>
+    </View>
   );
 }
 
 /**
- * The object, presented large and almost unframed. With photographs it pages sideways;
- * without them the tile still carries the piece's documented colorway and its model
- * number, because a grey rectangle tells a collector nothing.
+ * The hero, filling the top of the card edge to edge.
+ *
+ * Photograph if there is one, and it pages sideways when there are several. With no
+ * photograph the piece still arrives wearing its documented colorway, marked as a
+ * swatch. Only when the catalog has no colorway to read either does the slot go to the
+ * striped placeholder, that is the honest "we have nothing" state, and a grey
+ * rectangle is what it should look like.
  */
 function Hero({
   detail,
   photoToken,
-  size,
+  width,
+  height,
 }: {
   detail: ItemDetail;
   photoToken: string | null;
-  size: number;
+  width: number;
+  height: number;
 }) {
+  const scheme = useScheme();
   const [page, setPage] = useState(0);
-  const stride = size + Spacing.two;
   const photos = detail.photos;
+  const size = { width, height, borderRadius: 0 } as const;
 
   function onSettle(event: NativeSyntheticEvent<NativeScrollEvent>) {
     const next = Math.min(
-      Math.max(0, Math.round(event.nativeEvent.contentOffset.x / stride)),
+      Math.max(0, Math.round(event.nativeEvent.contentOffset.x / width)),
       photos.length - 1,
     );
     if (next !== page) setPage(next);
@@ -588,23 +633,32 @@ function Hero({
     />
   );
 
+  const body =
+    photos.length > 1 ? (
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        snapToInterval={width}
+        decelerationRate="fast"
+        onMomentumScrollEnd={onSettle}
+        accessibilityLabel={`Photographs of ${detail.pattern.name}`}>
+        {photos.map((photo) => tile(photo))}
+      </ScrollView>
+    ) : photos.length === 1 ? (
+      tile(photos[0])
+    ) : parseColorway(detail.pattern.colorway, scheme) ? (
+      tile(null)
+    ) : (
+      <PhotoPlaceholder style={size} />
+    );
+
   return (
-    <View style={styles.hero}>
-      {photos.length > 1 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          snapToInterval={stride}
-          snapToAlignment="start"
-          decelerationRate="fast"
-          onMomentumScrollEnd={onSettle}
-          contentContainerStyle={styles.heroStrip}
-          accessibilityLabel={`Photographs of ${detail.pattern.name}`}>
-          {photos.map((photo) => tile(photo))}
-        </ScrollView>
-      ) : (
-        tile(photos[0] ?? null)
-      )}
+    <View style={{ width, height }}>
+      {body}
+      <View style={styles.rarityCorner} pointerEvents="none">
+        <RarityPill rarity={detail.rarity} />
+      </View>
       {photos.length > 1 && <PageIndicator count={photos.length} index={page} />}
     </View>
   );
@@ -619,19 +673,12 @@ function HeroTile({
   photo: Photo | null;
   photoToken: string | null;
   detail: ItemDetail;
-  size: number;
+  size: { width: number; height: number; borderRadius: number };
 }) {
   const colors = useColors();
 
   return (
-    <View
-      style={[
-        styles.heroTile,
-        // Android draws `elevation` from the view's own outline, so the wrapper needs a
-        // fill even though the tile covers it.
-        { width: size, height: size, backgroundColor: colors.surface },
-        Elevation.object,
-      ]}>
+    <View style={size}>
       <SpecimenTile
         photo={photo}
         photoToken={photoToken}
@@ -639,11 +686,11 @@ function HeroTile({
         modelNo={detail.form.modelNo}
         patternName={detail.pattern.name}
         stampSize="large"
-        style={{ width: size, height: size }}
+        style={size}
       />
       {photo?.visibility === 'attributed' && photo.uploaderHandle && (
         <View style={[styles.attribution, { backgroundColor: colors.scrim }]}>
-          <Text style={[styles.attributionText, { color: Colors.light.accentText }]}>
+          <Text style={[styles.attributionText, { color: OnAccent.text }]}>
             by {photo.uploaderHandle}
           </Text>
         </View>
@@ -652,20 +699,21 @@ function HeroTile({
   );
 }
 
-/** Ticks rather than dots — the same rank vocabulary the rarity badge uses. */
+/** Ticks rather than dots, the same rank vocabulary the rarity badge uses. */
 function PageIndicator({ count, index }: { count: number; index: number }) {
   const colors = useColors();
 
   return (
     <View
       style={styles.pageIndicator}
+      pointerEvents="none"
       accessibilityLabel={`Photograph ${index + 1} of ${count}`}>
       {Array.from({ length: count }, (_, position) => (
         <View
           key={position}
           style={[
             styles.pageTick,
-            { backgroundColor: position === index ? colors.text : colors.border },
+            { backgroundColor: position === index ? OnAccent.text : OnAccent.rule },
           ]}
         />
       ))}
@@ -742,7 +790,8 @@ function PhotoUpload({
   }
 
   return (
-    <Section title="Add your photo" tinted>
+    <Card style={styles.panel}>
+      <Label>Your photograph</Label>
       <Text style={[styles.body, { color: colors.textSecondary }]}>
         Location metadata is removed by the server before the photo is stored.
       </Text>
@@ -760,16 +809,14 @@ function PhotoUpload({
             accessibilityState={{ selected }}
             style={({ pressed }) => [
               styles.visibilityChoice,
-              { borderColor: selected ? colors.accent : colors.border },
-              selected && { backgroundColor: colors.backgroundSelected },
-              pressed && { backgroundColor: colors.backgroundElement },
+              { backgroundColor: selected ? colors.backgroundElement : colors.background },
+              pressed && { transform: [{ translateY: Motion.pressTranslate }] },
             ]}>
             <View style={styles.visibilityCopy}>
-              {/* Full-strength text, not a toned Label: this sits on a tinted field and
-                  the toned greys fall under 4.5:1 there. Selection reads from the
-                  accent hairline and the radio mark. */}
               <Text style={[styles.visibilityTitle, { color: colors.text }]}>{choice}</Text>
-              <Text style={[styles.body, { color: colors.textSecondary }]}>{visibilityDescription(choice)}</Text>
+              <Text style={[styles.footnote, { color: colors.textSecondary }]}>
+                {visibilityDescription(choice)}
+              </Text>
             </View>
             <Text style={[styles.radioMark, { color: selected ? colors.accent : colors.textTertiary }]}>
               {selected ? '●' : '○'}
@@ -788,19 +835,22 @@ function PhotoUpload({
             style={styles.camera}
           />
           <View style={styles.cameraControls}>
-            <ActionButton
-              label="Cancel camera"
+            <PressButton
+              tone="quiet"
+              style={styles.grow}
               onPress={() => {
                 setCameraReady(false);
                 setCameraOpen(false);
-              }}
-            />
-            <ActionButton
-              label={cameraReady ? 'Take photo' : 'Camera starting…'}
+              }}>
+              Cancel
+            </PressButton>
+            <PressButton
+              tone="primary"
+              style={styles.grow}
               onPress={() => void takePhoto()}
-              disabled={!cameraReady}
-              emphasis="accent"
-            />
+              disabled={!cameraReady}>
+              {cameraReady ? 'Take photo' : 'Camera starting…'}
+            </PressButton>
           </View>
         </View>
       )}
@@ -814,22 +864,30 @@ function PhotoUpload({
             accessibilityLabel={`New photo of ${patternName}`}
           />
           <View style={styles.cameraControls}>
-            <ActionButton label="Retake photo" onPress={() => void openCamera()} />
-            <ActionButton
-              label={uploading ? 'Uploading…' : `Upload as ${visibility}`}
+            <PressButton tone="quiet" style={styles.grow} onPress={() => void openCamera()}>
+              Retake
+            </PressButton>
+            <PressButton
+              tone="primary"
+              style={styles.grow}
               onPress={() => void submitPhoto()}
-              disabled={uploading}
-              emphasis="accent"
-            />
+              disabled={uploading}>
+              {uploading ? 'Uploading…' : `Upload as ${visibility}`}
+            </PressButton>
           </View>
         </View>
       )}
 
       {!cameraOpen && !photoUri && (
-        <ActionButton label="Take a photo" onPress={() => void openCamera()} emphasis="accent" />
+        <PressButton
+          tone="primary"
+          onPress={() => void openCamera()}
+          accessibilityLabel={`Take a photo of ${patternName}`}>
+          Take a photo
+        </PressButton>
       )}
       {error && <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>}
-    </Section>
+    </Card>
   );
 }
 
@@ -841,128 +899,69 @@ function visibilityDescription(visibility: PhotoVisibility): string {
   return 'Never published; use this when you do not want ownership of a valuable piece disclosed.';
 }
 
-function formatYears(start: number | null, end: number | null): string {
-  if (start !== null && end !== null) return `${start}–${end}`;
-  if (start !== null) return `${start} onward`;
-  if (end !== null) return `Through ${end}`;
-  return 'Not documented';
+/** "Green on white · 2 qt round casserole · made 1972–1979". Blanks drop out. */
+function describe(detail: ItemDetail): string {
+  const { colorway } = detail.pattern;
+  const form = [
+    detail.form.capacityQt !== null ? `${detail.form.capacityQt} qt` : null,
+    detail.form.shape,
+  ].filter(Boolean).join(' ');
+
+  return [
+    colorway ? colorway.charAt(0).toUpperCase() + colorway.slice(1) : null,
+    form,
+    productionYears(detail.pattern.yearsStart, detail.pattern.yearsEnd),
+  ].filter(Boolean).join(' · ');
 }
 
-/**
- * Archive sections sit bare on the page under a hairline rule. The two sections that
- * change something — your collection and your photo — take a surface tint so the
- * interactive half of the screen reads apart from the record. No shadows either way.
- */
-function Section({
-  title,
-  children,
-  tinted = false,
-}: {
-  title: string;
-  children: React.ReactNode;
-  tinted?: boolean;
-}) {
-  const colors = useColors();
-
-  return (
-    <View
-      style={[
-        styles.section,
-        tinted && styles.sectionPanel,
-        tinted && { backgroundColor: colors.surface, borderColor: colors.border },
-      ]}>
-      {!tinted && <Divider />}
-      <Label tone="secondary">{title}</Label>
-      {children}
-    </View>
-  );
-}
-
-function Spec({ label, value, numeral = false }: { label: string; value: string; numeral?: boolean }) {
-  const colors = useColors();
-
-  return (
-    <>
-      <View style={styles.specRow}>
-        {/* Wrapped rather than styled: `Label`'s own style prop is typed for a View. */}
-        <View style={styles.specLabel}>
-          <Label tone="secondary">{label}</Label>
-        </View>
-        <Text style={[numeral ? styles.specNumeral : styles.specValue, { color: colors.text }]}>
-          {value}
-        </Text>
-      </View>
-      <Divider />
-    </>
-  );
-}
-
-/**
- * Ghost by default. `accent` raises it to a ceremonial hairline outline rather than a
- * fill — the solid accent is spent once per screen, on the ownership control.
- */
-function ActionButton({
-  label,
-  onPress,
-  emphasis = 'plain',
-  disabled = false,
-}: {
-  label: string;
-  onPress: () => void;
-  emphasis?: 'plain' | 'accent';
-  disabled?: boolean;
-}) {
-  const colors = useColors();
-  const border = disabled ? colors.border : emphasis === 'accent' ? colors.accent : colors.border;
-
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      style={({ pressed }) => [
-        styles.actionButton,
-        { borderColor: border },
-        pressed && {
-          backgroundColor: colors.backgroundElement,
-          transform: [{ scale: Motion.pressScale }],
-        },
-      ]}>
-      <Text style={[styles.actionText, { color: disabled ? colors.textTertiary : colors.text }]}>
-        {label}
-      </Text>
-    </Pressable>
-  );
+function productionYears(start: number | null, end: number | null): string | null {
+  if (start !== null && end !== null) return `made ${start}–${end}`;
+  if (start !== null) return `made ${start} onward`;
+  if (end !== null) return `made through ${end}`;
+  return null;
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   missing: { paddingHorizontal: Spacing.four, gap: Spacing.three },
   content: {
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
-    paddingHorizontal: Spacing.three,
-    gap: Spacing.four,
+    paddingHorizontal: Spacing.gutter,
+    gap: Spacing.two + Spacing.half,
   },
 
-  backButton: {
-    alignSelf: 'flex-start',
-    minHeight: HitTarget,
-    paddingHorizontal: Spacing.three,
-    borderWidth: Rule,
-    borderRadius: Radius.sm,
+  cardTab: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: Spacing.two + Spacing.half,
+    paddingVertical: Spacing.two,
   },
-  backText: { ...Type.label },
 
-  // --- hero: the object, and the only shadow on the screen ---
-  hero: { gap: Spacing.two },
-  heroStrip: { gap: Spacing.two },
-  heroTile: { borderRadius: Radius.sm },
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two + Spacing.half,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.three - Spacing.one,
+    paddingHorizontal: Spacing.three - Spacing.half,
+  },
+  bannerDot: { width: 10, height: 10, borderRadius: Radius.pill },
+  bannerText: { ...Type.caption, flex: 1 },
+
+  // --- the record ---
+  recordCard: { borderRadius: Radius.xl },
+  record: { padding: CARD_PAD },
+  // The prototype draws this at 31px, but the handoff's type table gives `title` as
+  // 27/31 and declares itself authoritative over the HTML. Token, not the mock.
+  title: { ...Type.title },
+  caption: { ...Type.callout, marginTop: Spacing.one },
+  priceSlot: { marginTop: Spacing.three - Spacing.half },
+  chipRow: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.three - Spacing.half },
+
+  rarityCorner: { position: 'absolute', left: CARD_PAD - Spacing.one, top: CARD_PAD - Spacing.one },
   attribution: {
     position: 'absolute',
     top: Spacing.two,
@@ -971,115 +970,85 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.half,
   },
-  attributionText: { ...Type.label },
-  pageIndicator: { flexDirection: 'row', gap: Spacing.one, justifyContent: 'center' },
-  pageTick: { width: Spacing.three, height: Spacing.half, borderRadius: Radius.xs },
-
-  // --- placard ---
-  placard: { gap: Spacing.two, paddingTop: Spacing.two },
-  patternName: { ...Type.display },
-  placardMeta: { gap: Spacing.two, paddingTop: Spacing.one },
-  formName: { ...Type.body },
-  modelLine: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two },
-  modelNo: { ...Type.numeral },
-
-  offlineNote: {
-    ...Type.caption,
-    borderWidth: Rule,
-    borderRadius: Radius.xs,
-    padding: Spacing.three,
+  attributionText: { ...Type.micro },
+  pageIndicator: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: Spacing.two,
+    flexDirection: 'row',
+    gap: Spacing.one,
+    justifyContent: 'center',
   },
+  pageTick: { width: Spacing.three, height: Spacing.one, borderRadius: Radius.pill },
 
-  // --- sections ---
-  section: { gap: Spacing.three },
-  sectionPanel: {
-    borderWidth: Rule,
-    borderRadius: Radius.sm,
-    padding: Spacing.three,
-  },
+  // --- the panels the prototype did not draw ---
+  panel: { padding: Spacing.three, gap: Spacing.three },
   body: { ...Type.body },
-
-  specTable: { marginTop: -Spacing.two },
-  specRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  specLabel: { flex: 1 },
-  specValue: { ...Type.body, flex: 1, textAlign: 'right' },
-  specNumeral: { ...Type.numeral, flex: 1, textAlign: 'right' },
-
-  // --- collection ---
-  segment: {
-    flexDirection: 'row',
-    borderWidth: Rule,
-    borderRadius: Radius.sm,
-    overflow: 'hidden',
-  },
-  segmentButton: { flex: 1, minHeight: HitTarget, alignItems: 'center', justifyContent: 'center' },
-  segmentText: { ...Type.headline },
+  footnote: { ...Type.caption, fontSize: 11, lineHeight: 16 },
+  field: { gap: Spacing.two },
   fieldRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  stepper: { flexDirection: 'row', alignItems: 'center', borderWidth: Rule, borderRadius: Radius.sm },
-  stepperButton: { minWidth: HitTarget, minHeight: HitTarget, alignItems: 'center', justifyContent: 'center' },
-  stepperSymbol: { ...Type.headline },
-  quantity: {
-    ...Type.numeral,
-    minWidth: Spacing.five,
-    textAlign: 'center',
-    borderLeftWidth: Rule,
-    borderRightWidth: Rule,
-    paddingVertical: Spacing.two,
-  },
-  choiceWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  choice: {
-    minHeight: HitTarget,
-    borderWidth: Rule,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.three,
+  fieldLabel: { ...Type.micro },
+
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  quantity: { ...Type.numeralLarge, minWidth: Spacing.five, textAlign: 'center' },
+
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two - Spacing.half },
+  filterChip: {
+    borderRadius: Radius.pill,
+    paddingVertical: 7,
+    paddingHorizontal: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  choiceText: { ...Type.label },
+  filterChipText: { ...Type.bodyStrong, fontSize: 11, lineHeight: 14 },
+
   notes: {
     ...Type.body,
-    minHeight: Spacing.six * 2,
-    borderWidth: Rule,
+    minHeight: Spacing.six + Spacing.four,
     borderRadius: Radius.sm,
-    padding: Spacing.three,
+    padding: Spacing.three - Spacing.half,
     textAlignVertical: 'top',
   },
-  removeButton: { minHeight: HitTarget, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center' },
-  removeText: { ...Type.label },
+  removeButton: {
+    minHeight: HitTarget,
+    borderRadius: Radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeText: { ...Type.micro },
   error: { ...Type.callout },
 
   // --- photo upload ---
   visibilityChoice: {
     minHeight: HitTarget,
-    borderWidth: Rule,
     borderRadius: Radius.sm,
-    padding: Spacing.three,
+    padding: Spacing.three - Spacing.half,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
   },
-  visibilityCopy: { flex: 1, gap: Spacing.one },
-  visibilityTitle: { ...Type.label },
+  visibilityCopy: { flex: 1, gap: Spacing.half },
+  visibilityTitle: { ...Type.micro },
   radioMark: { ...Type.headline },
   cameraFrame: { borderRadius: Radius.sm, overflow: 'hidden' },
   camera: { height: Spacing.six * 5 },
   cameraControls: { flexDirection: 'row', gap: Spacing.two, paddingTop: Spacing.two },
   previewBlock: { gap: Spacing.two },
   preview: { width: '100%', height: Spacing.six * 5, borderRadius: Radius.sm },
+  grow: { flex: 1 },
 
-  actionButton: {
-    flex: 1,
-    minHeight: HitTarget,
-    borderWidth: Rule,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.three,
-    alignItems: 'center',
-    justifyContent: 'center',
+  // --- the pinned footer ---
+  footer: {
+    flexDirection: 'row',
+    gap: Spacing.two + Spacing.half,
+    width: '100%',
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    paddingHorizontal: Spacing.gutter,
+    paddingTop: Spacing.three - Spacing.half,
   },
-  actionText: { ...Type.label, textAlign: 'center' },
+  fileButton: { flex: 1 },
+  starButton: { width: STAR_WIDTH, paddingHorizontal: 0 },
+  star: { ...Type.bodyStrong, fontSize: 16, lineHeight: 20 },
 });

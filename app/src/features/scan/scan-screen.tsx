@@ -1,127 +1,81 @@
 /**
- * The scan flow: permission, viewfinder, the identification wait, the guesses, and the
- * offline fallbacks around them.
+ * The scan flow: permission, the two-shot burst, the identification wait, the guesses,
+ * filing the result, and the fallbacks around all of it.
  *
- * Two visual languages meet on this screen, deliberately.
+ * This file is the wiring. Everything it draws lives in two siblings, split by which
+ * ground it sits on: `scan-camera.tsx` holds the screens over the camera, which use the
+ * fixed `CameraChrome` palette, and `scan-results.tsx` holds the screens on the app
+ * ground, which use the theme. That is the same line the reference lock draws, so it is
+ * the seam the files follow.
  *
- * Everything on the vellum ground — permission, the wait, results, catalog browse,
- * ownership — is the specimen index: condensed display type, metadata stacked under
- * its tile, hairline rules instead of shadows, accent held back to an outline.
+ * The two things worth knowing before changing anything here:
  *
- * The viewfinder is the exception. It is an instrument used one-handed in a thrift
- * aisle under bad light, so it drops the restraint: an opaque deck, a fixed dark
- * palette in both schemes, and a shutter big enough to hit without looking. The line
- * runs at the shutter — everything the shutter produces goes back to the archive.
+ * Offline is the expected case, not the exception. Antique malls have terrible signal,
+ * so a burst captured with no connection is written to SQLite as file URIs and drained
+ * later; the queue is never base64, and a queued burst that comes back while the user is
+ * still holding the camera does not yank them off it.
+ *
+ * A price is never rendered without the claim behind it. The ledger on the confirmation
+ * screen uses `LedgerFigure`, whose `source` prop is required, and a failed price batch
+ * fails the whole total rather than quietly under-reporting it.
  */
 
 import { useNetInfo } from '@react-native-community/netinfo';
 import { CameraView, PermissionStatus, useCameraPermissions } from 'expo-camera';
 import { randomUUID } from 'expo-crypto';
 import { Directory, File, Paths } from 'expo-file-system';
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  AppState,
-  Image,
-  Linking,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withDelay,
-  withTiming,
-} from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, Linking, StyleSheet, View } from 'react-native';
 
-import type { IdentifyResponse, OwnershipStatus, ScanGuess } from '@shared/types';
-import { identify, logScan, submitUnknownPattern } from '@/api';
+import { fetchPrices, identify, logScan, submitUnknownPattern } from '@/api';
 import {
   bumpScanAttempts,
   dequeueScan,
   enqueueScan,
+  getCollection,
   getSettings,
+  getUserItem,
   listQueuedScans,
   searchCatalog,
   setOwnership,
   type CatalogRow,
 } from '@/db';
+import { calculateCollectionValues } from '@/features/collection/collection-total';
+import { priceSourceLabel } from '@/features/collection/collection-ui';
+import type { IdentifyResponse, OwnershipStatus, ScanGuess } from '@shared/types';
 import {
-  BottomTabInset,
-  Colors,
-  Elevation,
-  HitTarget,
-  MaxContentWidth,
-  Motion,
-  Radius,
-  Rule,
-  Spacing,
-  Type,
-} from '@/constants/theme';
+  IdentifyingScreen,
+  PermissionScreen,
+  ShutterFlash,
+  ViewfinderScreen,
+} from './scan-camera';
 import {
-  Divider,
-  Label,
-  RarityBadge,
-  SpecimenTile,
-  useScheme,
-} from '@/features/collection/collection-ui';
-import { deriveLlmWasRight, shouldRetryQueueDrain } from './logic';
+  AlreadyOwnedSheet,
+  BrowseScreen,
+  FiledScreen,
+  ResultScreen,
+  money,
+  type FiledLedger,
+} from './scan-results';
+import { deriveLlmWasRight, ordinal, ordinalWord, shouldRetryQueueDrain } from './logic';
 
-type ColorPalette = (typeof Colors)[keyof typeof Colors];
 type Phase =
   | 'camera'
   | 'identifying'
   | 'results'
   | 'browse'
   | 'confirming'
-  | 'ownership'
+  | 'owned'
   | 'saved';
-
-/**
- * The two stages the identify round trip actually performs, and nothing else. `reading`
- * covers the single await on the vision request; `matching` covers resolving the
- * returned slugs against the local catalog. Naming a stage the code does not run would
- * be theatre, which is the opposite of why staged progress is here.
- */
-type IdentifyStage = 'reading' | 'matching';
 
 // ponytail: one capture-quality knob is enough; tune it only if upload time or model detail suffers.
 const CAPTURE_QUALITY = 0.8;
 const QUEUE_PHOTO_DIRECTORY = 'scan-queue';
-
-/**
- * The viewfinder keeps one fixed palette in both schemes: a camera feed is not a
- * surface that can be tinted, and a control that changes contrast with the system
- * theme is a control that disappears in half of them.
- */
-const CAMERA_INK = Colors.dark.text;
-const CAMERA_INK_DIM = Colors.dark.textSecondary;
-const CAMERA_DECK = Colors.dark.background;
-const CAMERA_RULE = Colors.dark.border;
-const CAMERA_SCRIM = Colors.dark.scrim;
-const CAMERA_ACCENT = Colors.dark.accent;
-const CAMERA_DISABLED = Colors.dark.textTertiary;
-
-const SHUTTER = Spacing.six + Spacing.three;
-const SHUTTER_CORE = SHUTTER - Spacing.four;
-const SHUTTER_SLOT = HitTarget * 2;
-const THUMB = Spacing.six;
-/** Big enough that the model stamp reads as a stamp rather than a cropped arc. */
-const INDEX_TILE = HitTarget * 2;
-const LEAD_TILE = Spacing.six * 2;
-
-/** Confidence bands. The wording is what gets read; the percentage stays in the label. */
-const STRONG_MATCH = 0.75;
-const LIKELY_MATCH = 0.5;
+/** The prototype's shutter beat: flash for 150ms, advance at 260ms. */
+const FLASH_MS = 150;
+/** How many shape chips the browse screen offers. Four is what the mock draws. */
+const CHIP_COUNT = 4;
 
 async function persistQueuedPhotos(photoUris: string[]): Promise<string[]> {
   const directory = new Directory(Paths.document, QUEUE_PHOTO_DIRECTORY);
@@ -159,588 +113,76 @@ function deleteQueuedPhotos(photoUris: string[]): void {
 }
 
 function queueLabel(count: number): string {
-  return `${count} scan${count === 1 ? '' : 's'} waiting`;
-}
-
-function confidenceLabel(confidence: number): string {
-  return `About ${Math.round(confidence * 10) * 10}% confidence`;
-}
-
-function confidenceTier(confidence: number): string {
-  if (confidence >= STRONG_MATCH) return 'strong match';
-  if (confidence >= LIKELY_MATCH) return 'likely match';
-  return 'possible match';
+  return `${count} scan${count === 1 ? '' : 's'} waiting to upload.`;
 }
 
 /**
- * Motion is confirmation, not decoration: the two moments worth animating are a frame
- * landing in the tray and the guesses arriving. Reduced motion skips straight to the
- * resting state rather than shortening the animation.
+ * The month the row was last written. Deliberately not "since March": `UserItem` has
+ * only `updatedAt`, so adding a second one last week would date the whole holding to
+ * last week. What this can honestly say is when it was last filed.
  */
-function Rise({
-  children,
-  delay = 0,
-  zoom = false,
-  style,
-}: {
-  children: ReactNode;
-  delay?: number;
-  zoom?: boolean;
-  style?: StyleProp<ViewStyle>;
-}) {
-  const reduced = useReducedMotion();
-  const progress = useSharedValue(reduced ? 1 : 0);
-
-  useEffect(() => {
-    if (reduced) {
-      progress.value = 1;
-      return;
-    }
-    progress.value = withDelay(
-      delay,
-      withTiming(1, { duration: Motion.enter, easing: Easing.bezier(...Motion.easing) }),
-    );
-  }, [delay, progress, reduced]);
-
-  const animated = useAnimatedStyle(() => ({
-    opacity: progress.value,
-    transform: [
-      { translateY: (1 - progress.value) * Motion.enterOffset },
-      { scale: zoom ? Motion.pressScale + (1 - Motion.pressScale) * progress.value : 1 },
-    ],
-  }));
-
-  return <Animated.View style={[style, animated]}>{children}</Animated.View>;
-}
-
-/**
- * Quiet when the queue is empty — it says nothing then, so it is worth reading when it
- * says anything at all. Loud enough to answer the only question a waiting scan raises:
- * how many, and what is it waiting on.
- */
-function QueueStrip({
-  count,
-  colors,
-  offline,
-  camera = false,
-}: {
-  count: number;
-  colors: ColorPalette;
-  offline: boolean;
-  camera?: boolean;
-}) {
-  if (count === 0) return null;
-
-  const detail = offline ? 'waiting for a connection' : 'identifying when ready';
-  const ink = camera ? CAMERA_INK : colors.text;
-  const dim = camera ? CAMERA_INK_DIM : colors.textSecondary;
-
-  return (
-    <View
-      accessibilityLabel={`${queueLabel(count)}, ${detail}`}
-      accessibilityLiveRegion="polite"
-      style={[
-        styles.queueStrip,
-        camera
-          ? { backgroundColor: CAMERA_SCRIM, borderColor: CAMERA_RULE }
-          : { backgroundColor: colors.surface, borderColor: colors.border },
-      ]}>
-      <Text style={[styles.numeral, { color: ink }]}>{count}</Text>
-      <View style={styles.queueCopy}>
-        <Text style={[styles.label, { color: ink }]}>
-          {count === 1 ? 'scan waiting' : 'scans waiting'}
-        </Text>
-        <Text style={[styles.caption, { color: dim }]}>{detail}</Text>
-      </View>
-    </View>
-  );
-}
-
-/** The two views a burst is made of, as an index entry each. */
-function FrameStrip({ photoUris, colors }: { photoUris: string[]; colors: ColorPalette }) {
-  return (
-    <View style={styles.framesRow}>
-      {['Pattern', 'Model no.'].map((label, index) => {
-        const uri = photoUris[index];
-        return (
-          <View key={label} style={styles.frameColumn}>
-            {uri ? (
-              <Image
-                accessibilityLabel={`${label} photo captured`}
-                accessibilityRole="image"
-                source={{ uri }}
-                style={[styles.frameImage, { borderColor: colors.border }]}
-              />
-            ) : (
-              <View
-                style={[
-                  styles.frameImage,
-                  styles.emptyFrame,
-                  { backgroundColor: colors.backgroundElement, borderColor: colors.border },
-                ]}>
-                <Text style={[styles.label, { color: colors.textTertiary }]}>—</Text>
-              </View>
-            )}
-            <Label tone={uri ? 'secondary' : 'tertiary'}>{label}</Label>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
-function Notice({ message, colors, error = false }: {
-  message: string | null;
-  colors: ColorPalette;
-  error?: boolean;
-}) {
-  if (!message) return null;
-  return (
-    <View
-      accessibilityLiveRegion="polite"
-      accessibilityRole="alert"
-      style={[
-        styles.notice,
-        {
-          backgroundColor: colors.surface,
-          borderColor: error ? colors.danger : colors.border,
-        },
-      ]}>
-      <Text style={[styles.label, { color: error ? colors.danger : colors.textSecondary }]}>
-        {error ? 'problem' : 'note'}
-      </Text>
-      <Text style={[styles.body, { color: colors.text }]}>{message}</Text>
-    </View>
-  );
-}
-
-/** Eyebrow, title, and the sentence under it — the header every archive page shares. */
-function ScreenHeader({
-  eyebrow,
-  title,
-  blurb,
-  colors,
-}: {
-  eyebrow: string;
-  title: string;
-  blurb?: string;
-  colors: ColorPalette;
-}) {
-  return (
-    <View style={styles.header}>
-      <Label tone="tertiary">{eyebrow}</Label>
-      <Text accessibilityRole="header" style={[styles.display, { color: colors.text }]}>
-        {title}
-      </Text>
-      {blurb ? <Text style={[styles.body, { color: colors.textSecondary }]}>{blurb}</Text> : null}
-      <Divider />
-    </View>
-  );
-}
-
-/** Solid accent fill is ceremonial: at most one per screen. Everything else is a ghost. */
-function ActionButton({
-  label,
-  onPress,
-  colors,
-  secondary = false,
-  disabled = false,
-  hint,
-}: {
-  label: string;
-  onPress: () => void;
-  colors: ColorPalette;
-  secondary?: boolean;
-  disabled?: boolean;
-  hint?: string;
-}) {
-  // CONTRACT: Colors.light accent/accentText needs stronger text contrast; theme.ts owns the pair.
-  const fill = disabled
-    ? colors.backgroundElement
-    : secondary
-      ? 'transparent'
-      : colors.accent;
-  const ink = disabled ? colors.textTertiary : secondary ? colors.text : colors.accentText;
-
-  return (
-    <Pressable
-      accessibilityHint={hint}
-      accessibilityLabel={label}
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.actionButton,
-        secondary ? styles.ghostButton : styles.solidButton,
-        {
-          backgroundColor: pressed && !disabled ? colors.backgroundSelected : fill,
-          borderColor: disabled ? colors.border : colors.accent,
-        },
-      ]}>
-      {({ pressed }) => (
-        <Text style={[styles.buttonLabel, { color: pressed && !disabled ? colors.text : ink }]}>
-          {label}
-        </Text>
-      )}
-    </Pressable>
-  );
-}
-
-function Surface({
-  children,
-  colors,
-  topInset,
-  bottomInset,
-  queuedCount,
-  offline,
-}: {
-  children: ReactNode;
-  colors: ColorPalette;
-  topInset: number;
-  bottomInset: number;
-  queuedCount: number;
-  offline: boolean;
-}) {
-  return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.surfaceContent,
-          {
-            paddingTop: topInset,
-            paddingBottom: bottomInset + BottomTabInset,
-          },
-        ]}
-        keyboardShouldPersistTaps="handled">
-        <QueueStrip count={queuedCount} colors={colors} offline={offline} />
-        {children}
-      </ScrollView>
-    </View>
-  );
-}
-
-/**
- * Handing over the instrument. The two frames are drawn before the camera opens, so the
- * two-shot burst is a thing the user has already seen once by the time it is asked for.
- */
-function PermissionScreen({
-  mode,
-  colors,
-  topInset,
-  bottomInset,
-  queuedCount,
-  offline,
-  onRequest,
-  onSettings,
-}: {
-  mode: 'checking' | 'undetermined' | 'denied';
-  colors: ColorPalette;
-  topInset: number;
-  bottomInset: number;
-  queuedCount: number;
-  offline: boolean;
-  onRequest: () => void;
-  onSettings: () => void;
-}) {
-  return (
-    <Surface
-      colors={colors}
-      topInset={topInset}
-      bottomInset={bottomInset}
-      queuedCount={queuedCount}
-      offline={offline}>
-      <ScreenHeader
-        eyebrow="camera"
-        title="Two views, one piece"
-        blurb="Photograph the pattern first, then the embossed model number underneath. Those two views let the catalog identify the exact pattern and form."
-        colors={colors}
-      />
-
-      <View style={styles.plateRow}>
-        {['Pattern', 'Model no.'].map((label, index) => (
-          <View key={label} style={styles.plateColumn}>
-            <View style={[styles.plate, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-              <Text style={[styles.numeralLarge, { color: colors.textTertiary }]}>{index + 1}</Text>
-            </View>
-            <Label tone="secondary">{label}</Label>
-            <Text style={[styles.caption, { color: colors.textTertiary }]}>
-              {index === 0 ? 'Face up, glare off the design' : 'Underside, centred'}
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      <Divider />
-
-      {mode === 'checking' ? (
-        <View
-          accessibilityLabel="Checking camera access"
-          accessibilityLiveRegion="polite"
-          accessibilityRole="progressbar"
-          style={styles.progressRow}>
-          <ActivityIndicator color={colors.accent} />
-          <Text style={[styles.callout, { color: colors.textSecondary }]}>Checking camera access…</Text>
-        </View>
-      ) : mode === 'undetermined' ? (
-        <ActionButton label="Allow camera access" onPress={onRequest} colors={colors} />
-      ) : (
-        <>
-          <Text style={[styles.callout, { color: colors.textSecondary }]}>
-            Camera access is off. Open this app’s system settings and allow Camera to scan a dish.
-          </Text>
-          <ActionButton label="Open app settings" onPress={onSettings} colors={colors} />
-        </>
-      )}
-    </Surface>
-  );
-}
-
-/**
- * The wait, named. Each row is work the app is doing at that moment — the request in
- * flight, then the returned slugs being matched against the saved catalog — so the
- * ledger is evidence rather than reassurance.
- */
-function IdentifyLedger({
-  stage,
-  hasBaseShot,
-  colors,
-}: {
-  stage: IdentifyStage;
-  hasBaseShot: boolean;
-  colors: ColorPalette;
-}) {
-  const steps: { key: IdentifyStage; label: string; detail: string }[] = [
-    {
-      key: 'reading',
-      label: hasBaseShot ? 'Reading pattern and model no.' : 'Reading the pattern',
-      detail: hasBaseShot
-        ? 'Both views are with the identifier.'
-        : 'The pattern view is with the identifier.',
-    },
-    {
-      key: 'matching',
-      label: 'Matching the saved catalog',
-      detail: 'Turning the answer into catalogued pieces.',
-    },
-  ];
-  const activeIndex = steps.findIndex((step) => step.key === stage);
-
-  return (
-    <View
-      accessibilityLabel={steps[activeIndex]?.detail ?? ''}
-      accessibilityLiveRegion="polite"
-      accessibilityRole="progressbar"
-      style={styles.ledger}>
-      {steps.map((step, index) => {
-        const done = index < activeIndex;
-        const active = index === activeIndex;
-        return (
-          <View key={step.key} style={styles.ledgerRow}>
-            <View style={styles.ledgerMarker}>
-              {active ? (
-                <ActivityIndicator color={colors.accent} size="small" />
-              ) : (
-                <View
-                  style={[
-                    styles.ledgerTick,
-                    done
-                      ? { backgroundColor: colors.accent, borderColor: colors.accent }
-                      : { borderColor: colors.border },
-                  ]}
-                />
-              )}
-            </View>
-            <View style={styles.ledgerCopy}>
-              <Text
-                style={[
-                  styles.label,
-                  { color: active ? colors.text : done ? colors.textSecondary : colors.textTertiary },
-                ]}>
-                {step.label}
-              </Text>
-              {active ? (
-                <Text style={[styles.caption, { color: colors.textSecondary }]}>{step.detail}</Text>
-              ) : null}
-            </View>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
-/** Confidence as a length, not a percentage: a hairline that fills, and the word for it. */
-function ConfidenceMeter({ confidence, colors }: { confidence: number; colors: ColorPalette }) {
-  return (
-    <View style={styles.confidenceBlock}>
-      <View style={[styles.confidenceTrack, { backgroundColor: colors.backgroundElement }]}>
-        <View
-          style={[
-            styles.confidenceFill,
-            { backgroundColor: colors.accent, width: `${Math.round(confidence * 100)}%` },
-          ]}
-        />
-      </View>
-      <Text style={[styles.label, { color: colors.accent }]}>{confidenceTier(confidence)}</Text>
-    </View>
-  );
-}
-
-/**
- * A guess as a specimen entry: the piece in its documented colors with its model number
- * struck across it, and the metadata stacked directly underneath. The top guess gets
- * the full plate and the accent outline — the one ceremonial mark on this screen.
- */
-function CandidateEntry({
-  guess,
-  row,
-  index,
-  lead,
-  colors,
-  onPress,
-}: {
-  guess: ScanGuess;
-  row: CatalogRow;
-  index: number;
-  lead: boolean;
-  colors: ColorPalette;
-  onPress: () => void;
-}) {
-  const metadata = (
-    <View style={styles.entryCopy}>
-      <Text style={[styles.headline, { color: colors.text }]}>{row.patternName}</Text>
-      <Text style={[styles.label, { color: colors.textSecondary }]}>
-        {row.shape} · {row.modelNo}
-      </Text>
-      <RarityBadge rarity={row.rarity} compact={!lead} />
-      <ConfidenceMeter confidence={guess.confidence} colors={colors} />
-      {lead ? (
-        <Text style={[styles.caption, { color: colors.textSecondary }]}>{guess.reasoning}</Text>
-      ) : null}
-    </View>
-  );
-
-  return (
-    <Pressable
-      accessibilityHint="Confirms this item and records whether it was the top guess"
-      accessibilityLabel={`${row.patternName}, ${row.shape}, model ${row.modelNo}, ${confidenceLabel(guess.confidence)}`}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.entry,
-        lead ? styles.leadEntry : styles.rowEntry,
-        {
-          backgroundColor: pressed ? colors.backgroundSelected : colors.surface,
-          borderColor: lead ? colors.accent : colors.border,
-        },
-      ]}>
-      <View style={lead ? styles.leadRank : styles.rowRank}>
-        <Text style={[styles.numeral, { color: colors.textTertiary }]}>
-          {String(index + 1).padStart(2, '0')}
-        </Text>
-      </View>
-      <SpecimenTile
-        colorway={row.colorway}
-        modelNo={row.modelNo}
-        patternName={row.patternName}
-        stampSize={lead ? 'large' : 'small'}
-        style={[lead ? styles.leadTile : styles.indexTile, Elevation.object]}
-      />
-      {metadata}
-    </Pressable>
-  );
-}
-
-/** The same entry, minus the guess — catalog browse is the identical index, unsorted. */
-function CatalogEntry({
-  row,
-  colors,
-  onPress,
-}: {
-  row: CatalogRow;
-  colors: ColorPalette;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityHint="Confirms this item as the piece you photographed"
-      accessibilityLabel={`${row.patternName}, ${row.shape}, model ${row.modelNo}`}
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.entry,
-        styles.rowEntry,
-        {
-          backgroundColor: pressed ? colors.backgroundSelected : colors.surface,
-          borderColor: colors.border,
-        },
-      ]}>
-      <SpecimenTile
-        colorway={row.colorway}
-        modelNo={row.modelNo}
-        patternName={row.patternName}
-        stampSize="small"
-        style={[styles.indexTile, Elevation.object]}
-      />
-      <View style={styles.entryCopy}>
-        <Text style={[styles.headline, { color: colors.text }]}>{row.patternName}</Text>
-        <Text style={[styles.label, { color: colors.textSecondary }]}>
-          {row.shape} · {row.modelNo}
-        </Text>
-        <RarityBadge rarity={row.rarity} compact />
-      </View>
-    </Pressable>
-  );
+function monthOf(iso: string): string | null {
+  const when = new Date(iso);
+  return Number.isNaN(when.valueOf())
+    ? null
+    : when.toLocaleDateString(undefined, { month: 'long' });
 }
 
 export default function ScanScreen() {
-  const scheme = useScheme();
-  const colors = Colors[scheme];
-  const insets = useSafeAreaInsets();
   const netInfo = useNetInfo();
   const [permission, requestPermission, refreshPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const drainingRef = useRef(false);
   const presentedQueuedIdRef = useRef<string | null>(null);
   const cameraIdleRef = useRef(true);
+  const ledgerTokenRef = useRef(0);
+  const loggedSlugRef = useRef<string | null>(null);
 
   const [phase, setPhase] = useState<Phase>('camera');
   const [cameraReady, setCameraReady] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  const [flashing, setFlashing] = useState(false);
   const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [guesses, setGuesses] = useState<ScanGuess[]>([]);
   const [guessRows, setGuessRows] = useState<CatalogRow[]>([]);
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [queuedCount, setQueuedCount] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [progressMessage, setProgressMessage] = useState('Comparing both views with the saved catalog…');
-  // Held apart from `phase` on purpose: a background queue drain runs the matching stage
-  // while the user is still on the viewfinder, and must not pull them off it.
-  const [stage, setStage] = useState<IdentifyStage | null>(null);
+  const [waitCopy, setWaitCopy] = useState({ title: 'Reading the mark', caption: '' });
+  const [catalog, setCatalog] = useState<CatalogRow[]>([]);
   const [catalogQuery, setCatalogQuery] = useState('');
-  const [catalogRows, setCatalogRows] = useState<CatalogRow[]>([]);
-  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [shapeFilter, setShapeFilter] = useState<string | null>(null);
   const [unknownPatternName, setUnknownPatternName] = useState('');
-  const [confirmedSlug, setConfirmedSlug] = useState('');
-  const [confirmedPatternName, setConfirmedPatternName] = useState('');
-  const [confirmedForm, setConfirmedForm] = useState('');
-  const [ownershipStatus, setOwnershipStatus] = useState<OwnershipStatus>('have');
-  const [quantity, setQuantity] = useState(1);
-  const [savingOwnership, setSavingOwnership] = useState(false);
+  const [owned, setOwned] = useState<{ row: CatalogRow; quantity: number; since: string | null } | null>(null);
+  const [filedHeadline, setFiledHeadline] = useState('');
+  const [ledger, setLedger] = useState<FiledLedger | null>(null);
 
   const isOffline = netInfo.isConnected === false || netInfo.isInternetReachable === false;
   const canDrainQueue = netInfo.isConnected === true && netInfo.isInternetReachable !== false;
   const needsBaseShot = photoUris.length === 1;
   const cameraIdle = phase === 'camera' && photoUris.length === 0 && !capturing;
   cameraIdleRef.current = cameraIdle;
-  const safeTop = insets.top + Spacing.three;
-  const safeBottom = insets.bottom + BottomTabInset + Spacing.three;
-  const surfaceBottom = insets.bottom + Spacing.three;
+
+  // Both facts, not one or the other: a notice must not swallow the queue count.
+  const banner =
+    [notice, queuedCount > 0 ? queueLabel(queuedCount) : null].filter(Boolean).join(' ') || null;
 
   const refreshQueuedCount = useCallback(async () => {
     const count = (await listQueuedScans()).length;
     setQueuedCount(Math.max(0, count - (presentedQueuedIdRef.current ? 1 : 0)));
+  }, []);
+
+  /**
+   * Always re-read rather than trusting a cached copy: the bundled catalog is seeded on
+   * first launch and refreshed in the background, so the rows can appear between mount
+   * and the moment a guess needs resolving.
+   */
+  const loadCatalog = useCallback(async () => {
+    // CONTRACT: app bootstrap must seed or sync the local catalog before this screen mounts.
+    const rows = await searchCatalog('', Number.MAX_SAFE_INTEGER);
+    setCatalog(rows);
+    return rows;
   }, []);
 
   const presentIdentifyResponse = useCallback(async (
@@ -750,30 +192,26 @@ export default function ScanScreen() {
     setPhotoUris(queuedPhotoUris);
     setGuesses(response.guesses);
     setError(null);
-    setStage('matching');
     if (response.lowConfidence || response.guesses.length === 0) {
       setCatalogQuery('');
-      setStage(null);
       setPhase('browse');
       return;
     }
 
-    // CONTRACT: app bootstrap must seed or sync the local catalog before this screen mounts.
-    const catalog = await searchCatalog('', Number.MAX_SAFE_INTEGER);
+    const rows = await loadCatalog();
     const resolved = response.guesses
       .slice(0, 3)
-      .map((guess) => catalog.find((row) => row.slug === guess.itemSlug))
+      .map((guess) => rows.find((row) => row.slug === guess.itemSlug))
       .filter((row): row is CatalogRow => Boolean(row));
     if (resolved.length === 0) {
       setCatalogQuery('');
-      setStage(null);
       setPhase('browse');
       return;
     }
     setGuessRows(resolved);
-    setStage(null);
+    setSelectedSlug(resolved[0].slug);
     setPhase('results');
-  }, []);
+  }, [loadCatalog]);
 
   const drainQueue = useCallback(async () => {
     if (drainingRef.current) return;
@@ -818,7 +256,8 @@ export default function ScanScreen() {
 
   useEffect(() => {
     void refreshQueuedCount();
-  }, [refreshQueuedCount]);
+    void loadCatalog();
+  }, [loadCatalog, refreshQueuedCount]);
 
   useEffect(() => {
     if (canDrainQueue && cameraIdle) void drainQueue();
@@ -832,46 +271,54 @@ export default function ScanScreen() {
   }, [refreshPermission]);
 
   useEffect(() => {
-    if (phase !== 'browse') return;
-    let ignore = false;
-    setCatalogLoading(true);
-    void searchCatalog(catalogQuery)
-      .then((rows) => {
-        if (!ignore) setCatalogRows(rows);
-      })
-      .catch(() => {
-        if (!ignore) setError('The saved catalog could not be opened.');
-      })
-      .finally(() => {
-        if (!ignore) setCatalogLoading(false);
-      });
-    return () => {
-      ignore = true;
-    };
-  }, [catalogQuery, phase]);
+    if (phase === 'browse') void loadCatalog().catch(() => setError('The saved catalog could not be opened.'));
+  }, [loadCatalog, phase]);
 
-  const resetScan = () => {
+  // The catalog is small enough to filter in memory, which keeps the field responsive
+  // per keystroke and matches what `searchCatalog` matches on: pattern, form, model no.
+  const browseRows = useMemo(() => {
+    const query = catalogQuery.trim().toLowerCase();
+    return catalog.filter((row) =>
+      (!shapeFilter || row.shape === shapeFilter) &&
+      (!query ||
+        row.patternName.toLowerCase().includes(query) ||
+        row.shape.toLowerCase().includes(query) ||
+        row.modelNo.toLowerCase().includes(query)),
+    );
+  }, [catalog, catalogQuery, shapeFilter]);
+
+  /** The forms the catalog actually holds most of, rather than a written-in list. */
+  const shapes = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const row of catalog) counts.set(row.shape, (counts.get(row.shape) ?? 0) + 1);
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, CHIP_COUNT)
+      .map(([shape]) => shape);
+  }, [catalog]);
+
+  const resetScan = useCallback(() => {
     setPhase('camera');
-    setCameraReady(false);
     setCapturing(false);
+    setFlashing(false);
     setPhotoUris([]);
     setGuesses([]);
     setGuessRows([]);
+    setSelectedSlug(null);
     setNotice(null);
     setError(null);
-    setStage(null);
     setCatalogQuery('');
+    setShapeFilter(null);
     setUnknownPatternName('');
-    setConfirmedSlug('');
-    setConfirmedPatternName('');
-    setConfirmedForm('');
-    setOwnershipStatus('have');
-    setQuantity(1);
-  };
+    setOwned(null);
+    setFiledHeadline('');
+    setLedger(null);
+    ledgerTokenRef.current += 1;
+    loggedSlugRef.current = null;
+  }, []);
 
   const queueBurst = async (uris: string[], hasBaseShot: boolean) => {
-    setStage(null);
-    setProgressMessage('Saving this scan on your phone…');
+    setWaitCopy({ title: 'Saving the scan', caption: 'Keeping it on this phone until a connection comes back.' });
     setPhase('identifying');
     let queuedPhotoUris: string[] = [];
     try {
@@ -898,12 +345,15 @@ export default function ScanScreen() {
       return;
     }
 
-    setProgressMessage(
-      hasBaseShot
-        ? 'Reading the pattern and embossed model number…'
-        : 'Comparing the pattern with the saved catalog…',
-    );
-    setStage('reading');
+    setWaitCopy({
+      title: 'Reading the mark',
+      // The model number cannot be named here: nothing has read it yet. `/identify`
+      // returns item slugs, so the mock's "Matching 474-B" is a number we do not have
+      // until the answer comes back, and naming a made-up one would be a false claim.
+      caption: catalog.length
+        ? `Matching ${hasBaseShot ? 'both shots' : 'the pattern'} against ${catalog.length} catalogued pieces.`
+        : `Matching ${hasBaseShot ? 'both shots' : 'the pattern'} against the catalog.`,
+    });
     setPhase('identifying');
     setError(null);
     try {
@@ -913,12 +363,10 @@ export default function ScanScreen() {
       } else if (shouldRetryQueueDrain(result.code, 0)) {
         await queueBurst(uris, hasBaseShot);
       } else {
-        setStage(null);
         setPhase('camera');
         setError(result.error);
       }
     } catch {
-      setStage(null);
       setPhase('camera');
       setError('The photo could not be read. Please capture it again.');
     }
@@ -929,6 +377,8 @@ export default function ScanScreen() {
     cameraIdleRef.current = false;
     setCapturing(true);
     setError(null);
+    setFlashing(true);
+    setTimeout(() => setFlashing(false), FLASH_MS);
     try {
       const picture = await cameraRef.current.takePictureAsync({
         base64: false,
@@ -950,48 +400,138 @@ export default function ScanScreen() {
     }
   };
 
-  const confirmItem = async (slug: string, patternName: string, form: string) => {
-    setConfirmedSlug(slug);
-    setConfirmedPatternName(patternName);
-    setConfirmedForm(form);
-    setStage(null);
-    setProgressMessage('Saving your confirmation and correction…');
+  /**
+   * Files it, then shows the confirmation immediately and fills the money in when it
+   * lands. The counts are local and instant; the comparables are a network round trip,
+   * and holding a saved piece behind one would put a spinner between the user and the
+   * thing they just did. The pending state still names a source, because a figure with
+   * no claim behind it is the one thing that must not appear.
+   */
+  const fileItem = async (row: CatalogRow, status: OwnershipStatus, quantity: number) => {
+    try {
+      await setOwnership(row.slug, status, quantity);
+    } catch {
+      setPhase('results');
+      setError('This item could not be added to your collection.');
+      return;
+    }
+
+    const items = await getCollection();
+    const have = items.filter((item) => item.status === 'have');
+    const pieces = have.reduce((total, item) => total + item.quantity, 0);
+    const pieceWord = `${pieces} ${pieces === 1 ? 'piece' : 'pieces'} filed`;
+    const repeat = status === 'have' && quantity > 1
+      ? ` and your ${ordinalWord(quantity) ?? ordinal(quantity)} ${row.patternName}`
+      : '';
+
+    setFiledHeadline(
+      status === 'want'
+        ? `${row.patternName}, ${row.shape}. On your want list.`
+        : `${row.patternName}, ${row.shape}. Your ${ordinal(pieces)} piece${repeat}.`,
+    );
+    setLedger({
+      itemFigure: null,
+      itemSource: 'awaiting comparables',
+      shelfFigure: null,
+      shelfSource: 'awaiting comparables',
+      pieceNote: pieceWord,
+    });
+    setOwned(null);
+    setPhase('saved');
+
+    // A later scan, or a reset, invalidates this fill: the prices that come back belong
+    // to the confirmation that asked for them and to no other.
+    const token = (ledgerTokenRef.current += 1);
+    const quotes = await fetchPrices(items.map((item) => item.itemSlug));
+    if (token !== ledgerTokenRef.current) return;
+
+    if (!quotes.ok) {
+      setLedger({
+        itemFigure: null,
+        itemSource: 'prices unavailable',
+        shelfFigure: null,
+        shelfSource: 'prices unavailable',
+        pieceNote: pieceWord,
+      });
+      return;
+    }
+
+    const quote = quotes.data.find((entry) => entry.itemSlug === row.slug) ?? null;
+    const values = calculateCollectionValues(have, quotes.data);
+    const unpriced = values[0]?.itemsUnpriced ?? have.length;
+
+    setLedger({
+      itemFigure: quote ? `${money.format(quote.low)}–${money.format(quote.high)}` : null,
+      itemSource: quote ? priceSourceLabel(quote.source) : 'no comparables yet',
+      // A failed chunk already returned above, so this total is either complete or absent.
+      shelfFigure: values.length
+        ? money.format(values.reduce((total, value) => total + value.haveTotal, 0))
+        : null,
+      shelfSource: values.length
+        ? values.map((value) => priceSourceLabel(value.source)).join(' + ')
+        : 'no comparables yet',
+      // Pieces with no comps never enter the total, and the exclusion is stated.
+      pieceNote: unpriced > 0 ? `${pieceWord} \u00b7 ${unpriced} without comps` : pieceWord,
+    });
+  };
+
+  /**
+   * One path for every way an item gets confirmed, a guess, a catalog row, or a pattern
+   * the user just named. `logScan` fires on all of them, because the user telling us
+   * which piece it is is the training signal regardless of what they do with it next.
+   */
+  const confirmRow = async (row: CatalogRow, status: OwnershipStatus) => {
+    setWaitCopy({ title: 'Filing it away', caption: `${row.patternName}, ${formOf(row)}.` });
     setPhase('confirming');
     setError(null);
-    try {
-      const settings = await getSettings();
-      // CONTRACT: api.ts must encode consented photoUris, and db.ts needs a pending-log queue
-      // so offline confirmations and their llmWasRight labels survive a failed request.
-      const result = await logScan({
-        photoUris,
-        guesses,
-        confirmedItemSlug: slug,
-        llmWasRight: deriveLlmWasRight(guesses, slug),
-        consentedToTraining: settings.trainingOptIn,
-      });
-      if (!result.ok) {
+
+    // Dismissing the already-owned sheet and confirming the same row again is one
+    // identification, not two, so it must not log a second time.
+    if (loggedSlugRef.current !== row.slug) {
+      loggedSlugRef.current = row.slug;
+      try {
+        const settings = await getSettings();
+        // CONTRACT: api.ts must encode consented photoUris, and db.ts needs a pending-log queue
+        // so offline confirmations and their llmWasRight labels survive a failed request.
+        const result = await logScan({
+          photoUris,
+          guesses,
+          confirmedItemSlug: row.slug,
+          llmWasRight: deriveLlmWasRight(guesses, row.slug),
+          consentedToTraining: settings.trainingOptIn,
+        });
+        if (!result.ok) setNotice('Confirmed locally. The scan history could not sync.');
+      } catch {
         setNotice('Confirmed locally. The scan history could not sync.');
       }
-    } catch {
-      setNotice('Confirmed locally. The scan history could not sync.');
-    } finally {
-      const queuedId = presentedQueuedIdRef.current;
-      if (queuedId) {
-        try {
-          await dequeueScan(queuedId);
-          deleteQueuedPhotos(photoUris);
-          presentedQueuedIdRef.current = null;
-          try {
-            await refreshQueuedCount();
-          } catch {
-            // The displayed count is already correct; refresh on the next queue event.
-          }
-        } catch {
-          setNotice('Confirmed locally. The saved scan will finish cleaning up later.');
-        }
-      }
-      setPhase('ownership');
     }
+
+    const queuedId = presentedQueuedIdRef.current;
+    if (queuedId) {
+      try {
+        await dequeueScan(queuedId);
+        deleteQueuedPhotos(photoUris);
+        presentedQueuedIdRef.current = null;
+        await refreshQueuedCount();
+      } catch {
+        setNotice('Confirmed locally. The saved scan will finish cleaning up later.');
+      }
+    }
+
+    if (status === 'have') {
+      const existing = await getUserItem(row.slug);
+      if (existing && existing.status === 'have' && existing.quantity > 0) {
+        setOwned({
+          row,
+          quantity: existing.quantity,
+          since: monthOf(existing.updatedAt),
+        });
+        setPhase('owned');
+        return;
+      }
+    }
+
+    await fileItem(row, status, status === 'want' ? 0 : 1);
   };
 
   const submitUnknown = async () => {
@@ -1005,8 +545,7 @@ export default function ScanScreen() {
       return;
     }
 
-    setStage(null);
-    setProgressMessage('Creating the new catalog entry…');
+    setWaitCopy({ title: 'Adding the pattern', caption: `Creating a catalog entry for ${patternName}.` });
     setPhase('confirming');
     setError(null);
     try {
@@ -1024,750 +563,182 @@ export default function ScanScreen() {
         setError(result.error);
         return;
       }
-      await confirmItem(result.data.slug, patternName, 'Form not yet catalogued');
+      const rows = await loadCatalog();
+      const created = rows.find((row) => row.slug === result.data.slug);
+      await confirmRow(
+        created ?? {
+          slug: result.data.slug,
+          patternId: patternName,
+          formId: '',
+          rarity: 'common',
+          ebayQuery: patternName,
+          userSubmitted: true,
+          patternName,
+          shape: 'Form not yet catalogued',
+          modelNo: '—',
+          colorway: null,
+        },
+        'have',
+      );
     } catch {
       setPhase('browse');
       setError('The new pattern could not be submitted.');
     }
   };
 
-  const saveOwnership = async () => {
-    setSavingOwnership(true);
+  const openBrowse = () => {
+    setCatalogQuery('');
+    setShapeFilter(null);
     setError(null);
-    try {
-      await setOwnership(confirmedSlug, ownershipStatus, quantity);
-      setPhase('saved');
-    } catch {
-      setError('This item could not be added to your collection.');
-    } finally {
-      setSavingOwnership(false);
-    }
+    setPhase('browse');
   };
 
-  if (!permission) {
-    return (
-      <PermissionScreen
-        mode="checking"
-        colors={colors}
-        topInset={safeTop}
-        bottomInset={surfaceBottom}
-        queuedCount={queuedCount}
-        offline={isOffline}
-        onRequest={() => {}}
-        onSettings={() => {}}
-      />
-    );
-  }
+  // The scan flow runs full-bleed, so the tab bar hides for the whole of it. It is a
+  // native tab bar owned by `components/app-tabs.tsx` and not reachable from a screen:
+  // a caller wanting it hidden has to do it there, on the route, not here.
+  const screen = renderPhase();
 
-  if (permission.status === PermissionStatus.UNDETERMINED) {
-    return (
-      <PermissionScreen
-        mode="undetermined"
-        colors={colors}
-        topInset={safeTop}
-        bottomInset={surfaceBottom}
-        queuedCount={queuedCount}
-        offline={isOffline}
-        onRequest={() => void requestPermission()}
-        onSettings={() => {}}
-      />
-    );
-  }
-
-  if (!permission.granted) {
-    return (
-      <PermissionScreen
-        mode="denied"
-        colors={colors}
-        topInset={safeTop}
-        bottomInset={surfaceBottom}
-        queuedCount={queuedCount}
-        offline={isOffline}
-        onRequest={() => {}}
-        onSettings={() => void Linking.openSettings()}
-      />
-    );
-  }
-
-  if (phase === 'camera') {
-    const shutterBusy = capturing || !cameraReady;
-    const shutterCore = shutterBusy
-      ? CAMERA_DISABLED
-      : needsBaseShot
-        ? CAMERA_ACCENT
-        : CAMERA_INK;
-
-    return (
-      <View style={[styles.screen, { backgroundColor: CAMERA_DECK }]}>
-        <CameraView
-          accessible={false}
-          facing="back"
-          onCameraReady={() => setCameraReady(true)}
-          onMountError={({ message }) => setError(message)}
-          ref={cameraRef}
-          style={StyleSheet.absoluteFill}
+  function renderPhase() {
+    if (phase === 'browse') {
+      return (
+        <BrowseScreen
+          rows={browseRows}
+          total={catalog.length}
+          query={catalogQuery}
+          onQuery={setCatalogQuery}
+          shapes={shapes}
+          shapeFilter={shapeFilter}
+          onShapeFilter={setShapeFilter}
+          banner={banner}
+          problem={error}
+          offline={isOffline}
+          unknownName={unknownPatternName}
+          onUnknownName={setUnknownPatternName}
+          onSubmitUnknown={() => void submitUnknown()}
+          onBack={resetScan}
+          onPick={(row) => void confirmRow(row, 'have')}
         />
-        <ScrollView
-          contentContainerStyle={styles.cameraOverlayContent}
-          showsVerticalScrollIndicator={false}
-          style={StyleSheet.absoluteFill}>
-          <View pointerEvents="box-none" style={[styles.cameraTop, { paddingTop: safeTop }]}>
-            <QueueStrip count={queuedCount} colors={colors} offline={isOffline} camera />
-            <View style={[styles.cameraPrompt, { backgroundColor: CAMERA_SCRIM, borderColor: CAMERA_RULE }]}>
-              <Text style={[styles.label, { color: needsBaseShot ? CAMERA_ACCENT : CAMERA_INK_DIM }]}>
-                {needsBaseShot ? 'Shot 2 of 2 · underside' : 'Shot 1 of 2 · pattern'}
-              </Text>
-              <Text accessibilityRole="header" style={[styles.title, { color: CAMERA_INK }]}>
-                {needsBaseShot ? 'Now flip it over' : 'Start with the pattern'}
-              </Text>
-              <Text style={[styles.callout, { color: CAMERA_INK }]}>
-                {needsBaseShot
-                  ? 'Center the embossed model number on the underside. It is usually the strongest identification clue.'
-                  : 'Fill the frame with the printed pattern and keep glare away from the design.'}
-              </Text>
-            </View>
-          </View>
+      );
+    }
 
-          {/* The aiming square. It turns accent the moment the second shot is the one being asked for. */}
-          <View pointerEvents="none" style={styles.reticleWrap}>
-            <View style={styles.reticle}>
-              {['topLeft', 'topRight', 'bottomLeft', 'bottomRight'].map((corner) => (
-                <View
-                  key={corner}
-                  style={[
-                    styles.reticleCorner,
-                    styles[corner as 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight'],
-                    { borderColor: needsBaseShot ? CAMERA_ACCENT : CAMERA_INK },
-                  ]}
-                />
-              ))}
-            </View>
-          </View>
-
-          <View
-            pointerEvents="box-none"
-            style={[
-              styles.cameraDeck,
-              Elevation.sheet,
-              { backgroundColor: CAMERA_DECK, borderTopColor: CAMERA_RULE, paddingBottom: safeBottom },
-            ]}>
-            {notice ? (
-              <View accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.cameraNotice}>
-                <Text style={[styles.callout, { color: CAMERA_INK }]}>{notice}</Text>
-              </View>
-            ) : null}
-            {error ? (
-              <View accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.cameraNotice}>
-                <Text style={[styles.callout, { color: Colors.dark.danger }]}>{error}</Text>
-              </View>
-            ) : null}
-
-            <View style={styles.shutterRow}>
-              <View style={styles.shutterSlot}>
-                {photoUris[0] ? (
-                  <Rise zoom style={styles.thumbWrap}>
-                    <Image
-                      accessibilityLabel="Pattern photo captured"
-                      accessibilityRole="image"
-                      source={{ uri: photoUris[0] }}
-                      style={[styles.thumb, { borderColor: CAMERA_ACCENT }]}
-                    />
-                    <Text style={[styles.label, { color: CAMERA_ACCENT }]}>kept</Text>
-                  </Rise>
-                ) : null}
-              </View>
-
-              <Pressable
-                accessibilityLabel={needsBaseShot ? 'Capture base model number' : 'Capture pattern'}
-                accessibilityRole="button"
-                accessibilityState={{ disabled: shutterBusy }}
-                disabled={shutterBusy}
-                onPress={() => void captureFrame()}
-                style={({ pressed }) => [
-                  styles.shutter,
-                  {
-                    borderColor: shutterBusy ? CAMERA_DISABLED : CAMERA_INK,
-                    transform: [{ scale: pressed ? Motion.pressScale : 1 }],
-                  },
-                ]}>
-                <View style={[styles.shutterCore, { backgroundColor: shutterCore }]} />
-              </Pressable>
-
-              <View style={styles.shutterSlot}>
-                {needsBaseShot ? (
-                  <Pressable
-                    accessibilityHint="Identifies from the pattern photo alone"
-                    accessibilityLabel="Skip the base shot"
-                    accessibilityRole="button"
-                    onPress={() => void identifyBurst(photoUris, false)}
-                    style={({ pressed }) => [
-                      styles.cameraGhostButton,
-                      {
-                        backgroundColor: pressed ? CAMERA_RULE : 'transparent',
-                        borderColor: CAMERA_INK_DIM,
-                      },
-                    ]}>
-                    <Text style={[styles.buttonLabel, { color: CAMERA_INK }]}>Skip</Text>
-                  </Pressable>
-                ) : null}
-              </View>
-            </View>
-
-            <Text accessibilityLiveRegion="polite" style={[styles.label, { color: CAMERA_INK_DIM }]}>
-              {capturing ? 'Saving frame…' : needsBaseShot ? 'Capture the underside' : 'Capture the pattern'}
-            </Text>
-          </View>
-        </ScrollView>
-      </View>
-    );
-  }
-
-  if (phase === 'identifying' || phase === 'confirming') {
-    return (
-      <Surface
-        colors={colors}
-        topInset={safeTop}
-        bottomInset={surfaceBottom}
-        queuedCount={queuedCount}
-        offline={isOffline}>
-        <ScreenHeader
-          eyebrow={phase === 'identifying' ? 'in progress' : 'confirming'}
-          title={phase === 'identifying' ? 'Identifying your piece' : 'Saving your choice'}
-          colors={colors}
-        />
-        {stage ? (
-          <IdentifyLedger stage={stage} hasBaseShot={photoUris.length > 1} colors={colors} />
-        ) : (
-          <View
-            accessibilityLabel={progressMessage}
-            accessibilityLiveRegion="polite"
-            accessibilityRole="progressbar"
-            style={styles.progressRow}>
-            <ActivityIndicator color={colors.accent} />
-            <Text style={[styles.callout, { color: colors.textSecondary }]}>{progressMessage}</Text>
-          </View>
-        )}
-        {phase === 'identifying' ? <FrameStrip photoUris={photoUris} colors={colors} /> : null}
-      </Surface>
-    );
-  }
-
-  if (phase === 'results') {
-    const candidates = guesses
-      .slice(0, 3)
-      .map((guess) => ({ guess, row: guessRows.find((row) => row.slug === guess.itemSlug) }))
-      .filter((candidate): candidate is { guess: ScanGuess; row: CatalogRow } => Boolean(candidate.row));
-    return (
-      <Surface
-        colors={colors}
-        topInset={safeTop}
-        bottomInset={surfaceBottom}
-        queuedCount={queuedCount}
-        offline={isOffline}>
-        <ScreenHeader
-          eyebrow={`${candidates.length} ${candidates.length === 1 ? 'match' : 'matches'}`}
-          title="Best matches"
-          blurb="Tap the exact pattern and form to confirm it."
-          colors={colors}
-        />
-        <Notice message={notice} colors={colors} />
-        <Notice message={error} colors={colors} error />
-        <View style={styles.stack}>
-          {candidates.map(({ guess, row }, index) => (
-            <Rise key={row.slug} delay={index * (Motion.press / 2)}>
-              <CandidateEntry
-                guess={guess}
-                row={row}
-                index={index}
-                lead={index === 0}
-                colors={colors}
-                onPress={() => void confirmItem(row.slug, row.patternName, `${row.shape} · ${row.modelNo}`)}
-              />
-            </Rise>
-          ))}
-        </View>
-        <Divider />
-        <ActionButton
-          label="None of these"
-          hint="Opens the saved catalog so you can find the piece yourself"
-          onPress={() => {
-            setCatalogQuery('');
-            setError(null);
-            setPhase('browse');
+    if (phase === 'saved' && ledger) {
+      return (
+        <FiledScreen
+          headline={filedHeadline}
+          ledger={ledger}
+          onSeeFile={() => {
+            resetScan();
+            router.push('/collection');
           }}
-          colors={colors}
-          secondary
+          onScanAnother={resetScan}
         />
-      </Surface>
-    );
-  }
+      );
+    }
 
-  if (phase === 'browse') {
-    return (
-      <Surface
-        colors={colors}
-        topInset={safeTop}
-        bottomInset={surfaceBottom}
-        queuedCount={queuedCount}
-        offline={isOffline}>
-        <ScreenHeader
-          eyebrow="saved catalog"
-          title="Find the right piece"
-          blurb="The saved catalog works without a connection. Search by pattern, shape, or model number."
-          colors={colors}
-        />
-        <Notice message={notice} colors={colors} />
-        <Notice message={error} colors={colors} error />
-        <TextInput
-          accessibilityLabel="Search the saved catalog"
-          accessibilityRole="search"
-          autoCapitalize="words"
-          onChangeText={setCatalogQuery}
-          placeholder="Butterprint, casserole, 444…"
-          placeholderTextColor={colors.textTertiary}
-          returnKeyType="search"
-          style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
-          value={catalogQuery}
-        />
-        {catalogLoading ? (
-          <View
-            accessibilityLabel="Searching the saved catalog"
-            accessibilityLiveRegion="polite"
-            accessibilityRole="progressbar"
-            style={styles.progressRow}>
-            <ActivityIndicator color={colors.accent} />
-            <Text style={[styles.callout, { color: colors.textSecondary }]}>Searching the saved catalog…</Text>
-          </View>
-        ) : (
-          <View style={styles.stack}>
-            <Label tone="tertiary">
-              {catalogRows.length} {catalogRows.length === 1 ? 'entry' : 'entries'}
-            </Label>
-            {catalogRows.map((row) => (
-              <CatalogEntry
-                key={row.slug}
-                row={row}
-                colors={colors}
-                onPress={() => void confirmItem(row.slug, row.patternName, `${row.shape} · ${row.modelNo}`)}
-              />
-            ))}
-            {catalogRows.length === 0 ? (
-              <Text style={[styles.callout, { color: colors.textSecondary }]}>No saved catalog items match that search.</Text>
-            ) : null}
-          </View>
-        )}
+    if (phase === 'results' || phase === 'owned') {
+      const candidates = guesses
+        .slice(0, 3)
+        .map((guess) => ({ guess, row: guessRows.find((row) => row.slug === guess.itemSlug) }))
+        .filter((entry): entry is { guess: ScanGuess; row: CatalogRow } => Boolean(entry.row));
+      const selected = candidates.find((entry) => entry.row.slug === selectedSlug)?.row ?? null;
 
-        <Divider />
-
-        <View style={[styles.slab, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Label tone="tertiary">not catalogued</Label>
-          <Text accessibilityRole="header" style={[styles.headline, { color: colors.text }]}>
-            Name it yourself
-          </Text>
-          <Text style={[styles.callout, { color: colors.textSecondary }]}>
-            Name it in your own words. A connection is required to create the catalog entry.
-          </Text>
-          <TextInput
-            accessibilityLabel="Name the unknown pattern"
-            accessibilityRole="text"
-            autoCapitalize="words"
-            onChangeText={setUnknownPatternName}
-            placeholder="Pattern name"
-            placeholderTextColor={colors.textTertiary}
-            returnKeyType="done"
-            style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
-            value={unknownPatternName}
+      return (
+        <>
+          <ResultScreen
+            photoUris={photoUris}
+            candidates={candidates}
+            selectedSlug={selectedSlug}
+            banner={banner}
+            problem={error}
+            busy={phase === 'owned'}
+            onSelect={setSelectedSlug}
+            onConfirm={() => selected && void confirmRow(selected, 'have')}
+            onWant={() => selected && void confirmRow(selected, 'want')}
+            onNone={openBrowse}
+            onRetake={resetScan}
           />
-          <ActionButton
-            label={isOffline ? 'Connect to submit new pattern' : 'Submit new pattern'}
-            onPress={() => void submitUnknown()}
-            colors={colors}
-            disabled={isOffline}
-          />
-        </View>
-      </Surface>
-    );
-  }
-
-  if (phase === 'ownership') {
-    return (
-      <Surface
-        colors={colors}
-        topInset={safeTop}
-        bottomInset={surfaceBottom}
-        queuedCount={queuedCount}
-        offline={isOffline}>
-        <ScreenHeader eyebrow="confirmed" title={confirmedPatternName} colors={colors} />
-        <Text style={[styles.label, { color: colors.textSecondary }]}>{confirmedForm}</Text>
-        <Notice message={notice} colors={colors} />
-        <Notice message={error} colors={colors} error />
-        <View style={[styles.slab, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text accessibilityRole="header" style={[styles.headline, { color: colors.text }]}>
-            Add it to your collection
-          </Text>
-          <View accessibilityRole="radiogroup" style={styles.toggleRow}>
-            {(['have', 'want'] as const).map((status) => {
-              const selected = ownershipStatus === status;
-              return (
-                <Pressable
-                  accessibilityLabel={status === 'have' ? 'Mark as owned' : 'Mark as wanted'}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: selected }}
-                  key={status}
-                  onPress={() => setOwnershipStatus(status)}
-                  style={({ pressed }) => [
-                    styles.toggleButton,
-                    {
-                      backgroundColor: pressed ? colors.backgroundSelected : colors.background,
-                      borderColor: selected ? colors.accent : colors.border,
-                    },
-                  ]}>
-                  {/* Selection carries a filled mark as well as a hue, so it survives color blindness. */}
-                  {selected ? (
-                    <View style={[styles.selectedMark, { backgroundColor: colors.accent }]} />
-                  ) : null}
-                  <Text style={[styles.buttonLabel, { color: selected ? colors.accent : colors.textSecondary }]}>
-                    {status === 'have' ? 'Have' : 'Want'}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          {ownershipStatus === 'have' ? (
-            <View style={styles.quantityRow}>
-              <Label tone="secondary">quantity</Label>
-              <View style={styles.stepper}>
-                <Pressable
-                  accessibilityLabel="Decrease quantity"
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: quantity === 1 }}
-                  disabled={quantity === 1}
-                  onPress={() => setQuantity((current) => Math.max(1, current - 1))}
-                  style={({ pressed }) => [
-                    styles.stepperButton,
-                    {
-                      backgroundColor: pressed ? colors.backgroundSelected : colors.background,
-                      borderColor: colors.border,
-                    },
-                  ]}>
-                  <Text style={[styles.numeral, { color: quantity === 1 ? colors.textTertiary : colors.text }]}>−</Text>
-                </Pressable>
-                <Text
-                  accessibilityLabel={`Quantity ${quantity}`}
-                  style={[styles.numeralLarge, styles.quantityValue, { color: colors.text }]}>
-                  {quantity}
-                </Text>
-                <Pressable
-                  accessibilityLabel="Increase quantity"
-                  accessibilityRole="button"
-                  onPress={() => setQuantity((current) => current + 1)}
-                  style={({ pressed }) => [
-                    styles.stepperButton,
-                    {
-                      backgroundColor: pressed ? colors.backgroundSelected : colors.background,
-                      borderColor: colors.border,
-                    },
-                  ]}>
-                  <Text style={[styles.numeral, { color: colors.text }]}>+</Text>
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <Text style={[styles.callout, { color: colors.textSecondary }]}>Want-list items do not need a quantity.</Text>
+          {phase === 'owned' && owned && (
+            <AlreadyOwnedSheet
+              row={owned.row}
+              quantity={owned.quantity}
+              since={owned.since}
+              addLabel={
+                ordinalWord(owned.quantity + 1)
+                  ? `Add a ${ordinalWord(owned.quantity + 1)}`
+                  : 'Add another'
+              }
+              onAdd={() => void fileItem(owned.row, 'have', owned.quantity + 1)}
+              onOpen={() => {
+                const slug = owned.row.slug;
+                resetScan();
+                router.push({ pathname: '/item/[slug]', params: { slug } });
+              }}
+              onDismiss={() => {
+                setOwned(null);
+                setPhase('results');
+              }}
+            />
           )}
-          <ActionButton
-            label={savingOwnership ? 'Saving to collection…' : 'Save to collection'}
-            onPress={() => void saveOwnership()}
-            colors={colors}
-            disabled={savingOwnership}
-          />
-        </View>
-      </Surface>
+        </>
+      );
+    }
+
+    if (phase === 'identifying' || phase === 'confirming') {
+      return (
+        <IdentifyingScreen title={waitCopy.title} caption={waitCopy.caption} banner={banner} />
+      );
+    }
+
+    if (!permission) {
+      return <PermissionScreen mode="checking" onRequest={() => {}} onBrowse={openBrowse} />;
+    }
+    if (permission.status === PermissionStatus.UNDETERMINED) {
+      return (
+        <PermissionScreen
+          mode="undetermined"
+          onRequest={() => void requestPermission()}
+          onBrowse={openBrowse}
+        />
+      );
+    }
+    if (!permission.granted) {
+      return (
+        <PermissionScreen
+          mode="denied"
+          onRequest={() => void Linking.openSettings()}
+          onBrowse={openBrowse}
+        />
+      );
+    }
+
+    return (
+      <ViewfinderScreen
+        step={needsBaseShot ? 2 : 1}
+        banner={banner}
+        problem={error}
+        busy={capturing || !cameraReady}
+        cameraRef={cameraRef}
+        onCameraReady={() => setCameraReady(true)}
+        onMountError={setError}
+        onCapture={() => void captureFrame()}
+        onBack={() => setPhotoUris([])}
+        onSkip={() => void identifyBurst(photoUris, false)}
+      />
     );
   }
 
   return (
-    <Surface
-      colors={colors}
-      topInset={safeTop}
-      bottomInset={surfaceBottom}
-      queuedCount={queuedCount}
-      offline={isOffline}>
-      <ScreenHeader eyebrow="saved" title={confirmedPatternName} colors={colors} />
-      <Text style={[styles.body, { color: colors.textSecondary }]}>
-        Now on your {ownershipStatus === 'have' ? 'shelf' : 'want list'}.
-      </Text>
-      <ActionButton label="Scan another piece" onPress={resetScan} colors={colors} />
-    </Surface>
+    <View style={styles.root}>
+      {screen}
+      <ShutterFlash visible={flashing} />
+    </View>
   );
 }
 
+function formOf(row: CatalogRow): string {
+  return `${row.shape} ${row.modelNo}`;
+}
+
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  surfaceContent: {
-    alignSelf: 'center',
-    gap: Spacing.three,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.three,
-    width: '100%',
-  },
-
-  // --- type roles. Display face for titles, labels and numerals; system face for prose.
-  display: { ...Type.display },
-  title: { ...Type.title },
-  headline: { ...Type.headline },
-  label: { ...Type.label },
-  numeral: { ...Type.numeral },
-  numeralLarge: { ...Type.numeralLarge },
-  body: { ...Type.body },
-  callout: { ...Type.callout },
-  caption: { ...Type.caption },
-  buttonLabel: { ...Type.label, textAlign: 'center' },
-
-  header: { gap: Spacing.two },
-
-  actionButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: HitTarget,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  /** The single ceremonial fill. Pill is reserved for it. */
-  solidButton: { borderRadius: Radius.pill },
-  ghostButton: { borderRadius: Radius.sm, borderWidth: Rule },
-
-  queueStrip: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    borderRadius: Radius.sm,
-    borderWidth: Rule,
-    flexDirection: 'row',
-    gap: Spacing.two,
-    minHeight: HitTarget,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  queueCopy: { gap: Spacing.half },
-
-  framesRow: { flexDirection: 'row', gap: Spacing.three },
-  frameColumn: { gap: Spacing.one },
-  frameImage: {
-    borderRadius: Radius.xs,
-    borderWidth: Rule,
-    height: Spacing.six,
-    width: Spacing.six,
-  },
-  emptyFrame: { alignItems: 'center', justifyContent: 'center' },
-
-  notice: {
-    borderRadius: Radius.sm,
-    borderWidth: Rule,
-    gap: Spacing.one,
-    padding: Spacing.three,
-  },
-
-  plateRow: { flexDirection: 'row', gap: Spacing.three },
-  plateColumn: { flex: 1, gap: Spacing.two },
-  plate: {
-    alignItems: 'center',
-    aspectRatio: 1,
-    borderRadius: Radius.sm,
-    borderWidth: Rule,
-    justifyContent: 'center',
-  },
-
-  progressRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: Spacing.two,
-    minHeight: HitTarget,
-  },
-
-  ledger: { gap: Spacing.three },
-  ledgerRow: { flexDirection: 'row', gap: Spacing.three },
-  ledgerMarker: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: Spacing.four,
-  },
-  ledgerTick: {
-    borderRadius: Radius.xs,
-    borderWidth: Rule,
-    height: Spacing.two,
-    width: Spacing.two,
-  },
-  ledgerCopy: { flex: 1, gap: Spacing.half },
-
-  confidenceBlock: { gap: Spacing.half, paddingTop: Spacing.half },
-  confidenceTrack: {
-    borderRadius: Radius.xs,
-    height: Spacing.half,
-    overflow: 'hidden',
-    width: '100%',
-  },
-  confidenceFill: { height: '100%' },
-
-  stack: { gap: Spacing.two },
-
-  entry: {
-    borderWidth: Rule,
-    minHeight: HitTarget,
-  },
-  leadEntry: {
-    borderRadius: Radius.lg,
-    gap: Spacing.two,
-    padding: Spacing.three,
-  },
-  rowEntry: {
-    alignItems: 'flex-start',
-    borderRadius: Radius.sm,
-    flexDirection: 'row',
-    gap: Spacing.three,
-    padding: Spacing.two,
-  },
-  leadRank: { position: 'absolute', right: Spacing.three, top: Spacing.three, zIndex: 1 },
-  rowRank: { minWidth: Spacing.four },
-  leadTile: { height: LEAD_TILE, width: '100%' },
-  indexTile: { height: INDEX_TILE, width: INDEX_TILE },
-  entryCopy: { flex: 1, gap: Spacing.one },
-
-  input: {
-    ...Type.body,
-    borderRadius: Radius.sm,
-    borderWidth: Rule,
-    minHeight: HitTarget,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-
-  slab: {
-    borderRadius: Radius.lg,
-    borderWidth: Rule,
-    gap: Spacing.three,
-    padding: Spacing.three,
-  },
-
-  toggleRow: { flexDirection: 'row', gap: Spacing.two },
-  toggleButton: {
-    alignItems: 'center',
-    borderRadius: Radius.sm,
-    borderWidth: Rule,
-    flex: 1,
-    flexDirection: 'row',
-    gap: Spacing.two,
-    justifyContent: 'center',
-    minHeight: HitTarget,
-    paddingHorizontal: Spacing.three,
-  },
-  selectedMark: {
-    borderRadius: Radius.xs,
-    height: Spacing.two,
-    width: Spacing.two,
-  },
-  quantityRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  stepper: { alignItems: 'center', flexDirection: 'row', gap: Spacing.two },
-  stepperButton: {
-    alignItems: 'center',
-    borderRadius: Radius.sm,
-    borderWidth: Rule,
-    height: HitTarget,
-    justifyContent: 'center',
-    width: HitTarget,
-  },
-  quantityValue: { minWidth: HitTarget, textAlign: 'center' },
-
-  // --- the instrument. Bold on purpose; the archive resumes after the shutter.
-  cameraOverlayContent: {
-    flexGrow: 1,
-    justifyContent: 'space-between',
-  },
-  cameraTop: {
-    gap: Spacing.two,
-    paddingHorizontal: Spacing.three,
-  },
-  cameraPrompt: {
-    alignSelf: 'stretch',
-    borderRadius: Radius.sm,
-    borderWidth: Rule,
-    gap: Spacing.two,
-    padding: Spacing.three,
-  },
-  reticleWrap: {
-    alignItems: 'center',
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingVertical: Spacing.four,
-  },
-  reticle: {
-    aspectRatio: 1,
-    maxWidth: MaxContentWidth / 2,
-    width: '66%',
-  },
-  reticleCorner: {
-    height: Spacing.four,
-    position: 'absolute',
-    width: Spacing.four,
-  },
-  topLeft: { borderLeftWidth: Spacing.half, borderTopWidth: Spacing.half, left: 0, top: 0 },
-  topRight: { borderRightWidth: Spacing.half, borderTopWidth: Spacing.half, right: 0, top: 0 },
-  bottomLeft: { borderBottomWidth: Spacing.half, borderLeftWidth: Spacing.half, bottom: 0, left: 0 },
-  bottomRight: { borderBottomWidth: Spacing.half, borderRightWidth: Spacing.half, bottom: 0, right: 0 },
-  cameraDeck: {
-    alignItems: 'center',
-    borderTopWidth: Rule,
-    gap: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.three,
-  },
-  cameraNotice: {
-    alignSelf: 'stretch',
-    paddingBottom: Spacing.two,
-  },
-  shutterRow: {
-    alignItems: 'center',
-    alignSelf: 'stretch',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  shutterSlot: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: HitTarget,
-    width: SHUTTER_SLOT,
-  },
-  shutter: {
-    alignItems: 'center',
-    borderRadius: Radius.pill,
-    borderWidth: Spacing.one,
-    height: SHUTTER,
-    justifyContent: 'center',
-    width: SHUTTER,
-  },
-  shutterCore: {
-    borderRadius: Radius.pill,
-    height: SHUTTER_CORE,
-    width: SHUTTER_CORE,
-  },
-  thumbWrap: { alignItems: 'center', gap: Spacing.half },
-  thumb: {
-    borderRadius: Radius.xs,
-    borderWidth: Rule,
-    height: THUMB,
-    width: THUMB,
-  },
-  cameraGhostButton: {
-    alignItems: 'center',
-    borderRadius: Radius.sm,
-    borderWidth: Rule,
-    justifyContent: 'center',
-    minHeight: HitTarget,
-    paddingHorizontal: Spacing.three,
-  },
+  root: { flex: 1 },
 });

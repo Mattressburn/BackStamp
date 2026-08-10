@@ -8,7 +8,7 @@ import { neutralSwatch, parseColorway } from './colorways.js';
 /**
  * The parser stands between the catalog's prose and 379 items' worth of on-screen
  * color, so the thing worth testing is that word order actually decides figure from
- * ground — "white on pink" and "pink and white" are different pieces.
+ * ground, "white on pink" and "pink and white" are different pieces.
  */
 
 test('"X on Y" reads Y as the glass and X as the print', () => {

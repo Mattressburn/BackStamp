@@ -5,7 +5,7 @@ import { StyleSheet, useColorScheme, View } from 'react-native';
 import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { Colors, Motion } from '@/constants/theme';
+import { Motion, SplashGround } from '@/constants/theme';
 
 /**
  * The launch overlay hands off from the native splash screen, so its ground has to
@@ -20,7 +20,7 @@ const DURATION = 520;
 
 export function AnimatedSplashOverlay() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const colors = Colors[scheme];
+  const ground = SplashGround[scheme];
   const [animate, setAnimate] = useState(false);
   const [visible, setVisible] = useState(true);
 
@@ -53,7 +53,7 @@ export function AnimatedSplashOverlay() {
           scheduleOnRN(setVisible, false);
         }
       })}
-      style={[styles.splashOverlay, { backgroundColor: colors.background }]}>
+      style={[styles.splashOverlay, { backgroundColor: ground }]}>
       {mark}
     </Animated.View>
   ) : (
@@ -63,7 +63,7 @@ export function AnimatedSplashOverlay() {
           setAnimate(true);
         });
       }}
-      style={[styles.splashOverlay, { backgroundColor: colors.background }]}>
+      style={[styles.splashOverlay, { backgroundColor: ground }]}>
       {mark}
     </View>
   );

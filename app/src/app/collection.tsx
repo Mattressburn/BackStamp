@@ -1,15 +1,15 @@
 /**
- * The collection, drawn as a specimen index.
+ * The collection, drawn as a card file.
  *
- * The reference is a typographic archive on vellum: a plate on top, its metadata
- * stacked directly underneath, hairline rules doing the separating, and no color in
- * the chrome. A shelf of Pyrex is exactly that — 379 pattern x form combinations, each
- * one an entry — so the grid is the honest shape for it, and the old list of tall
- * rounded cards was not.
+ * The reference is a 1970s index drawer: an avocado band across the top, a masthead
+ * that says what is in the drawer and what it is worth, three file tabs, and a run of
+ * index cards under whichever tab is out. A row is one card. Separation is the printed
+ * offset under it, never a rule and never a blur.
  *
- * Ceremony budget for this screen: one solid accent fill, and it belongs to the empty
- * state's primary action. Everything else that needs emphasis gets a rule, a tint, or
- * the condensed face.
+ * Three tabs, one row component. Have and Want read the local collection; All reads the
+ * cached catalog, so most All rows have no price because none was ever requested for
+ * them, that is a different state from "we looked and found nothing", and the row says
+ * so. The same three-way split covers prices still loading and a failed price batch.
  */
 
 import { router, useFocusEffect } from 'expo-router';
@@ -29,53 +29,91 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fetchItem, fetchPrices, getToken } from '@/api';
 import {
   BottomTabInset,
-  Elevation,
+  Fonts,
   HitTarget,
   MaxContentWidth,
   Motion,
+  OnAccent,
   Radius,
-  Rule,
   Spacing,
   Type,
 } from '@/constants/theme';
-import { getCollection, searchCatalog, setOwnership, type CatalogRow } from '@/db';
+import { getCollection, getSettings, searchCatalog, setOwnership, type CatalogRow } from '@/db';
 import { calculateCollectionValues } from '@/features/collection/collection-total';
 import {
-  Divider,
+  Card,
+  CircleButton,
+  FileTabs,
+  HeaderBar,
   Label,
+  PressButton,
+  PriceFigure,
   priceSourceLabel,
-  RarityBadge,
   SpecimenTile,
   useColors,
+  useElevation,
 } from '@/features/collection/collection-ui';
-import type { ItemDetail, OwnershipStatus, PriceQuote, UserItem } from '@shared/types';
+import type { ItemDetail, PriceQuote, UserItem } from '@shared/types';
 
-// CONTRACT: `Label` in collection-ui types its `style` prop as StyleProp<ViewStyle> but
-// spreads it onto a <Text> (that mismatch is the standing tsc error on that file), and
-// its `tone` union has no entry for `colors.want`. Until both are fixed this file uses
-// `Type.label` on a plain <Text> wherever it needs a text color outside Label's tones.
+// CONTRACT: `fetchPrices(slugs)` takes no price-source argument, so the `showSoldComps`
+// setting cannot be honoured from this screen, the source is whatever the batch
+// returns. Honouring it needs `/price/batch` to accept a preferred source and
+// `fetchPrices` to pass it through. This screen already labels whatever it gets.
 
-const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' });
+// CONTRACT: `user_items` stores `updated_at` only. See NEW_WINDOW_MS below, without a
+// `created_at` column, "newly filed" cannot be told apart from "recently edited".
+
+// CONTRACT: `PriceFigure` has one size for a row (`Type.numeral` over a caption note).
+// The mock's row price is a single 12px line, so rows here run two lines taller than the
+// mock. A compact variant on `PriceFigure` would close it; overriding the type locally
+// would mean rendering a price without its source, which is the one thing it prevents.
+
+const money = new Intl.NumberFormat(undefined, {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+});
 
 /**
- * Four slots is the first two grid rows; past that every tile lands together. The step
- * is derived so the last tile finishes at `enter + 3 steps` = 220ms, inside `settle`.
+ * Four slots is the first screenful of rows; past that every row lands together. The
+ * step is derived so the last one finishes at `enter + 3 steps` = 220ms, inside `settle`.
  */
 const STAGGER_SLOTS = 4;
 const STAGGER_STEP = (Motion.settle - Motion.enter) / STAGGER_SLOTS;
 
+/**
+ * ponytail: a row counts as newly filed if it was written in the last ten minutes —
+ * long enough to still be there when the user walks back from the scan that filed it,
+ * short enough that it is gone next session. Ceiling: `setOwnership` bumps `updated_at`
+ * on a quantity change too, so a piece whose count you just raised re-tags itself as NEW
+ * on the next refetch. Fixing that needs a `created_at` column, not a longer comment.
+ */
+const NEW_WINDOW_MS = 10 * 60 * 1000;
+
+const TILE = 66;
+const FAB_SIZE = 64;
+/** The mock puts the FAB 96 above the bottom against a 78 tab bar. */
+const FAB_GAP = Spacing.three + Spacing.half;
+
 type Palette = ReturnType<typeof useColors>;
+type FileTab = 'have' | 'want' | 'all';
+
+/** Whether a price was asked for at all, and how that went. Rows must not conflate them. */
+type PriceState = 'ready' | 'pending' | 'error' | 'unasked';
+
+type Row = { slug: string; entry: UserItem | undefined };
 
 export default function CollectionScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
-  const [mode, setMode] = useState<OwnershipStatus>('have');
+  const [tab, setTab] = useState<FileTab>('have');
   const [items, setItems] = useState<UserItem[]>([]);
   const [catalog, setCatalog] = useState<Map<string, CatalogRow>>(new Map());
   const [details, setDetails] = useState<Map<string, ItemDetail>>(new Map());
   const [quotes, setQuotes] = useState<PriceQuote[]>([]);
   const [pricesLoaded, setPricesLoaded] = useState(false);
+  const [hideValues, setHideValues] = useState(false);
   const [photoToken, setPhotoToken] = useState<string | null>(null);
   const [priceError, setPriceError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -89,14 +127,16 @@ export default function CollectionScreen() {
     setLoadError(null);
 
     try {
-      const [localItems, catalogRows, token] = await Promise.all([
+      const [localItems, catalogRows, token, settings] = await Promise.all([
         getCollection(),
         searchCatalog('', Number.MAX_SAFE_INTEGER),
         getToken(),
+        getSettings(),
       ]);
       setItems(localItems);
       setCatalog(new Map(catalogRows.map((row) => [row.slug, row])));
       setPhotoToken(token);
+      setHideValues(settings.hideValuesOnShelf);
       setLoading(false);
       setQuotes([]);
       setPricesLoaded(false);
@@ -143,23 +183,43 @@ export default function CollectionScreen() {
   const values = useMemo(() => calculateCollectionValues(items, quotes), [items, quotes]);
   const haveTotal = values.reduce((total, value) => total + value.haveTotal, 0);
   const wantTotal = values.reduce((total, value) => total + value.wantTotal, 0);
-  const quotedSlugs = useMemo(() => new Set(quotes.map((quote) => quote.itemSlug)), [quotes]);
+  const quoteBySlug = useMemo(
+    () => new Map(quotes.map((quote) => [quote.itemSlug, quote])),
+    [quotes],
+  );
   const unpricedCount = pricesLoaded
-    ? items.filter((item) => !quotedSlugs.has(item.itemSlug)).length
+    ? items.filter((item) => !quoteBySlug.has(item.itemSlug)).length
     : 0;
   const haveHasPrice = pricesLoaded && items.some(
-    (item) => item.status === 'have' && quotedSlugs.has(item.itemSlug),
+    (item) => item.status === 'have' && quoteBySlug.has(item.itemSlug),
   );
   const wantHasPrice = pricesLoaded && items.some(
-    (item) => item.status === 'want' && quotedSlugs.has(item.itemSlug),
+    (item) => item.status === 'want' && quoteBySlug.has(item.itemSlug),
   );
-  const visibleItems = items.filter((item) => item.status === mode);
+
   const counts = {
     have: items.filter((item) => item.status === 'have').length,
     want: items.filter((item) => item.status === 'want').length,
+    all: catalog.size,
   };
 
+  const rows: Row[] = useMemo(() => {
+    if (tab !== 'all') {
+      return items
+        .filter((item) => item.status === tab)
+        .map((item) => ({ slug: item.itemSlug, entry: item }));
+    }
+    const byslug = new Map(items.map((item) => [item.itemSlug, item]));
+    // The Map keeps the catalog's own order, which is pattern name then model number.
+    return [...catalog.keys()].map((slug) => ({ slug, entry: byslug.get(slug) }));
+  }, [tab, items, catalog]);
+
+  const priceState: PriceState = pricesLoaded ? 'ready' : priceError ? 'error' : 'pending';
+  /** Nothing filed at all, sitting on the tab it opens to: the first-launch screen. */
+  const firstLaunch = items.length === 0 && tab === 'have';
+
   async function changeQuantity(item: UserItem, delta: number) {
+    if (savingSlug !== null) return;
     const quantity = Math.max(1, item.quantity + delta);
     if (quantity === item.quantity) return;
     setSavingSlug(item.itemSlug);
@@ -177,23 +237,31 @@ export default function CollectionScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator
-          color={colors.accent}
-          accessibilityLabel="Loading collection"
-          accessibilityRole="progressbar"
-        />
+      <View style={[styles.screen, { backgroundColor: colors.background }]}>
+        <View style={{ paddingTop: insets.top, backgroundColor: colors.headerBar }}>
+          <HeaderBar wordmark />
+        </View>
+        <View style={styles.centered}>
+          <ActivityIndicator
+            color={colors.accent}
+            accessibilityLabel="Loading collection"
+            accessibilityRole="progressbar"
+          />
+        </View>
       </View>
     );
   }
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
+      {/* HeaderBar has no safe-area of its own, so the band is extended into it here. */}
+      <View style={{ paddingTop: insets.top, backgroundColor: colors.headerBar }}>
+        <HeaderBar wordmark />
+      </View>
+
       <FlatList
-        data={visibleItems}
-        keyExtractor={(item) => item.itemSlug}
-        numColumns={2}
-        columnWrapperStyle={styles.column}
+        data={rows}
+        keyExtractor={(row) => row.slug}
         refreshControl={(
           <RefreshControl
             refreshing={refreshing}
@@ -204,251 +272,243 @@ export default function CollectionScreen() {
         )}
         contentContainerStyle={[
           styles.content,
-          {
-            paddingTop: insets.top + Spacing.three,
-            paddingBottom: insets.bottom + BottomTabInset + Spacing.four,
-          },
+          { paddingBottom: insets.bottom + BottomTabInset + FAB_GAP + FAB_SIZE + Spacing.three },
         ]}
-        ListHeaderComponent={(
-          <View style={styles.header}>
-            <View style={styles.masthead}>
-              <View style={styles.mastheadCopy}>
-                <Label tone="accent">Your shelf</Label>
-                <Text style={[styles.title, { color: colors.text }]}>Collection</Text>
-              </View>
-              <View style={styles.mastheadCount}>
-                <Text style={[styles.countValue, { color: colors.text }]}>{items.length}</Text>
-                <Label tone="tertiary">{items.length === 1 ? 'piece' : 'pieces'}</Label>
-              </View>
-            </View>
-
-            <Divider />
-
-            {items.length > 0 && (
-              <>
-                <ValueLedger
-                  colors={colors}
-                  values={values}
-                  haveTotal={haveTotal}
-                  wantTotal={wantTotal}
-                  haveHasPrice={haveHasPrice}
-                  wantHasPrice={wantHasPrice}
-                  unpricedCount={unpricedCount}
-                  pricesLoaded={pricesLoaded}
-                  priceError={priceError}
-                />
-                <Divider />
-              </>
-            )}
-
-            <View
-              style={[styles.segment, { borderColor: colors.border }]}
-              accessibilityRole="tablist">
-              {(['have', 'want'] as const).map((status, position) => {
-                const selected = mode === status;
-                return (
-                  <View key={status} style={styles.segmentSlot}>
-                    {position > 0 && (
-                      <View style={[styles.segmentRule, { backgroundColor: colors.border }]} />
-                    )}
-                    <Pressable
-                      onPress={() => setMode(status)}
-                      accessibilityRole="tab"
-                      accessibilityLabel={`Show ${status === 'have' ? 'owned pieces' : 'want list'}`}
-                      accessibilityState={{ selected }}
-                      style={({ pressed }) => [
-                        styles.segmentButton,
-                        selected && { backgroundColor: colors.backgroundSelected },
-                        pressed && { backgroundColor: colors.backgroundElement },
-                      ]}>
-                      <Text style={[
-                        styles.segmentText,
-                        { color: selected ? colors.text : colors.textSecondary },
-                      ]}>
-                        {status === 'have' ? 'Have' : 'Want'}
-                      </Text>
-                      <Text style={[
-                        styles.segmentCount,
-                        { color: selected ? colors.textSecondary : colors.textTertiary },
-                      ]}>
-                        {counts[status]}
-                      </Text>
-                    </Pressable>
-                  </View>
-                );
-              })}
-            </View>
+        ListHeaderComponent={firstLaunch ? null : (
+          <View>
+            <Masthead
+              tab={tab}
+              counts={counts}
+              colors={colors}
+              hideValues={hideValues}
+              total={tab === 'want' ? wantTotal : haveTotal}
+              hasTotal={tab === 'want' ? wantHasPrice : haveHasPrice}
+              sources={values.map((value) => priceSourceLabel(value.source))}
+              unpricedCount={unpricedCount}
+              priceState={priceState}
+              priceError={priceError}
+            />
 
             {loadError && <Text style={[styles.error, { color: colors.danger }]}>{loadError}</Text>}
+
+            <View style={styles.tabs}>
+              <FileTabs
+                tabs={[
+                  { key: 'have', label: 'Have' },
+                  { key: 'want', label: 'Want' },
+                  { key: 'all', label: counts.all > 0 ? `All ${counts.all}` : 'All' },
+                ] as const}
+                active={tab}
+                onChange={setTab}
+              />
+            </View>
           </View>
         )}
         renderItem={({ item, index }) => (
-          <SpecimenCell
-            item={item}
+          <FileRow
+            row={item}
             index={index}
-            catalog={catalog.get(item.itemSlug)}
-            detail={details.get(item.itemSlug)}
+            attached={index === 0}
+            catalog={catalog.get(item.slug)}
+            detail={details.get(item.slug)}
+            quote={quoteBySlug.get(item.slug) ?? null}
+            priceState={item.entry ? priceState : 'unasked'}
+            hideValues={hideValues}
             colors={colors}
-            saving={savingSlug === item.itemSlug}
             photoToken={photoToken}
             reducedMotion={reducedMotion}
             onChangeQuantity={changeQuantity}
           />
         )}
         ItemSeparatorComponent={() => <View style={styles.rowGap} />}
-        ListEmptyComponent={(
-          <EmptyCollection mode={mode} hasOtherItems={items.length > 0} colors={colors} />
+        ListEmptyComponent={firstLaunch ? (
+          <FirstLaunch catalogCount={counts.all} colors={colors} onBrowse={() => setTab('all')} />
+        ) : (
+          <EmptyTab tab={tab} colors={colors} />
         )}
       />
+
+      {!firstLaunch && (
+        <ScanFab colors={colors} bottom={insets.bottom + BottomTabInset + FAB_GAP} />
+      )}
     </View>
   );
 }
 
+// ------------------------------------------------------------------ masthead
+
 /**
- * The ledger. Two figures, their captions above and the claim behind them below — the
- * archive's stacked-metadata discipline applied to money.
+ * The block above the tabs: what drawer this is, how much is in it, what it is worth.
  *
- * Honesty rules carried over unchanged: pieces with no comps never enter a total and
- * the exclusion is stated; a failed price batch fails the whole total rather than
- * quietly under-reporting it; and no figure is rendered without its source.
+ * The money sentence is built by `TotalSentence`, which takes its claim as a required
+ * prop, a collection total is a sum of medians that can span both price sources, so
+ * `PriceFigure` cannot carry it, and this is the replacement that keeps the figure from
+ * ever being rendered bare.
  */
-function ValueLedger({
+function Masthead({
+  tab,
+  counts,
   colors,
-  values,
-  haveTotal,
-  wantTotal,
-  haveHasPrice,
-  wantHasPrice,
+  hideValues,
+  total,
+  hasTotal,
+  sources,
   unpricedCount,
-  pricesLoaded,
+  priceState,
   priceError,
 }: {
+  tab: FileTab;
+  counts: { have: number; want: number; all: number };
   colors: Palette;
-  values: ReturnType<typeof calculateCollectionValues>;
-  haveTotal: number;
-  wantTotal: number;
-  haveHasPrice: boolean;
-  wantHasPrice: boolean;
+  hideValues: boolean;
+  total: number;
+  hasTotal: boolean;
+  sources: string[];
   unpricedCount: number;
-  pricesLoaded: boolean;
+  priceState: PriceState;
   priceError: string | null;
 }) {
-  // A total can draw on both price sources at once, so the label names every source
-  // that fed it rather than picking one and implying the rest.
-  const loadedSource = values.length > 0
-    ? values.map((value) => priceSourceLabel(value.source)).join(' + ')
-    : 'no comparables yet';
-  const pendingSource = priceError ? 'prices unavailable' : 'awaiting comparables';
-  const source = pricesLoaded ? loadedSource : pendingSource;
-  const emptySource = pricesLoaded ? 'no comparables yet' : pendingSource;
+  const heading = {
+    have: { label: 'Card file', title: `${counts.have} ${counts.have === 1 ? 'piece' : 'pieces'} filed` },
+    want: { label: 'On the hunt', title: `${counts.want} ${counts.want === 1 ? 'piece' : 'pieces'} wanted` },
+    all: { label: 'The catalog', title: `${counts.all} ${counts.all === 1 ? 'piece' : 'pieces'} catalogued` },
+  }[tab];
 
   return (
-    <View style={styles.ledger}>
-      <View style={styles.ledgerRow}>
-        <LedgerFigure
-          caption="Estimated shelf value"
-          total={haveHasPrice ? haveTotal : null}
-          source={haveHasPrice ? source : emptySource}
-          colors={colors}
-        />
-        <View style={[styles.ledgerRule, { backgroundColor: colors.border }]} />
-        <LedgerFigure
-          caption="Want list · one each"
-          total={wantHasPrice ? wantTotal : null}
-          source={wantHasPrice ? source : emptySource}
-          colors={colors}
-        />
-      </View>
+    <View style={styles.masthead}>
+      <Label tone="spice">{heading.label}</Label>
+      <Text style={[styles.title, { color: colors.text }]}>{heading.title}</Text>
 
-      {pricesLoaded && values.map((value) => (
-        <Text key={value.source} style={[styles.note, { color: colors.textSecondary }]}>
-          {[
-            value.haveTotal > 0 ? `${money.format(value.haveTotal)} owned` : null,
-            value.wantTotal > 0 ? `${money.format(value.wantTotal)} wanted` : null,
-          ].filter(Boolean).join(' · ')} — {priceSourceLabel(value.source)}
+      {tab === 'all' ? (
+        <Text style={[styles.caption, { color: colors.textSecondary }]}>
+          Everything in the catalog on this phone. {counts.have} filed, {counts.want} on the hunt.
         </Text>
-      ))}
-      {pricesLoaded && values.length === 0 && (
-        <Text style={[styles.note, { color: colors.textSecondary }]}>No comparable prices found.</Text>
-      )}
-      {pricesLoaded && unpricedCount > 0 && (
-        <Text style={[styles.note, { color: colors.textSecondary }]}>
-          {unpricedCount} {unpricedCount === 1 ? 'piece has' : 'pieces have'} no comps and {unpricedCount === 1 ? 'is' : 'are'} excluded from these totals.
-        </Text>
-      )}
-      {!pricesLoaded && (
-        <Text style={[styles.note, { color: colors.textSecondary }]}>
-          {priceError ? `Prices unavailable: ${priceError}` : 'Loading comparable prices…'}
-        </Text>
+      ) : (
+        <>
+          <TotalSentence
+            lead={tab === 'have' ? 'Worth about' : 'About'}
+            trail={tab === 'have' ? '' : ' to finish the list'}
+            total={hasTotal ? total : null}
+            source={sources.length > 0 ? sources.join(' + ') : 'no comparables yet'}
+            hideValues={hideValues}
+            priceState={priceState}
+            priceError={priceError}
+            colors={colors}
+            after={tab === 'have'
+              ? counts.want > 0
+                ? ` ${counts.want} more on the hunt.`
+                : ' Nothing on the hunt yet.'
+              : ''}
+          />
+          {!hideValues && priceState === 'ready' && unpricedCount > 0 && (
+            <Text style={[styles.caption, { color: colors.textSecondary }]}>
+              {unpricedCount} {unpricedCount === 1 ? 'piece has' : 'pieces have'} no comps and{' '}
+              {unpricedCount === 1 ? 'is' : 'are'} excluded from this total.
+            </Text>
+          )}
+        </>
       )}
     </View>
   );
 }
 
 /**
- * `PriceFigure` welds a *quoted range* to its one source, which is the right tool
- * everywhere a `PriceQuote` exists. A collection total is neither — it is a sum of
- * medians that can span both sources — so this figure exists instead, with `source` as
- * a required prop so the number still cannot be rendered bare.
+ * The collection total, welded to the claim behind it. `source` is required for the same
+ * reason `PriceFigure` requires one: a number on its own does not say whether it came
+ * from what sold or from what someone is asking.
+ *
+ * A total that is not there yet says which of the three reasons applies rather than
+ * printing a zero: nothing was priced, the prices are still coming, or the batch failed.
  */
-function LedgerFigure({
-  caption,
+function TotalSentence({
+  lead,
+  trail,
+  after,
   total,
   source,
+  hideValues,
+  priceState,
+  priceError,
   colors,
 }: {
-  caption: string;
+  lead: string;
+  trail: string;
+  after: string;
   total: number | null;
   source: string;
+  hideValues: boolean;
+  priceState: PriceState;
+  priceError: string | null;
   colors: Palette;
 }) {
-  return (
-    <View style={styles.ledgerCell}>
-      <Label tone="secondary">{caption}</Label>
-      <Text style={[
-        styles.ledgerValue,
-        { color: total === null ? colors.textTertiary : colors.text },
-      ]}>
-        {total === null ? '—' : money.format(total)}
-      </Text>
-      <Label tone="tertiary">{source}</Label>
-    </View>
-  );
+  const claim = hideValues
+    ? 'Values are hidden on the shelf.'
+    : priceState === 'pending'
+      ? 'Checking comparable prices.'
+      : priceState === 'error'
+        ? `Prices unavailable: ${priceError ?? 'the price service did not answer'}.`
+        : total === null
+          ? 'No comparable prices found yet.'
+          : `${lead} ${money.format(total)}${trail}, from comps ${source}.`;
+
+  return <Text style={[styles.caption, { color: colors.textSecondary }]}>{claim}{after}</Text>;
 }
 
+// ------------------------------------------------------------------ rows
+
 /**
- * One index entry: the plate, then its metadata directly beneath in a fixed order —
- * pattern in the condensed face, form in the reading face, model number and rank on the
- * spine line. The plate is the only thing on the screen that casts a shadow, because it
- * is the only thing standing in for a physical object.
+ * One index card. Tile, pattern, the form and model line, then the price under it.
+ *
+ * A Have row ends in the ownership stepper, a Want row in the gold star. The price is
+ * `PriceFigure` whenever a quote exists and whenever we asked and got nothing back; the
+ * two states where we did not ask, prices still loading, and a catalog row that is not
+ * in the collection, say that instead, because "no comparables" is a claim about the
+ * market and those two are claims about this app.
  */
-function SpecimenCell({
-  item,
+function FileRow({
+  row,
   index,
+  attached,
   catalog,
   detail,
+  quote,
+  priceState,
+  hideValues,
   colors,
-  saving,
   photoToken,
   reducedMotion,
   onChangeQuantity,
 }: {
-  item: UserItem;
+  row: Row;
   index: number;
+  attached: boolean;
   catalog: CatalogRow | undefined;
   detail: ItemDetail | undefined;
+  quote: PriceQuote | null;
+  priceState: PriceState;
+  hideValues: boolean;
   colors: Palette;
-  saving: boolean;
   photoToken: string | null;
   reducedMotion: boolean;
   onChangeQuantity: (item: UserItem, delta: number) => Promise<void>;
 }) {
+  // The card is pressed by the row's own Pressable but drawn by `Card`, so the state is
+  // lifted rather than read from the style callback. Nesting the two would collapse the
+  // stepper into the row's accessibility node and put it out of reach of a screen reader.
+  const [pressed, setPressed] = useState(false);
+  const entry = row.entry;
   const photo = detail?.photos[0];
-  const patternName = detail?.pattern.name ?? catalog?.patternName ?? item.itemSlug;
+  const patternName = detail?.pattern.name ?? catalog?.patternName ?? row.slug;
   const form = detail?.form.shape ?? catalog?.shape ?? 'Catalog details unavailable';
-  const rarity = detail?.rarity ?? catalog?.rarity;
   const modelNo = detail?.form.modelNo ?? catalog?.modelNo ?? null;
   const colorway = detail?.pattern.colorway ?? catalog?.colorway ?? null;
+  const isNew = entry != null && Date.now() - Date.parse(entry.updatedAt) < NEW_WINDOW_MS;
+
+  const caption = [
+    form,
+    modelNo,
+    entry?.status === 'have' ? `×${entry.quantity}` : null,
+  ].filter(Boolean).join(' · ');
 
   const entering = reducedMotion
     ? undefined
@@ -459,150 +519,204 @@ function SpecimenCell({
       .withInitialValues({ transform: [{ translateY: Motion.enterOffset }] });
 
   return (
-    <Animated.View style={styles.cell} entering={entering}>
-      <Pressable
-        onPress={() => router.push({ pathname: '/item/[slug]', params: { slug: item.itemSlug } })}
-        accessibilityRole="button"
-        accessibilityLabel={`View ${patternName}, ${form}`}
-        style={({ pressed }) => [styles.cellMain, pressed && styles.cellPressed]}>
-        <View
-          style={[
-            styles.plate,
-            { backgroundColor: colors.surface, borderColor: colors.border },
-            Elevation.object,
-          ]}>
-          <SpecimenTile
-            photo={photo}
-            photoToken={photoToken}
-            colorway={colorway}
-            modelNo={modelNo}
-            patternName={patternName}
-            style={styles.plateFill}
-          />
-        </View>
+    <Animated.View entering={entering}>
+      <Card
+        attached={attached}
+        style={[
+          // The mock's ring sits outside the card and shifts nothing, which is an
+          // outline rather than a border.
+          isNew && {
+            outlineWidth: 2,
+            outlineColor: colors.accent,
+            outlineStyle: 'solid',
+            outlineOffset: Spacing.half,
+          },
+          pressed && { transform: [{ translateY: Motion.pressTranslate }] },
+        ]}>
+        <View style={styles.row}>
+          <Pressable
+            onPress={() => router.push({ pathname: '/item/[slug]', params: { slug: row.slug } })}
+            accessibilityRole="button"
+            accessibilityLabel={[
+              patternName,
+              caption.replaceAll('×', 'quantity '),
+              entry?.status === 'want' ? 'on your want list' : null,
+              isNew ? 'newly filed' : null,
+            ].filter(Boolean).join(', ')}
+            onPressIn={() => setPressed(true)}
+            onPressOut={() => setPressed(false)}
+            style={styles.rowMain}>
+            <SpecimenTile
+              photo={photo}
+              photoToken={photoToken}
+              colorway={colorway}
+              modelNo={modelNo}
+              patternName={patternName}
+              stampSize="small"
+              style={styles.tile}
+            />
+            <View style={styles.rowCopy}>
+              <Text numberOfLines={2} style={[styles.rowName, { color: colors.text }]}>
+                {patternName}
+              </Text>
+              <Text numberOfLines={1} style={[styles.rowCaption, { color: colors.textSecondary }]}>
+                {caption}
+              </Text>
+              {!hideValues && (
+                priceState === 'ready' ? (
+                  <PriceFigure quote={quote} emptyNote="No comparables yet." />
+                ) : priceState === 'unasked' ? null : (
+                  <Text style={[styles.rowPending, { color: colors.textTertiary }]}>
+                    {priceState === 'error' ? 'Prices unavailable' : 'Checking comparables…'}
+                  </Text>
+                )
+              )}
+            </View>
+          </Pressable>
 
-        <View style={styles.meta}>
-          <Text numberOfLines={2} style={[styles.metaPattern, { color: colors.text }]}>
-            {patternName}
-          </Text>
-          <Text numberOfLines={1} style={[styles.metaForm, { color: colors.textSecondary }]}>
-            {form}
-          </Text>
-          <View style={styles.metaSpine}>
-            <Text numberOfLines={1} style={[styles.metaModel, { color: colors.textTertiary }]}>
-              {modelNo ? `No. ${modelNo}` : 'unlisted'}
-            </Text>
-            {rarity && <RarityBadge rarity={rarity} compact />}
+          <View style={styles.rowTail}>
+            {isNew && <Text style={[styles.newTag, { color: colors.accent }]}>New</Text>}
+            {entry?.status === 'have' && (
+              <Stepper item={entry} colors={colors} onChange={onChangeQuantity} />
+            )}
+            {entry?.status === 'want' && (
+              <Text style={[styles.star, { color: colors.want }]}>{'★'}</Text>
+            )}
           </View>
         </View>
-      </Pressable>
-
-      {item.status === 'have' ? (
-        <View style={[styles.stepper, { borderColor: colors.border }]}>
-          <Pressable
-            onPress={() => void onChangeQuantity(item, -1)}
-            disabled={saving || item.quantity <= 1}
-            accessibilityRole="button"
-            accessibilityLabel={`Decrease quantity of ${patternName}`}
-            accessibilityState={{ disabled: saving || item.quantity <= 1 }}
-            style={({ pressed }) => [
-              styles.stepperButton,
-              pressed && { backgroundColor: colors.backgroundSelected },
-            ]}>
-            <Text style={[
-              styles.stepperSymbol,
-              { color: item.quantity <= 1 ? colors.textTertiary : colors.text },
-            ]}>
-              −
-            </Text>
-          </Pressable>
-          <View style={[styles.stepperRule, { backgroundColor: colors.border }]} />
-          <Text
-            accessibilityLabel={`${item.quantity} owned`}
-            style={[styles.quantity, { color: colors.text }]}>
-            {item.quantity}
-          </Text>
-          <View style={[styles.stepperRule, { backgroundColor: colors.border }]} />
-          <Pressable
-            onPress={() => void onChangeQuantity(item, 1)}
-            disabled={saving}
-            accessibilityRole="button"
-            accessibilityLabel={`Increase quantity of ${patternName}`}
-            accessibilityState={{ disabled: saving }}
-            style={({ pressed }) => [
-              styles.stepperButton,
-              pressed && { backgroundColor: colors.backgroundSelected },
-            ]}>
-            <Text style={[styles.stepperSymbol, { color: colors.text }]}>+</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <Text style={[styles.wantMark, { color: colors.want, borderColor: colors.want }]}>
-          Wanted
-        </Text>
-      )}
+      </Card>
     </Animated.View>
   );
 }
 
 /**
- * An index with nothing filed in it yet. There are no illustration assets, so the empty
- * state is drawn the way the archive would print an unfilled page: three ruled plates,
- * numbered, waiting. The one solid accent fill on this screen is the action below them.
+ * How many of this piece are on the shelf. `CircleButton` reaches 44dp through its own
+ * `hitSlop` rather than by being 44dp, which keeps the stepper inside the height of the
+ * 66pt tile beside it.
  */
-function EmptyCollection({
-  mode,
-  hasOtherItems,
+function Stepper({
+  item,
   colors,
+  onChange,
 }: {
-  mode: OwnershipStatus;
-  hasOtherItems: boolean;
+  item: UserItem;
   colors: Palette;
+  onChange: (item: UserItem, delta: number) => Promise<void>;
 }) {
-  const completelyEmpty = !hasOtherItems;
+  return (
+    <View style={styles.stepper}>
+      <CircleButton
+        size={30}
+        onPress={() => void onChange(item, 1)}
+        accessibilityLabel={`Add one more, ${item.quantity + 1} owned`}>
+        +
+      </CircleButton>
+      <Text
+        accessibilityLabel={`${item.quantity} owned`}
+        style={[styles.quantity, { color: colors.text }]}>
+        {item.quantity}
+      </Text>
+      <CircleButton
+        size={30}
+        onPress={() => void onChange(item, -1)}
+        accessibilityLabel={
+          item.quantity <= 1 ? 'Remove one, already at one owned' : `Remove one, ${item.quantity - 1} owned`
+        }>
+        {'−'}
+      </CircleButton>
+    </View>
+  );
+}
+
+/** The scan action, sitting over the file. Spice, so it is the only object on the page. */
+function ScanFab({ colors, bottom }: { colors: Palette; bottom: number }) {
+  const elevation = useElevation();
 
   return (
-    <View style={styles.empty}>
+    <Pressable
+      onPress={() => router.push('/')}
+      accessibilityRole="button"
+      accessibilityLabel="Scan a piece"
+      style={({ pressed }) => [
+        styles.fab,
+        { bottom, backgroundColor: colors.spice },
+        !pressed && elevation.object,
+        pressed && { transform: [{ translateY: Motion.pressTranslate }] },
+      ]}>
+      <Text style={styles.fabLabel}>SCAN</Text>
+    </Pressable>
+  );
+}
+
+// ------------------------------------------------------------------ empty
+
+/**
+ * Nothing filed at all. Three ruled slots waiting for the first three pieces, then the
+ * one action worth taking. The browse link switches to the All tab, which is the only
+ * place in the app that lists the whole catalog.
+ */
+function FirstLaunch({
+  catalogCount,
+  colors,
+  onBrowse,
+}: {
+  catalogCount: number;
+  colors: Palette;
+  onBrowse: () => void;
+}) {
+  return (
+    <View style={styles.firstLaunch}>
       <View
-        style={styles.emptyPlates}
+        style={styles.slots}
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants">
-        {['001', '002', '003'].map((plate) => (
-          <View key={plate} style={[styles.emptyPlate, { borderColor: colors.border }]}>
-            <Text style={[styles.emptyPlateNo, { color: colors.textTertiary }]}>{plate}</Text>
+        {['01', '02', '03'].map((slot) => (
+          <View key={slot} style={[styles.slot, { borderColor: colors.border }]}>
+            <Text style={[styles.slotNo, { color: colors.textTertiary }]}>{slot}</Text>
           </View>
         ))}
       </View>
 
-      <Divider />
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>Nothing filed yet</Text>
+      <Text style={[styles.emptyBody, { color: colors.textSecondary }]}>
+        Scan the first piece and we&apos;ll tell you what it is, what it&apos;s worth, and what
+        else came in the set.
+      </Text>
 
-      <View style={styles.emptyCopy}>
-        <Label tone="accent">
-          {completelyEmpty ? 'Empty index' : mode === 'have' ? 'Nothing owned' : 'Nothing wanted'}
-        </Label>
-        <Text style={[styles.emptyTitle, { color: colors.text }]}>
-          {completelyEmpty ? 'Your shelf is empty' : `Nothing marked ${mode} yet`}
-        </Text>
-        <Text style={[styles.emptyBody, { color: colors.textSecondary }]}>
-          {completelyEmpty
-            ? 'Scan a piece to identify it, check comparable prices, and start your collection.'
-            : mode === 'have'
-              ? 'Pieces move here when you mark them as owned.'
-              : 'Save pieces you are hunting so they stay separate from what you own.'}
-        </Text>
-      </View>
-
-      <Pressable
+      <PressButton
         onPress={() => router.push('/')}
-        accessibilityRole="button"
-        accessibilityLabel="Go to Scan"
-        style={({ pressed }) => [
-          styles.primaryButton,
-          { backgroundColor: pressed ? colors.have : colors.accent },
-        ]}>
-        <Text style={[styles.primaryButtonText, { color: colors.accentText }]}>Scan a piece</Text>
-      </Pressable>
+        accessibilityLabel="Scan my first piece"
+        style={styles.emptyAction}>
+        Scan my first piece
+      </PressButton>
+
+      {catalogCount > 0 && (
+        <Pressable
+          onPress={onBrowse}
+          accessibilityRole="button"
+          accessibilityLabel={`Browse all ${catalogCount} catalogued pieces`}
+          style={styles.browseLink}>
+          <Text style={[styles.browseText, { color: colors.spice }]}>
+            or browse all {catalogCount}
+          </Text>
+        </Pressable>
+      )}
     </View>
+  );
+}
+
+/** One tab is empty but the file is not. Says which drawer is empty and why. */
+function EmptyTab({ tab, colors }: { tab: FileTab; colors: Palette }) {
+  return (
+    <Card attached style={styles.emptyTab}>
+      <Text style={[styles.emptyTabText, { color: colors.textSecondary }]}>
+        {tab === 'have'
+          ? 'Nothing filed yet. Pieces land here when you mark them as owned.'
+          : tab === 'want'
+            ? 'Nothing on the hunt. Star a piece to keep it separate from what you own.'
+            : 'The catalog has not downloaded yet. Pull to refresh once you have signal.'}
+      </Text>
+    </Card>
   );
 }
 
@@ -613,118 +727,85 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.gutter,
   },
 
-  // --- masthead + ledger ---
-  header: { gap: Spacing.three, marginBottom: Spacing.four },
-  masthead: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  mastheadCopy: { gap: Spacing.one },
-  mastheadCount: { alignItems: 'flex-end' },
-  title: { ...Type.display },
-  countValue: { ...Type.numeralLarge },
+  // --- masthead ---
+  masthead: { paddingTop: Spacing.gutter, gap: Spacing.one },
+  title: { ...Type.display, marginTop: Spacing.half },
+  caption: { ...Type.callout },
+  error: { ...Type.callout, marginTop: Spacing.two },
+  tabs: { paddingTop: Spacing.three + Spacing.half },
 
-  ledger: { gap: Spacing.two },
-  ledgerRow: { flexDirection: 'row', alignItems: 'stretch' },
-  ledgerCell: { flex: 1, gap: Spacing.one },
-  ledgerRule: { width: Rule, marginHorizontal: Spacing.three },
-  ledgerValue: { ...Type.numeralLarge },
-  note: { ...Type.caption },
-
-  // --- have / want ---
-  segment: {
+  // --- rows ---
+  rowGap: { height: Spacing.two + Spacing.half },
+  row: {
     flexDirection: 'row',
-    borderWidth: Rule,
-    borderRadius: Radius.sm,
-    overflow: 'hidden',
+    alignItems: 'center',
+    gap: Spacing.three - Spacing.one,
+    padding: Spacing.three - Spacing.one,
   },
-  segmentSlot: { flex: 1, flexDirection: 'row' },
-  segmentRule: { width: Rule, alignSelf: 'stretch' },
-  segmentButton: {
+  rowMain: {
     flex: 1,
-    minHeight: HitTarget,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
+    gap: Spacing.three - Spacing.one,
   },
-  segmentText: { ...Type.label },
-  segmentCount: { ...Type.numeral },
-  error: { ...Type.callout },
+  tile: { width: TILE, height: TILE },
+  rowCopy: { flex: 1, minWidth: 0, gap: Spacing.half },
+  rowName: { ...Type.headline },
+  rowCaption: { ...Type.caption },
+  rowPending: { ...Type.caption, fontSize: 11, lineHeight: 16 },
 
-  // --- the grid ---
-  column: { gap: Spacing.two },
-  rowGap: { height: Spacing.four },
-  /** `maxWidth` keeps a lone final tile at column width instead of stretching the row. */
-  cell: { flex: 1, maxWidth: '50%', gap: Spacing.two },
-  cellMain: { gap: Spacing.two },
-  /** Scale only. Dimming a parent of a shadow-caster flattens the plate's shadow on iOS. */
-  cellPressed: { transform: [{ scale: Motion.pressScale }] },
+  rowTail: { alignItems: 'center', gap: Spacing.two },
+  newTag: { ...Type.micro },
+  star: { ...Type.numeral, fontSize: 20, lineHeight: 24 },
+  stepper: { alignItems: 'center', gap: Spacing.one },
+  quantity: { ...Type.numeral, minWidth: Spacing.five, textAlign: 'center' },
 
-  plate: { aspectRatio: 1, borderWidth: Rule, borderRadius: Radius.sm },
-  plateFill: { flex: 1, alignSelf: 'stretch' },
-
-  meta: { gap: Spacing.half },
-  /** Fixed to two lines so metadata sits on one baseline across a row, as an index does. */
-  metaPattern: { ...Type.headline, minHeight: Type.headline.lineHeight * 2 },
-  metaForm: { ...Type.caption },
-  metaSpine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
-    marginTop: Spacing.half,
-  },
-  metaModel: { ...Type.label, flexShrink: 1 },
-
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    borderWidth: Rule,
-    borderRadius: Radius.sm,
-    overflow: 'hidden',
-  },
-  stepperRule: { width: Rule },
-  stepperButton: { flex: 1, minHeight: HitTarget, alignItems: 'center', justifyContent: 'center' },
-  stepperSymbol: { ...Type.headline },
-  quantity: {
-    ...Type.numeral,
-    minWidth: Spacing.five,
-    textAlign: 'center',
-    alignSelf: 'center',
-    paddingHorizontal: Spacing.one,
-  },
-  wantMark: {
-    ...Type.label,
-    alignSelf: 'flex-start',
-    borderWidth: Rule,
-    borderRadius: Radius.xs,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-  },
-
-  // --- empty index ---
-  empty: { gap: Spacing.four, paddingTop: Spacing.two, paddingBottom: Spacing.six },
-  emptyPlates: { flexDirection: 'row', gap: Spacing.two },
-  emptyPlate: {
-    flex: 1,
-    aspectRatio: 1,
-    borderWidth: Rule,
-    borderRadius: Radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyPlateNo: { ...Type.numeral },
-  emptyCopy: { gap: Spacing.two },
-  emptyTitle: { ...Type.title },
-  emptyBody: { ...Type.body },
-  primaryButton: {
-    alignSelf: 'flex-start',
-    minHeight: HitTarget,
+  // --- fab ---
+  fab: {
+    position: 'absolute',
+    right: Spacing.gutter,
+    width: FAB_SIZE,
+    height: FAB_SIZE,
     borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.four,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primaryButtonText: { ...Type.bodyStrong },
+  /** Cream on a solid spice field, which is exactly what `OnAccent` is for. */
+  fabLabel: { ...Type.micro, fontSize: 11, letterSpacing: 0.6, color: OnAccent.text },
+
+  // --- empty ---
+  firstLaunch: {
+    paddingTop: Spacing.five - Spacing.half,
+    paddingHorizontal: Spacing.one,
+    alignItems: 'center',
+  },
+  slots: { flexDirection: 'row', gap: Spacing.two + Spacing.half },
+  slot: {
+    width: 74,
+    height: 74,
+    borderRadius: Radius.md,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  slotNo: { ...Type.numeral, fontFamily: Fonts.display },
+  emptyTitle: { ...Type.title, marginTop: Spacing.four + Spacing.half, textAlign: 'center' },
+  emptyBody: { ...Type.body, marginTop: Spacing.two, textAlign: 'center' },
+  emptyAction: {
+    marginTop: Spacing.four - Spacing.half,
+    paddingHorizontal: Spacing.five - Spacing.half,
+  },
+  browseLink: {
+    minHeight: HitTarget,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.two,
+  },
+  browseText: { ...Type.bodyStrong, fontSize: 13 },
+
+  emptyTab: { padding: Spacing.gutter },
+  emptyTabText: { ...Type.body },
 });

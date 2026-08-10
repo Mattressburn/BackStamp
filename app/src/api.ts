@@ -36,7 +36,7 @@ let cachedToken: string | null = null;
 
 // expo-secure-store is backed by the iOS keychain and Android keystore and has no
 // browser implementation. The web target is a layout preview only, so it runs signed
-// out rather than falling back to localStorage — a session token in localStorage is
+// out rather than falling back to localStorage, a session token in localStorage is
 // readable by any script on the page, which is the whole thing SecureStore avoids.
 const canPersistToken = Platform.OS !== 'web';
 
@@ -146,7 +146,7 @@ export function fetchPrice(slug: string): Promise<ApiResult<PriceQuote | null>> 
 
 /**
  * Collection totals need many quotes at once. The server caps a batch at 100 slugs, so
- * chunk here rather than in each caller — a collection larger than 100 items is the
+ * chunk here rather than in each caller, a collection larger than 100 items is the
  * normal case for anyone this app is built for, and a 400 on their shelf is not.
  */
 const PRICE_BATCH_LIMIT = 100;
@@ -178,7 +178,7 @@ export async function logScan(input: {
 }): Promise<ApiResult<{ id: string }>> {
   const { photoUris, ...rest } = input;
   // The backend cannot read a phone-local file URI. Encode here, and only when the
-  // user opted in — an un-consented scan sends no photo at all rather than sending
+  // user opted in, an un-consented scan sends no photo at all rather than sending
   // one the server is trusted to discard.
   const photos = input.consentedToTraining
     ? await Promise.all(photoUris.map((uri) => new File(uri).base64()))

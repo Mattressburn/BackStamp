@@ -1,5 +1,5 @@
 /**
- * Every pattern in the catalog documents its colorway as prose — "turquoise and
+ * Every pattern in the catalog documents its colorway as prose, "turquoise and
  * white", "white on pink", "brown on speckled beige". All 33 of them, no nulls. This
  * turns that sentence into the two colors it names, so a piece with no photograph
  * still arrives on screen wearing its actual colors instead of a grey box.
@@ -49,7 +49,7 @@ const NOISE = new Set([
 ]);
 
 export type Swatch = {
-  /** The body of the piece — the glass itself. */
+  /** The body of the piece, the glass itself. */
   ground: string;
   /** The printed or fired-on decoration. Null when the colorway names one color. */
   figure: string | null;
@@ -113,7 +113,7 @@ export function parseColorway(colorway: string | null | undefined, scheme: Schem
 /**
  * The fallback when a colorway names nothing recognisable. These mirror
  * `Colors[scheme].backgroundElement` but are written out here so this module imports
- * nothing — it has to stay free of `react-native` to be testable under plain node.
+ * nothing, it has to stay free of `react-native` to be testable under plain node.
  */
 const NEUTRAL = { light: '#EDEAE0', dark: '#232120' } as const;
 
@@ -131,7 +131,7 @@ export function neutralSwatch(scheme: Scheme): Swatch {
  */
 export function inkOn(ground: string): { stroke: string; text: string } {
   const value = parseInt(ground.slice(1), 16);
-  // Rec. 601 luma — close enough for a two-way light/dark decision and cheap.
+  // Rec. 601 luma, close enough for a two-way light/dark decision and cheap.
   const luma =
     (0.299 * ((value >> 16) & 255) + 0.587 * ((value >> 8) & 255) + 0.114 * (value & 255)) / 255;
 

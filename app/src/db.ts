@@ -162,6 +162,13 @@ export async function searchCatalog(query = '', limit = 200): Promise<CatalogRow
   );
 }
 
+/** How many items the phone holds. Counts in SQLite rather than loading every row. */
+export async function countCatalogItems(): Promise<number> {
+  const db = await connect();
+  const row = await db.getFirstAsync<{ count: number }>('SELECT COUNT(*) AS count FROM items');
+  return row?.count ?? 0;
+}
+
 export async function getPattern(id: string): Promise<Pattern | null> {
   const db = await connect();
   return db.getFirstAsync<Pattern>(
@@ -296,11 +303,23 @@ export interface Settings {
   /** Opt-in, default off. Governs whether scans are kept for future training. */
   trainingOptIn: boolean;
   defaultPhotoVisibility: PhotoVisibility;
+  /**
+   * Keep money off the shelf, for a collector who does not want it on screen.
+   *
+   * There is deliberately no "prefer sold comps" flag beside this one. The design
+   * handoff drew that toggle, but `fetchPrices(slugs)` takes no source argument and
+   * `/price/batch` returns whichever of SoldComps or eBay Browse answered, so nothing
+   * could read the flag. A switch that persists a value no code consults is the same
+   * class of dishonesty as an unlabelled price. Adding it for real means changing the
+   * `PriceSource` interface, the route, and the cache keys.
+   */
+  hideValuesOnShelf: boolean;
 }
 
 const SETTINGS_DEFAULTS: Settings = {
   trainingOptIn: false,
   defaultPhotoVisibility: 'private',
+  hideValuesOnShelf: false,
 };
 
 export async function getSettings(): Promise<Settings> {

@@ -1,7 +1,23 @@
+/**
+ * Set up, drawn as the card file's own drawer.
+ *
+ * Read the reference lock in `constants/theme.ts` first. This screen is the plainest
+ * expression of it: an avocado header band, then labelled groups, each one a single
+ * index card whose rows are divided by the one rule this direction still allows. The
+ * card's solid offset does the separating; there is no blur anywhere on this screen.
+ *
+ * The Harvest File prototype drew three groups (account, prices, catalog). The screen
+ * says more than that and none of it was cut to match the mock: what sign-in stores,
+ * what sync carries, the four photo-visibility choices, the training opt-in and its
+ * default, and the fact that Google sign-in is unconfigured in this build rather than
+ * merely broken. Those are claims, not decoration, so they were reskinned into rows
+ * instead of deleted.
+ */
+
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Children, Fragment, useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -9,27 +25,29 @@ import {
   ScrollView,
   Share,
   StyleSheet,
-  Switch,
   Text,
   View,
+  type AccessibilityRole,
+  type AccessibilityState,
 } from 'react-native';
+import Animated, {
+  Easing,
+  interpolateColor,
+  useAnimatedStyle,
+  useDerivedValue,
+  useReducedMotion,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import {
-  fetchCatalog,
-  getToken,
-  pullCollection,
-  pushCollection,
-  signIn,
-  signOut,
-} from '@/api';
+import { fetchCatalog, getToken, pullCollection, pushCollection, signIn, signOut } from '@/api';
 import {
   BottomTabInset,
   HitTarget,
   MaxContentWidth,
   Motion,
+  OnAccent,
   Radius,
-  Rule,
   Spacing,
   Type,
 } from '@/constants/theme';
@@ -39,16 +57,32 @@ import {
   getSettings,
   saveSettings,
   replaceCollection,
+  countCatalogItems,
   syncCatalog,
   type Settings,
 } from '@/db';
-import { Divider, Label, useColors, useScheme } from '@/features/collection/collection-ui';
+import {
+  Card,
+  Divider,
+  HeaderBar,
+  Label,
+  PressButton,
+  useColors,
+  useScheme,
+} from '@/features/collection/collection-ui';
 import { BRAND } from '@shared/branding';
 import type { AuthProvider, PhotoVisibility, UserItem } from '@shared/types';
 
 WebBrowser.maybeCompleteAuthSession();
 
 const VISIBILITIES: PhotoVisibility[] = ['attributed', 'anonymous', 'private'];
+
+/** The shared curve, as an easing function. Every motion on this screen uses it. */
+const EASING = Easing.bezier(...Motion.easing);
+
+/** 46 x 27 track, 21pt knob at left 3 or left 22, so the knob travels 19. */
+const TOGGLE = { width: 46, height: 27, knob: 21, inset: 3 } as const;
+const KNOB_TRAVEL = TOGGLE.width - TOGGLE.knob - TOGGLE.inset * 2;
 
 async function pushLocalCollection(items: readonly UserItem[]): Promise<number> {
   // CONTRACT: add a shared sync payload type and let pushCollection accept it.
@@ -68,6 +102,7 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [catalogVersion, setCatalogVersion] = useState(0);
+  const [catalogCount, setCatalogCount] = useState<number | null>(null);
   const [signedIn, setSignedIn] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -81,11 +116,12 @@ export default function SettingsScreen() {
   });
 
   useEffect(() => {
-    void Promise.all([getSettings(), getCatalogVersion(), getToken()])
-      .then(([storedSettings, version, token]) => {
+    void Promise.all([getSettings(), getCatalogVersion(), getToken(), countCatalogItems()])
+      .then(([storedSettings, version, token, count]) => {
         setSettings(storedSettings);
         setCatalogVersion(version);
         setSignedIn(Boolean(token));
+        setCatalogCount(count);
       })
       .catch((loadError) => {
         setError(loadError instanceof Error ? loadError.message : 'Could not load settings.');
@@ -197,6 +233,7 @@ export default function SettingsScreen() {
       try {
         await syncCatalog(result.data);
         setCatalogVersion(result.data.version);
+        setCatalogCount(await countCatalogItems());
         setMessage(`Catalog updated to version ${result.data.version}.`);
       } catch (syncError) {
         setError(syncError instanceof Error ? syncError.message : 'Could not store the catalog.');
@@ -212,7 +249,7 @@ export default function SettingsScreen() {
     try {
       const collection = await getCollection();
       await Share.share({
-        title: 'Export collection',
+        title: `${BRAND.name} collection export`,
         message: JSON.stringify(collection, null, 2),
       });
     } catch (exportError) {
@@ -224,249 +261,390 @@ export default function SettingsScreen() {
     void handleIdentity('google', identityToken);
   }, [handleIdentity]);
 
+  // The header band stays up while settings load: without it the screen reads as broken
+  // rather than as busy, since the tab bar is drawn either way.
   if (!settings) {
     return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        {error ? (
-          <Notice tone="error">{error}</Notice>
-        ) : (
-          <ActivityIndicator
-            color={colors.accent}
-            accessibilityLabel="Loading settings"
-            accessibilityRole="progressbar"
-          />
-        )}
+      <View style={[styles.screen, { backgroundColor: colors.background }]}>
+        <Header />
+        <View style={styles.centered}>
+          {error ? (
+            <Notice tone="error">{error}</Notice>
+          ) : (
+            <ActivityIndicator
+              color={colors.accent}
+              accessibilityLabel="Loading settings"
+              accessibilityRole="progressbar"
+            />
+          )}
+        </View>
       </View>
     );
   }
 
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[
-        styles.content,
-        {
-          paddingTop: insets.top + Spacing.four,
-          paddingBottom: insets.bottom + BottomTabInset + Spacing.five,
-        },
-      ]}>
-      {/* The one screen the wordmark is allowed to sit on. Name comes from branding. */}
-      <View style={styles.masthead}>
-        <Label tone="tertiary">Settings</Label>
-        <Text style={[styles.wordmark, { color: colors.text }]}>{BRAND.name}</Text>
-        <Label tone="accent">Private by default</Label>
-      </View>
-
-      <Section title="Account and sync">
-        <View style={styles.metaRow}>
-          <Label tone="tertiary">Status</Label>
-          <Text style={[styles.state, { color: signedIn ? colors.have : colors.textSecondary }]}>
-            {signedIn ? 'Signed in' : 'Not signed in'}
-          </Text>
-        </View>
-
-        <Fact term="Stored">
-          The provider’s subject ID and nothing else — no email, no name, no profile.
-        </Fact>
-        <Fact term="Synced">
-          Your collection syncs as item slugs, have/want status, and counts only.
-        </Fact>
-
-        {!signedIn && googleClientId && (
-          <GoogleSignInButton
-            clientId={googleClientId}
-            disabled={busy}
-            onIdentityToken={handleGoogleIdentity}
-            onError={setError}
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+      <Header />
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: insets.bottom + BottomTabInset + Spacing.five },
+        ]}>
+        <Group label="Your account">
+          <Row
+            strong
+            lead={
+              <View
+                style={[
+                  styles.avatar,
+                  { backgroundColor: signedIn ? colors.want : colors.backgroundElement },
+                ]}
+              />
+            }
+            title={signedIn ? 'Signed in' : 'Not signed in'}
+            caption={
+              signedIn
+                ? 'Your collection syncs across devices.'
+                : 'Everything stays on this phone until you sign in.'
+            }
           />
-        )}
-        {!signedIn && !googleClientId && (
-          <Fact term="Google">Not configured in this build, so Google sign-in is unavailable here.</Fact>
-        )}
-
-        {!signedIn && appleAvailable && (
-          <AppleAuthentication.AppleAuthenticationButton
-            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-            buttonStyle={scheme === 'dark'
-              ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-              : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-            cornerRadius={Radius.sm}
-            onPress={() => void handleAppleSignIn()}
-            accessibilityLabel="Sign in with Apple"
-            accessibilityRole="button"
-            accessibilityState={{ disabled: busy }}
-            pointerEvents={busy ? 'none' : 'auto'}
-            style={styles.appleButton}
+          <Row
+            title="Display name"
+            value="Not stored"
+            valueTone="spice"
+            caption="Sign-in keeps the provider's subject ID and nothing else: no email, no name, no profile."
           />
-        )}
-
-        {signedIn && (
-          <>
-            {/* The one solid accent fill and the one pill on this screen. */}
-            <ActionButton
-              label={busy ? 'Syncing…' : 'Sync collection'}
-              onPress={() => void handleCollectionSync()}
-              disabled={busy}
-              primary
+          <Row
+            title="What syncs"
+            value="Slugs and counts"
+            valueTone="spice"
+            caption="Item slugs, have or want, and quantities. Condition and notes never leave this device."
+          />
+          {!signedIn && !googleClientId && (
+            <Row
+              title="Google sign-in"
+              value="Unavailable"
+              valueTone="quiet"
+              caption="Not configured in this build, so there is no Google button to press rather than a dead one."
             />
-            <Pressable
-              onPress={() => void handleSignOut()}
+          )}
+        </Group>
+
+        <View style={styles.actions}>
+          {!signedIn && googleClientId && (
+            <GoogleSignInButton
+              clientId={googleClientId}
               disabled={busy}
+              onIdentityToken={handleGoogleIdentity}
+              onError={setError}
+            />
+          )}
+
+          {!signedIn && appleAvailable && (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={scheme === 'dark'
+                ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={Radius.lg}
+              onPress={() => void handleAppleSignIn()}
+              accessibilityLabel="Sign in with Apple"
               accessibilityRole="button"
-              accessibilityLabel="Sign out"
               accessibilityState={{ disabled: busy }}
-              style={({ pressed }) => [
-                styles.signOut,
-                pressed && { backgroundColor: colors.backgroundElement },
-              ]}>
-              <Text style={[styles.signOutText, { color: busy ? colors.textTertiary : colors.danger }]}>
+              pointerEvents={busy ? 'none' : 'auto'}
+              style={styles.appleButton}
+            />
+          )}
+
+          {signedIn && (
+            <>
+              <PressButton
+                onPress={() => void handleCollectionSync()}
+                disabled={busy}
+                accessibilityLabel="Sync collection">
+                {busy ? 'Syncing…' : 'Sync collection'}
+              </PressButton>
+              <PressButton
+                tone="quiet"
+                onPress={() => void handleSignOut()}
+                disabled={busy}
+                accessibilityLabel="Sign out"
+                textStyle={{ color: busy ? colors.textTertiary : colors.danger }}>
                 Sign out
-              </Text>
-            </Pressable>
-          </>
-        )}
-      </Section>
-
-      <Section title="Training data">
-        <View style={styles.settingRow}>
-          <View style={styles.settingCopy}>
-            <Text style={[styles.settingTitle, { color: colors.text }]}>Help improve identification</Text>
-            <Text style={[styles.copy, { color: colors.textSecondary }]}>
-              When on, confirmed scans and photos are kept to improve identification later. Default is off.
-            </Text>
-          </View>
-          <Switch
-            value={settings.trainingOptIn}
-            onValueChange={(value) => void updateSettings({ trainingOptIn: value })}
-            trackColor={{ false: colors.backgroundSelected, true: colors.accent }}
-            thumbColor={colors.surface}
-            style={styles.switch}
-            accessibilityRole="switch"
-            accessibilityLabel="Help improve identification"
-            accessibilityState={{ checked: settings.trainingOptIn }}
-          />
+              </PressButton>
+            </>
+          )}
         </View>
-      </Section>
 
-      <Section title="Default photo visibility" flush>
+        <Group label="Prices">
+          <ToggleRow
+            title="Hide values on the shelf"
+            checked={settings.hideValuesOnShelf}
+            onChange={(value) => void updateSettings({ hideValuesOnShelf: value })}
+          />
+        </Group>
+
         <View accessibilityRole="radiogroup">
-          {VISIBILITIES.map((visibility, index) => {
-            const selected = settings.defaultPhotoVisibility === visibility;
-            return (
-              <Fragment key={visibility}>
-                {index > 0 && <Divider />}
-                <Pressable
+          <Group label="Default photo visibility" caption="Private by default.">
+            {VISIBILITIES.map((visibility) => {
+              const selected = settings.defaultPhotoVisibility === visibility;
+              return (
+                <Row
+                  key={visibility}
+                  title={visibility.charAt(0).toUpperCase() + visibility.slice(1)}
+                  caption={visibilityCopy(visibility)}
+                  value={selected ? 'Selected' : undefined}
                   onPress={() => void updateSettings({ defaultPhotoVisibility: visibility })}
                   accessibilityRole="radio"
-                  accessibilityLabel={`Use ${visibility} as default photo visibility`}
                   accessibilityState={{ selected }}
-                  style={({ pressed }) => [
-                    styles.choice,
-                    {
-                      // A continuous index rail down the group, one entry marked.
-                      borderLeftColor: selected ? colors.accent : colors.border,
-                      backgroundColor: selected
-                        ? colors.backgroundSelected
-                        : pressed ? colors.backgroundElement : colors.surface,
-                    },
-                  ]}>
-                  <View style={styles.choiceHead}>
-                    <Text
-                      style={[styles.choiceTitle, { color: selected ? colors.text : colors.textSecondary }]}>
-                      {visibility}
-                    </Text>
-                    {selected && <Label tone="accent">Selected</Label>}
-                  </View>
-                  <Text style={[styles.copy, { color: colors.textSecondary }]}>{visibilityCopy(visibility)}</Text>
-                </Pressable>
-              </Fragment>
-            );
-          })}
+                  accessibilityLabel={`Use ${visibility} as default photo visibility`}
+                />
+              );
+            })}
+          </Group>
         </View>
-      </Section>
 
-      <Section title="Catalog">
-        <View style={styles.metaRow}>
-          <Label tone="tertiary">Offline catalog version</Label>
-          <Text style={[styles.numeral, { color: colors.text }]}>{catalogVersion}</Text>
-        </View>
-        <ActionButton
-          label={busy ? 'Updating…' : 'Update catalog'}
-          onPress={() => void handleCatalogSync()}
-          disabled={busy}
-        />
-      </Section>
+        <Group label="Training data">
+          <ToggleRow
+            title="Help improve identification"
+            caption="When on, confirmed scans and photos are kept to improve identification later. Default is off."
+            checked={settings.trainingOptIn}
+            onChange={(value) => void updateSettings({ trainingOptIn: value })}
+          />
+        </Group>
 
-      <Section title="Export">
-        <Text style={[styles.copy, { color: colors.textSecondary }]}>
-          Export your local collection entries, including condition and notes, without an account identifier.
-        </Text>
-        <ActionButton label="Export collection" onPress={() => void handleExport()} />
-      </Section>
+        <Group label="Catalog">
+          <Row
+            title={catalogCount === null ? 'Catalog on this phone' : `${catalogCount} items on this phone`}
+            caption={`Offline copy, version ${catalogVersion}.`}
+            value={busy ? 'Updating…' : 'Refresh'}
+            onPress={() => void handleCatalogSync()}
+            disabled={busy}
+            accessibilityLabel="Refresh the offline catalog"
+          />
+          <Row
+            title="Export my collection"
+            caption="Your local entries, condition and notes included, with no account identifier."
+            value="JSON"
+            valueTone="quiet"
+            onPress={() => void handleExport()}
+            accessibilityLabel="Export my collection as JSON"
+          />
+        </Group>
 
-      {message && <Notice tone="ok">{message}</Notice>}
-      {error && <Notice tone="error">{error}</Notice>}
-    </ScrollView>
+        {message && <Notice tone="ok">{message}</Notice>}
+        {error && <Notice tone="error">{error}</Notice>}
+      </ScrollView>
+    </View>
   );
 }
 
 /**
- * A section is a label over a hairline-ruled band, not a card. The band carries a
- * surface tint as well as the rules, because a hairline alone is close to invisible on
- * the dark ground.
+ * The offline catalog's size.
+ *
+ * Counts in SQLite via `countCatalogItems()` rather than reading the length of a search
+ * result, which would load all 379 rows to learn how many there are.
  */
-function Section({
-  title,
+
+/**
+ * The avocado band, plus the status bar above it.
+ *
+ * CONTRACT: `HeaderBar` in `collection-ui` does not take the top safe-area inset, so
+ * every screen that uses it has to paint the status bar itself. It would be one
+ * `useSafeAreaInsets()` inside the primitive.
+ */
+function Header() {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={{ paddingTop: insets.top, backgroundColor: colors.headerBar }}>
+      <HeaderBar title="Set up" />
+    </View>
+  );
+}
+
+/**
+ * A spice label over one card. Children are rows, and the rule between them is drawn
+ * here rather than at the call site, which is why they must be flat siblings: a
+ * fragment wrapping two rows counts as one child and loses the rule between them.
+ */
+function Group({
+  label,
+  caption,
   children,
-  flush = false,
 }: {
-  title: string;
+  label: string;
+  caption?: string;
   children: React.ReactNode;
-  flush?: boolean;
 }) {
   const colors = useColors();
+  const rows = Children.toArray(children);
+
   return (
-    <View style={styles.section}>
-      <View style={styles.sectionHead}>
-        <Label>{title}</Label>
-      </View>
-      <View
-        style={[
-          styles.sectionBody,
-          { backgroundColor: colors.surface, borderColor: colors.border },
-          flush ? null : styles.sectionBodyPadded,
-        ]}>
-        {children}
-      </View>
+    <View style={styles.group}>
+      <Label>{label}</Label>
+      {caption && <Text style={[styles.groupCaption, { color: colors.textSecondary }]}>{caption}</Text>}
+      <Card style={styles.groupCard}>
+        {rows.map((row, index) => (
+          <Fragment key={index}>
+            {index > 0 && <Divider />}
+            {row}
+          </Fragment>
+        ))}
+      </Card>
     </View>
   );
 }
 
-/** An index entry: the term in the display face, the claim in readable prose beneath it. */
-function Fact({ term, children }: { term: string; children: React.ReactNode }) {
+type ValueTone = 'accent' | 'spice' | 'quiet';
+
+/** One line of a group card: optional lead, a title over its caption, a value or control. */
+function Row({
+  title,
+  caption,
+  value,
+  valueTone = 'accent',
+  lead,
+  right,
+  strong = false,
+  onPress,
+  disabled = false,
+  accessibilityRole = 'button',
+  accessibilityState,
+  accessibilityLabel,
+}: {
+  title: string;
+  caption?: string;
+  value?: string;
+  valueTone?: ValueTone;
+  lead?: React.ReactNode;
+  right?: React.ReactNode;
+  strong?: boolean;
+  onPress?: () => void;
+  disabled?: boolean;
+  accessibilityRole?: AccessibilityRole;
+  accessibilityState?: AccessibilityState;
+  accessibilityLabel?: string;
+}) {
   const colors = useColors();
+  const valueColor = { accent: colors.accent, spice: colors.spice, quiet: colors.textTertiary }[
+    valueTone
+  ];
+
+  const body = (
+    <>
+      {lead}
+      <View style={styles.rowCopy}>
+        <Text style={[strong ? styles.rowTitleStrong : styles.rowTitle, { color: colors.text }]}>
+          {title}
+        </Text>
+        {caption && (
+          <Text style={[styles.rowCaption, { color: colors.textSecondary }]}>{caption}</Text>
+        )}
+      </View>
+      {value !== undefined && (
+        <Text style={[styles.rowValue, { color: disabled ? colors.textTertiary : valueColor }]}>
+          {value}
+        </Text>
+      )}
+      {right}
+    </>
+  );
+
+  if (!onPress) return <View style={styles.row}>{body}</View>;
+
   return (
-    <View style={styles.fact}>
-      <Label tone="tertiary">{term}</Label>
-      <Text style={[styles.copy, { color: colors.textSecondary }]}>{children}</Text>
-    </View>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole={accessibilityRole}
+      accessibilityLabel={accessibilityLabel ?? title}
+      // An explicit label replaces the child text, which would drop the caption, and on
+      // these rows the caption is the substance ("Default is off").
+      accessibilityHint={caption}
+      accessibilityState={{ ...accessibilityState, disabled }}
+      style={({ pressed }) => [
+        styles.row,
+        pressed && !disabled && { backgroundColor: colors.backgroundElement },
+      ]}>
+      {body}
+    </Pressable>
   );
 }
 
+function ToggleRow({
+  title,
+  caption,
+  checked,
+  onChange,
+}: {
+  title: string;
+  caption?: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <Row
+      title={title}
+      caption={caption}
+      onPress={() => onChange(!checked)}
+      accessibilityRole="switch"
+      accessibilityState={{ checked }}
+      accessibilityLabel={title}
+      right={<Toggle checked={checked} />}
+    />
+  );
+}
+
+/**
+ * The one control this direction draws from scratch: a 46 x 27 pill whose knob slides
+ * rather than scales, and whose track crossfades avocado to the quiet fill. The whole
+ * row is the tap target, so the pill itself takes no touches.
+ */
+function Toggle({ checked }: { checked: boolean }) {
+  const colors = useColors();
+  const reduced = useReducedMotion();
+
+  const progress = useDerivedValue(
+    () =>
+      reduced
+        ? (checked ? 1 : 0)
+        : withTiming(checked ? 1 : 0, { duration: Motion.enter, easing: EASING }),
+    [checked, reduced],
+  );
+
+  const track = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      progress.value,
+      [0, 1],
+      [colors.backgroundElement, colors.accent],
+    ),
+  }));
+  const knob = useAnimatedStyle(() => ({ transform: [{ translateX: progress.value * KNOB_TRAVEL }] }));
+
+  return (
+    <Animated.View style={[styles.track, track]} pointerEvents="none">
+      <Animated.View style={[styles.knob, knob]} />
+    </Animated.View>
+  );
+}
+
+/** Feedback from the last action, as a card rather than a banner. */
 function Notice({ tone, children }: { tone: 'ok' | 'error'; children: React.ReactNode }) {
   const colors = useColors();
+
   return (
-    <View
-      accessibilityLiveRegion="polite"
-      style={[
-        styles.notice,
-        {
-          backgroundColor: colors.surface,
-          borderColor: colors.border,
-          borderLeftColor: tone === 'error' ? colors.danger : colors.have,
-        },
-      ]}>
-      <Text style={[styles.copy, { color: tone === 'error' ? colors.danger : colors.text }]}>{children}</Text>
+    <View accessibilityLiveRegion="polite">
+      <Card style={styles.notice}>
+        {/* `Label` has no danger tone, so an error announces itself in spice and says so. */}
+        <Label tone={tone === 'error' ? 'spice' : 'accent'}>
+          {tone === 'error' ? 'Did not work' : 'Done'}
+        </Label>
+        <Text style={[styles.rowTitle, { color: tone === 'error' ? colors.danger : colors.text }]}>
+          {children}
+        </Text>
+      </Card>
     </View>
   );
 }
@@ -482,7 +660,6 @@ function GoogleSignInButton({
   onIdentityToken: (token: string) => void;
   onError: (message: string) => void;
 }) {
-  const colors = useColors();
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({ clientId });
   const blocked = disabled || !request;
 
@@ -494,25 +671,13 @@ function GoogleSignInButton({
   }, [onError, onIdentityToken, response]);
 
   return (
-    <Pressable
+    <PressButton
+      tone="quiet"
       onPress={() => void promptAsync()}
       disabled={blocked}
-      accessibilityRole="button"
-      accessibilityLabel="Continue with Google"
-      accessibilityState={{ disabled: blocked }}
-      style={({ pressed }) => [
-        styles.providerButton,
-        {
-          borderColor: colors.border,
-          backgroundColor: pressed ? colors.backgroundSelected : colors.backgroundElement,
-          transform: [{ scale: pressed ? Motion.pressScale : 1 }],
-        },
-      ]}>
-      <Text style={[styles.providerMark, { color: blocked ? colors.textTertiary : colors.accent }]}>G</Text>
-      <Text style={[styles.providerText, { color: blocked ? colors.textTertiary : colors.text }]}>
-        Continue with Google
-      </Text>
-    </Pressable>
+      accessibilityLabel="Continue with Google">
+      Continue with Google
+    </PressButton>
   );
 }
 
@@ -522,126 +687,56 @@ function visibilityCopy(visibility: PhotoVisibility): string {
   return 'Never published, for pieces you do not want anyone to know you own.';
 }
 
-/**
- * Ghost by default. `primary` is the pill, and the screen gets exactly one — anything
- * else turns the accent into chrome.
- */
-function ActionButton({
-  label,
-  onPress,
-  disabled = false,
-  primary = false,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  primary?: boolean;
-}) {
-  const colors = useColors();
-  // Ghost rests on `backgroundElement`, not `surface`: the section band is already
-  // surface, and a hairline border alone is close to invisible on the dark ground.
-  const fill = primary
-    ? disabled ? colors.backgroundSelected : colors.accent
-    : colors.backgroundElement;
-
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      style={({ pressed }) => [
-        styles.actionButton,
-        primary ? styles.actionPrimary : styles.actionGhost,
-        {
-          borderColor: disabled ? colors.border : primary ? colors.accent : colors.border,
-          backgroundColor: !primary && pressed ? colors.backgroundSelected : fill,
-          transform: [{ scale: pressed ? Motion.pressScale : 1 }],
-        },
-      ]}>
-      <Text
-        style={[
-          styles.actionText,
-          { color: disabled ? colors.textTertiary : primary ? colors.accentText : colors.text },
-        ]}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.three },
+  screen: { flex: 1 },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.gutter },
   content: {
     width: '100%',
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
-    gap: Spacing.four,
+    paddingHorizontal: Spacing.gutter,
+    paddingTop: Spacing.gutter,
+    gap: Spacing.gutter,
   },
 
-  masthead: { paddingHorizontal: Spacing.three, gap: Spacing.one },
-  wordmark: { ...Type.display },
+  // 10: the gap the mocks put between a label and its card, and between stacked cards.
+  group: { gap: Spacing.two + Spacing.half },
+  groupCaption: { ...Type.caption },
+  groupCard: { borderRadius: Radius.lg },
 
-  section: { gap: Spacing.two },
-  sectionHead: { paddingHorizontal: Spacing.three },
-  sectionBody: { borderTopWidth: Rule, borderBottomWidth: Rule },
-  sectionBodyPadded: { padding: Spacing.three, gap: Spacing.three },
-
-  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three },
-  state: { ...Type.label },
-  numeral: { ...Type.numeral },
-
-  fact: { gap: Spacing.one },
-  copy: { ...Type.body },
-
-  settingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
-  settingCopy: { flex: 1, gap: Spacing.one },
-  settingTitle: { ...Type.bodyStrong },
-  switch: { minWidth: HitTarget, minHeight: HitTarget },
-
-  choice: {
-    minHeight: HitTarget,
-    borderLeftWidth: Spacing.half,
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    gap: Spacing.one,
-  },
-  choiceHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
-  choiceTitle: { ...Type.label },
-
-  providerButton: {
-    minHeight: HitTarget,
-    borderWidth: Rule,
-    borderRadius: Radius.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    paddingHorizontal: Spacing.three,
-  },
-  providerMark: { ...Type.numeral },
-  providerText: { ...Type.bodyStrong },
+  // Buttons carry their own offset, and `Card` clips its children, so the auth actions
+  // sit below the account card rather than inside it.
+  actions: { gap: Spacing.two + Spacing.half },
   appleButton: { width: '100%', height: HitTarget },
 
-  signOut: { minHeight: HitTarget, borderRadius: Radius.sm, alignItems: 'center', justifyContent: 'center' },
-  signOutText: { ...Type.bodyStrong },
-
-  actionButton: {
+  row: {
     minHeight: HitTarget,
-    borderWidth: Rule,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: Spacing.three - Spacing.one,
+    padding: Spacing.three - Spacing.half,
   },
-  actionPrimary: { borderRadius: Radius.pill, paddingHorizontal: Spacing.four },
-  actionGhost: { borderRadius: Radius.sm, paddingHorizontal: Spacing.three },
-  actionText: { ...Type.bodyStrong },
+  rowCopy: { flex: 1, gap: Spacing.half },
+  rowTitle: { ...Type.body },
+  rowTitleStrong: { ...Type.bodyStrong },
+  rowCaption: { ...Type.caption },
+  rowValue: { ...Type.bodyStrong },
 
-  notice: {
-    alignSelf: 'stretch',
-    borderTopWidth: Rule,
-    borderBottomWidth: Rule,
-    borderLeftWidth: Spacing.half,
-    padding: Spacing.three,
+  avatar: { width: 42, height: 42, borderRadius: Radius.pill },
+
+  track: {
+    width: TOGGLE.width,
+    height: TOGGLE.height,
+    borderRadius: Radius.pill,
+    justifyContent: 'center',
+    paddingHorizontal: TOGGLE.inset,
   },
+  knob: {
+    width: TOGGLE.knob,
+    height: TOGGLE.knob,
+    borderRadius: Radius.pill,
+    backgroundColor: OnAccent.text,
+  },
+
+  notice: { padding: Spacing.three - Spacing.half, gap: Spacing.one },
 });

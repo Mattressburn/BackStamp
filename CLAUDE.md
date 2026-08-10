@@ -35,12 +35,22 @@ counts only, so `condition`/`notes` stay device-local; AI placeholder images are
 generated from a written description, never image-to-image from a user photo.
 
 **The design has a reference lock, and it lives in the header of
-`app/src/constants/theme.ts`.** Read it before changing anything visual. The short
-version: the primary reference is an archival type-specimen index, so hierarchy comes
-from a condensed display face and hairline rules, not from drop shadows and rounded
-cards. Tokens carry roles — the display face never sets body copy, the accent is never
-a background field, rarity colors are only ever rank, and colorway hex is only ever a
-swatch. Moving a token outside its role is the specific failure mode to avoid.
+`app/src/constants/theme.ts`.** Read it before changing anything visual. It has been
+replaced once, on 2026-08-10, and the header records the old direction and why it went.
+The short version of the current one: the reference is a 1970s card file, so separation
+is a solid offset shadow with no blur, in a darker tone of the ground beneath. A blur
+radius anywhere in the app is a bug. Buttons press 3px down and lose that offset;
+nothing scales. One family, Rubik, at 400/700/900. Tokens carry roles — the accent is
+the header band and primary actions but never a page ground, rarity colors are only
+ever rank, colorway hex is only ever a swatch, and `CameraChrome` belongs to the scan
+flow alone because it sits over a live camera feed and does not follow the app theme.
+Moving a token outside its role is the specific failure mode to avoid.
+
+**Read elevation through `useElevation()`, never `Elevation.card`.** It is keyed by
+scheme, because the offset colors are palette values and a light tan offset reads as a
+pale smear on the dark ground. It is expressed as `boxShadow`, the one shadow API that
+renders on iOS, Android and web alike, so the browser preview shows what the phone
+will. The bundled fonts are OFL and `app/assets/fonts/OFL.txt` ships with them.
 
 **A colorway swatch is not a photograph.** `app/src/constants/colorways.ts` turns a
 pattern's documented prose colorway into the two colors it names, so a piece with no

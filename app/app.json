@@ -19,7 +19,7 @@
     "android": {
       "package": "com.backstamp.app",
       "adaptiveIcon": {
-        "backgroundColor": "#F6F4EC",
+        "backgroundColor": "#6E7A22",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -38,11 +38,11 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F6F4EC",
+          "backgroundColor": "#6E7A22",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 112,
           "dark": {
-            "backgroundColor": "#131211",
+            "backgroundColor": "#231D14",
             "image": "./assets/images/splash-icon-dark.png",
             "imageWidth": 112
           }

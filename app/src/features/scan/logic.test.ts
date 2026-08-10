@@ -6,7 +6,7 @@ import test from 'node:test';
 import type { ApiErrorCode } from '@shared/types';
 
 // @ts-expect-error Node's TypeScript test runner requires the explicit extension.
-import { deriveLlmWasRight, shouldRetryQueueDrain } from './logic.ts';
+import { deriveLlmWasRight, ordinal, ordinalWord, shouldRetryQueueDrain } from './logic.ts';
 
 const guesses = [
   { itemSlug: 'butterprint-444', confidence: 0.86, reasoning: 'Pattern and base match.' },
@@ -30,4 +30,20 @@ test('queue drain retries transient failures until the third failed attempt', ()
   for (const code of terminal) {
     assert.equal(shouldRetryQueueDrain(code, 0), false, `${code} should not retry`);
   }
+});
+
+test('ordinal handles the teens exception', () => {
+  assert.equal(ordinal(1), '1st');
+  assert.equal(ordinal(3), '3rd');
+  assert.equal(ordinal(11), '11th');
+  assert.equal(ordinal(13), '13th');
+  assert.equal(ordinal(21), '21st');
+  assert.equal(ordinal(25), '25th');
+  assert.equal(ordinal(112), '112th');
+});
+
+test('ordinalWord runs out past ten so the caller can reword', () => {
+  assert.equal(ordinalWord(3), 'third');
+  assert.equal(ordinalWord(10), 'tenth');
+  assert.equal(ordinalWord(11), null);
 });

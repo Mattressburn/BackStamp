@@ -13,8 +13,9 @@ SplashScreen.preventAutoHideAsync();
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  // The display face carries titles and labels only, so a slow load degrades to the
-  // system face rather than to a blank screen — render either way.
+  // Rubik now sets every role, not just the display ones, so a slow load degrades the
+  // whole screen to the platform face rather than blanking it, render either way, and
+  // let the splash overlay cover the swap.
   const [fontsLoaded] = useFonts(FontAssets);
 
   // Seeds the local catalog from the bundled copy on first launch, then refreshes in

@@ -56,13 +56,17 @@ and it is loud. Chrome recedes to warm neutrals with a single accent, the way a 
 paints its walls off-white. Rarity is the one place loud color is correct, because it
 is a rank collectors read at a glance.
 
-The lock, in one line: an archival type-specimen index. Condensed display face for
-titles, labels and numerals; the system face for anything readable; hairline rules and
-surface tint instead of drop shadows; low radius; the accent used ceremonially, at most
-one solid fill per screen. Shared primitives live in
-`app/src/features/collection/collection-ui.tsx` — `SpecimenTile`, `PriceFigure`,
-`RarityBadge`, `Label`, `Divider`. Use them rather than rebuilding them, especially
-`PriceFigure`, which exists to make a bare price impossible.
+The lock, in one line: a 1970s card file. Avocado, harvest gold and spice brown on
+toasted cream; separation is a solid offset shadow with no blur, in a darker tone of the
+ground beneath; buttons press 3px down and lose that offset rather than scaling; one
+family, Rubik, at 400/700/900. A blur radius anywhere is a bug. Read elevation through
+`useElevation()`, never `Elevation.card` — it is keyed by scheme.
+
+Shared primitives live in `app/src/features/collection/collection-ui.tsx` — `Card`,
+`PressButton`, `CircleButton`, `HeaderBar`, `FileTabs`, `SpecChip`, `SpecimenTile`,
+`PriceFigure`, `RarityBadge`, `RarityPill`, `Label`, `Divider`, `PhotoPlaceholder`. Use
+them rather than rebuilding them, especially `PriceFigure`, which exists to make a bare
+price impossible.
 
 Follow each platform's conventions rather than forcing one look on both: 44dp minimum
 tap targets, real safe-area insets, native-feeling navigation. Support light and dark —
