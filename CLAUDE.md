@@ -57,6 +57,16 @@ pattern's documented prose colorway into the two colors it names, so a piece wit
 photo still arrives wearing its real colors. It must always be labelled as a swatch,
 same reasoning as never rendering a bare price.
 
+**Do not raise the 1024px upload bound expecting better accuracy.** Measured on
+2026-08-10: Gemini reported exactly 1064 image input tokens for the same photo sent at
+5712px, 2048px and 1024px. It downsamples to the same tile budget regardless, so a bigger
+upload buys nothing the model can see and only costs bytes and battery. The same
+measurement is why a shelf photo can never carry a whole collection: about four tiles of
+detail spread across forty dishes. See `docs/2026-08-10-shelf-photo-probe.md`, which also
+records that the model answers a wide frame by emitting canonical nesting sets
+(441/442/443/444) at 0.80 to 1.00 confidence while its own evidence field contradicts the
+slug in the same row.
+
 **Do not crawl the Corning Museum Pyrex Pattern Library, and do not touch its
 photographs.** CMoG confirms that factual information may be restated without a
 license. Screenshots and direct quotations of chunks of its text are expressly carved
