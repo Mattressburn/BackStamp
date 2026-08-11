@@ -143,6 +143,7 @@ export default function ScanScreen() {
   const [capturing, setCapturing] = useState(false);
   const [flashing, setFlashing] = useState(false);
   const [photoUris, setPhotoUris] = useState<string[]>([]);
+  const [identifiedHasBaseShot, setIdentifiedHasBaseShot] = useState(false);
   const [guesses, setGuesses] = useState<ScanGuess[]>([]);
   const [guessRows, setGuessRows] = useState<CatalogRow[]>([]);
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
@@ -188,8 +189,10 @@ export default function ScanScreen() {
   const presentIdentifyResponse = useCallback(async (
     response: IdentifyResponse,
     queuedPhotoUris: string[],
+    hasBaseShot: boolean,
   ) => {
     setPhotoUris(queuedPhotoUris);
+    setIdentifiedHasBaseShot(hasBaseShot);
     setGuesses(response.guesses);
     setError(null);
     if (response.lowConfidence || response.guesses.length === 0) {
@@ -223,7 +226,7 @@ export default function ScanScreen() {
           const result = await identify(scan.photos, scan.hasBaseShot);
           if (result.ok) {
             if (!cameraIdleRef.current) break;
-            await presentIdentifyResponse(result.data, scan.photos);
+            await presentIdentifyResponse(result.data, scan.photos, scan.hasBaseShot);
             presentedQueuedIdRef.current = scan.localId;
             break;
           }
@@ -302,6 +305,7 @@ export default function ScanScreen() {
     setCapturing(false);
     setFlashing(false);
     setPhotoUris([]);
+    setIdentifiedHasBaseShot(false);
     setGuesses([]);
     setGuessRows([]);
     setSelectedSlug(null);
@@ -359,7 +363,7 @@ export default function ScanScreen() {
     try {
       const result = await identify(uris, hasBaseShot);
       if (result.ok) {
-        await presentIdentifyResponse(result.data, uris);
+        await presentIdentifyResponse(result.data, uris, hasBaseShot);
       } else if (shouldRetryQueueDrain(result.code, 0)) {
         await queueBurst(uris, hasBaseShot);
       } else {
@@ -499,6 +503,7 @@ export default function ScanScreen() {
           confirmedItemSlug: row.slug,
           llmWasRight: deriveLlmWasRight(guesses, row.slug),
           consentedToTraining: settings.trainingOptIn,
+          hasBaseShot: identifiedHasBaseShot,
         });
         if (!result.ok) setNotice('Confirmed locally. The scan history could not sync.');
       } catch {

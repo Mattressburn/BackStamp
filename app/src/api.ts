@@ -5,7 +5,7 @@
  * generation key cannot ship inside a mobile binary, where anyone can extract them.
  */
 
-import { File } from 'expo-file-system';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
@@ -90,6 +90,42 @@ async function request<T>(
   }
 }
 
+// ---------------------------------------------------------------- uploads
+
+/**
+ * Every camera file URI in this app becomes bytes on the wire here and nowhere else, so
+ * the resize lives here rather than at each `takePictureAsync`. There are three capture
+ * sites and this covers all of them.
+ *
+ * Phone cameras shoot about 12MP. Vision models bill an image by tiles, and 4032px buys
+ * no accuracy over 1024 for reading a printed pattern or an embossed model number, so a
+ * full-resolution upload is paying for pixels the model discards.
+ *
+ * Two bounds, because these are two different things. A photo the model reads is an
+ * input. A photo contributed to the catalog is the artifact itself, so it keeps enough
+ * resolution to stay worth looking at. A scan kept for training uses the model bound on
+ * purpose: a stored example should be what the model actually saw, or replaying it later
+ * measures a scan that never happened.
+ *
+ * ponytail: no guard against upscaling a source narrower than the bound, because every
+ * source here is a camera capture at several megapixels. Add one if a gallery picker
+ * lands.
+ */
+const MODEL_INPUT_MAX_WIDTH = 1024;
+const CATALOG_PHOTO_MAX_WIDTH = 2048;
+const UPLOAD_JPEG_QUALITY = 0.8;
+
+async function encodeForUpload(uri: string, maxWidth: number): Promise<string> {
+  const image = await ImageManipulator.manipulate(uri).resize({ width: maxWidth }).renderAsync();
+  const { base64 } = await image.saveAsync({
+    base64: true,
+    compress: UPLOAD_JPEG_QUALITY,
+    format: SaveFormat.JPEG,
+  });
+  if (!base64) throw new Error('The photo could not be prepared for upload.');
+  return base64;
+}
+
 // ---------------------------------------------------------------- identify
 
 /**
@@ -101,7 +137,9 @@ export async function identify(
   photoUris: string[],
   hasBaseShot: boolean,
 ): Promise<ApiResult<IdentifyResponse>> {
-  const photos = await Promise.all(photoUris.map((uri) => new File(uri).base64()));
+  const photos = await Promise.all(
+    photoUris.map((uri) => encodeForUpload(uri, MODEL_INPUT_MAX_WIDTH)),
+  );
   return request<IdentifyResponse>('/identify', {
     method: 'POST',
     body: JSON.stringify({ photos, hasBaseShot }),
@@ -131,7 +169,9 @@ export async function submitUnknownPattern(input: {
   // description alone, so a photo marked private cannot leak into a public catalog
   // image by way of image-to-image generation.
   const photo =
-    photoUri && input.visibility !== 'private' ? await new File(photoUri).base64() : null;
+    photoUri && input.visibility !== 'private'
+      ? await encodeForUpload(photoUri, MODEL_INPUT_MAX_WIDTH)
+      : null;
   return request<{ slug: string }>('/patterns/unknown', {
     method: 'POST',
     body: JSON.stringify({ ...rest, photo }),
@@ -175,13 +215,14 @@ export async function logScan(input: {
   confirmedItemSlug: string | null;
   llmWasRight: boolean | null;
   consentedToTraining: boolean;
+  hasBaseShot: boolean;
 }): Promise<ApiResult<{ id: string }>> {
   const { photoUris, ...rest } = input;
   // The backend cannot read a phone-local file URI. Encode here, and only when the
   // user opted in, an un-consented scan sends no photo at all rather than sending
   // one the server is trusted to discard.
   const photos = input.consentedToTraining
-    ? await Promise.all(photoUris.map((uri) => new File(uri).base64()))
+    ? await Promise.all(photoUris.map((uri) => encodeForUpload(uri, MODEL_INPUT_MAX_WIDTH)))
     : [];
   return request<{ id: string }>('/scans', {
     method: 'POST',
@@ -214,7 +255,7 @@ export async function uploadPhoto(input: {
   photoUri: string;
   visibility: PhotoVisibility;
 }): Promise<ApiResult<{ id: string }>> {
-  const base64 = await new File(input.photoUri).base64();
+  const base64 = await encodeForUpload(input.photoUri, CATALOG_PHOTO_MAX_WIDTH);
   return request<{ id: string }>('/photos', {
     method: 'POST',
     body: JSON.stringify({

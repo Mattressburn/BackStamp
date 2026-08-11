@@ -23,6 +23,7 @@ import { configuredImageGenerator, type ImageGenerator } from './image-generator
 import { Identifier } from './identify.js';
 import { PriceService } from './pricing.js';
 import { stripExif } from './photos/strip-exif.js';
+import { createRateLimit, type RateLimitOptions } from './rate-limit.js';
 
 type BackendEnv = { Variables: { session: Omit<Session, 'token'> } };
 type ErrorStatus = 400 | 401 | 404 | 429 | 500 | 502;
@@ -34,6 +35,12 @@ export interface AppOptions {
   identifier?: Identifier;
   imageGenerator?: ImageGenerator;
   prices?: PriceService;
+  rateLimit?: {
+    clientAddress?: RateLimitOptions['clientAddress'];
+    limits?: Partial<Record<'identify' | 'scans' | 'unknownPattern', number>>;
+    now?: RateLimitOptions['now'];
+    trustProxyHeader?: boolean;
+  };
 }
 
 class ApiRouteError extends Error {
@@ -112,6 +119,12 @@ const jsonLimit = (maxSize: number) =>
     onError: (c) => c.json(failure('Request body is too large', 'bad_request'), 413),
   });
 
+function environmentLimit(name: string, fallback: number): number {
+  const value = Number(process.env[name] ?? fallback);
+  if (!Number.isSafeInteger(value) || value < 1) throw new Error(`Invalid ${name}`);
+  return value;
+}
+
 function jpegFromBase64(value: string): Buffer {
   const encoded = value.startsWith('data:image/jpeg;base64,') ? value.slice(23) : value;
   if (!encoded || encoded.length > MAX_JPEG_BASE64_CHARS || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)) {
@@ -168,6 +181,37 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
   const prices = options.prices ?? new PriceService(options.db);
   const sessionSecret = options.sessionSecret ?? process.env.SESSION_SECRET ?? '';
   const sessionConfigured = Buffer.byteLength(sessionSecret) >= 32;
+  // Only TRUST_PROXY_HEADER=true enables forwarded identity. Direct exposure or a proxy
+  // that does not sanitize X-Forwarded-For lets callers spoof fresh addresses and bypass us.
+  const rateLimitOptions = {
+    clientAddress: options.rateLimit?.clientAddress,
+    now: options.rateLimit?.now,
+    trustProxyHeader:
+      options.rateLimit?.trustProxyHeader ?? process.env.TRUST_PROXY_HEADER === 'true',
+  };
+  // One Gemini call per request is the common scan path, so allow short capture bursts.
+  const identifyRateLimit = createRateLimit({
+    ...rateLimitOptions,
+    limit:
+      options.rateLimit?.limits?.identify ??
+      environmentLimit('RATE_LIMIT_IDENTIFY_PER_MINUTE', 30),
+    windowMs: 60_000,
+  });
+  // A scan can write six sanitized photos, so cap disk-heavy bursts below identification.
+  const scansRateLimit = createRateLimit({
+    ...rateLimitOptions,
+    limit:
+      options.rateLimit?.limits?.scans ?? environmentLimit('RATE_LIMIT_SCANS_PER_MINUTE', 12),
+    windowMs: 60_000,
+  });
+  // Unknown patterns make two model calls including image generation, so this is intentionally tight.
+  const unknownPatternRateLimit = createRateLimit({
+    ...rateLimitOptions,
+    limit:
+      options.rateLimit?.limits?.unknownPattern ??
+      environmentLimit('RATE_LIMIT_UNKNOWN_PATTERNS_PER_HOUR', 2),
+    windowMs: 60 * 60_000,
+  });
 
   const sessionFrom = (c: Context<BackendEnv>): Omit<Session, 'token'> | null => {
     const authorization = c.req.header('Authorization');
@@ -192,7 +236,7 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
   });
   app.notFound((c) => c.json(failure('Route not found', 'not_found'), 404));
 
-  app.post('/identify', jsonLimit(6 * MAX_JPEG_BASE64_CHARS + 10_000), async (c) => {
+  app.post('/identify', identifyRateLimit, jsonLimit(6 * MAX_JPEG_BASE64_CHARS + 10_000), async (c) => {
     const input = await body(c);
     if (!Array.isArray(input.photos) || input.photos.length === 0 || input.photos.length > 6) {
       throw new ApiRouteError('bad_request', 400, 'photos must contain 1 to 6 JPEGs');
@@ -270,7 +314,7 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
     return c.json(success(quotes));
   });
 
-  app.post('/scans', jsonLimit(6 * MAX_JPEG_BASE64_CHARS + 25_000), async (c) => {
+  app.post('/scans', scansRateLimit, jsonLimit(6 * MAX_JPEG_BASE64_CHARS + 25_000), async (c) => {
     const input = await body(c);
     if (
       !Array.isArray(input.photos) ||
@@ -297,6 +341,9 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
     ) {
       throw new ApiRouteError('bad_request', 400, 'Invalid scan labels');
     }
+    if (typeof input.hasBaseShot !== 'boolean') {
+      throw new ApiRouteError('bad_request', 400, 'Invalid hasBaseShot');
+    }
     if ((confirmedItemSlug === null) !== (input.llmWasRight === null)) {
       throw new ApiRouteError('bad_request', 400, 'Confirmed item and llmWasRight must be labeled together');
     }
@@ -309,22 +356,26 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
     }
 
     const id = randomUUID();
-    let photoRef: string | null = null;
-    if (input.consentedToTraining) {
-      // api.ts encodes to base64 at send time and sends an empty array when the user
-      // has not opted in, so this branch only ever sees photos we are allowed to keep.
-      const photo = optionalJpeg(input.photos[0]);
-      if (photo) {
-        await mkdir(options.photoDir, { recursive: true });
-        photoRef = `scan-${id}.jpg`;
-        await writeFile(join(options.photoDir, photoRef), photo, { flag: 'wx' });
-      }
-    }
+    const photoRefs: string[] = [];
     try {
+      if (input.consentedToTraining) {
+        // api.ts sends an empty array when the user has not opted in, so only this
+        // branch decodes photos. jpegFromBase64 strips EXIF before bytes touch disk.
+        const photos = input.photos.map((photo) => jpegFromBase64(photo as string));
+        if (photos.length > 0) {
+          await mkdir(options.photoDir, { recursive: true });
+        }
+        for (const [ordinal, photo] of photos.entries()) {
+          const photoRef = `scan-${id}-${ordinal}.jpg`;
+          photoRefs.push(photoRef);
+          await writeFile(join(options.photoDir, photoRef), photo, { flag: 'wx' });
+        }
+      }
       options.db.addScan({
         id,
         userId: sessionFrom(c)?.userId ?? null,
-        photoRef,
+        photoRefs,
+        hasBaseShot: input.hasBaseShot,
         guessesJson: JSON.stringify(guesses),
         confirmedItemSlug,
         llmWasRight: input.llmWasRight as boolean | null,
@@ -332,7 +383,9 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
         createdAt: new Date().toISOString(),
       });
     } catch (error) {
-      if (photoRef) await rm(join(options.photoDir, photoRef), { force: true });
+      await Promise.all(
+        photoRefs.map((photoRef) => rm(join(options.photoDir, photoRef), { force: true })),
+      );
       throw error;
     }
     return c.json(success({ id }));
@@ -401,7 +454,7 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
     }
   });
 
-  app.post('/patterns/unknown', jsonLimit(MAX_JPEG_BASE64_CHARS + 25_000), async (c) => {
+  app.post('/patterns/unknown', unknownPatternRateLimit, jsonLimit(MAX_JPEG_BASE64_CHARS + 25_000), async (c) => {
     const input = await body(c);
     const patternName = requiredString(input.patternName, 'patternName', 100);
     const description = requiredString(input.description, 'description');

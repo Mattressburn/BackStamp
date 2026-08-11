@@ -58,13 +58,16 @@ photo still arrives wearing its real colors. It must always be labelled as a swa
 same reasoning as never rendering a bare price.
 
 **Do not crawl the Corning Museum Pyrex Pattern Library, and do not touch its
-photographs.** As of 2026-08-10 the user reports CMoG granted use of their **data**
-provided it is not reproduced word for word, so restated facts are now fair game and the
-date corrections are unblocked. That grant does not extend to their photographs, which
-are separately copyrighted, and it cannot extend to the Pyrex pattern artwork itself,
-which belongs to Corning/Instant Brands rather than to CMoG. Claude has not read the
-exact wording of the reply; ask for it before relying on anything broader than facts.
-The site still carries no model numbers, so it can never produce items on its own.
+photographs.** CMoG confirms that factual information may be restated without a
+license. Screenshots and direct quotations of chunks of its text are expressly carved
+out. Its photographs remain separately copyrighted, and its reply does not cover the
+Pyrex pattern artwork, which belongs to Corning or Instant Brands rather than CMoG.
+CMoG requested source recognition and a link; Settings now provides both for pattern
+names and production dates. The site carries no model numbers, so it cannot produce
+items on its own.
+
+**Launch obligation:** Send the live app link to Suzanne Abrams Rebillard, Managing
+Editor, Publications, at CMoG.
 
 ## Commands
 

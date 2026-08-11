@@ -52,6 +52,8 @@ function textContent(message: Anthropic.Messages.Message): string {
   return block.text;
 }
 
+// This order is load-bearing for prefix caching. Keep fixed instructions and the catalog
+// before request-derived text so the large catalog prefix stays byte-identical across calls.
 function identifyPrompt(
   request: IdentifyRequest,
   catalog: { items: Item[]; patterns: Pattern[]; forms: Form[] },
@@ -67,11 +69,11 @@ function identifyPrompt(
   return [
     'Identify this vintage ovenware item using only the supplied catalog.',
     'The embossed base model number outranks pattern appearance. Curved glass, glare, fading, and partial pattern views make appearance less reliable.',
+    'Return at most three catalog slugs. Never invent a slug and never return a free-text item name.',
+    `Catalog:\n${JSON.stringify(choices)}`,
     request.hasBaseShot
       ? 'A base photo is present. Read its embossed model number first and give it the highest evidentiary weight.'
       : 'No base photo is present. Lower confidence when the form or model number is uncertain.',
-    'Return at most three catalog slugs. Never invent a slug and never return a free-text item name.',
-    `Catalog:\n${JSON.stringify(choices)}`,
   ].join('\n\n');
 }
 

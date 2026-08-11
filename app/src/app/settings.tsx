@@ -20,6 +20,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Children, Fragment, useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -76,6 +77,7 @@ import type { AuthProvider, PhotoVisibility, UserItem } from '@shared/types';
 WebBrowser.maybeCompleteAuthSession();
 
 const VISIBILITIES: PhotoVisibility[] = ['attributed', 'anonymous', 'private'];
+const CMOG_PATTERN_LIBRARY_URL = 'https://pyrex.cmog.org/pattern-library';
 
 /** The shared curve, as an easing function. Every motion on this screen uses it. */
 const EASING = Easing.bezier(...Motion.easing);
@@ -429,6 +431,17 @@ export default function SettingsScreen() {
             valueTone="quiet"
             onPress={() => void handleExport()}
             accessibilityLabel="Export my collection as JSON"
+          />
+        </Group>
+
+        <Group label="Sources">
+          <Row
+            title="Corning Museum of Glass"
+            caption="Pattern names and production dates from the Pyrex Pattern Library."
+            value="Visit"
+            onPress={() => void Linking.openURL(CMOG_PATTERN_LIBRARY_URL)}
+            accessibilityRole="link"
+            accessibilityLabel="Open the Corning Museum of Glass Pyrex Pattern Library"
           />
         </Group>
 

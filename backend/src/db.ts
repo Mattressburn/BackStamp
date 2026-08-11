@@ -12,6 +12,7 @@ import type {
   Photo,
   PhotoVisibility,
   PriceQuote,
+  Scan,
   UserItem,
 } from '@shared/types.js';
 
@@ -70,6 +71,16 @@ interface CollectionRow {
 
 interface VersionRow {
   value: string;
+}
+
+interface TrainingScanPhotoRow {
+  id: string;
+  file_ref: string;
+  has_base_shot: number;
+  guesses_json: string;
+  confirmed_item_slug: string;
+  llm_was_right: number | null;
+  created_at: string;
 }
 
 const patternFromRow = (row: PatternRow): Pattern => ({
@@ -160,12 +171,21 @@ export class BackendDatabase {
       CREATE TABLE IF NOT EXISTS scans (
         id TEXT PRIMARY KEY,
         user_id TEXT,
+        -- Retained for legacy rows. New writes use scan_photos and leave this NULL.
         photo_ref TEXT,
         guesses_json TEXT NOT NULL,
         confirmed_item_slug TEXT,
         llm_was_right INTEGER,
         consented_to_training INTEGER NOT NULL CHECK (consented_to_training IN (0, 1)),
+        has_base_shot INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL
+      ) STRICT;
+
+      CREATE TABLE IF NOT EXISTS scan_photos (
+        scan_id TEXT NOT NULL REFERENCES scans(id),
+        ordinal INTEGER NOT NULL,
+        file_ref TEXT NOT NULL,
+        PRIMARY KEY (scan_id, ordinal)
       ) STRICT;
 
       CREATE TABLE IF NOT EXISTS collection (
@@ -191,6 +211,15 @@ export class BackendDatabase {
         )
       ) STRICT;
     `);
+
+    const scanColumns = this.sqlite.prepare('PRAGMA table_info(scans)').all() as unknown as {
+      name: string;
+    }[];
+    if (!scanColumns.some((column) => column.name === 'has_base_shot')) {
+      this.sqlite.exec(
+        'ALTER TABLE scans ADD COLUMN has_base_shot INTEGER NOT NULL DEFAULT 0',
+      );
+    }
   }
 
   seedCatalog(catalog: CatalogResponse): void {
@@ -461,30 +490,69 @@ export class BackendDatabase {
   addScan(input: {
     id: string;
     userId: string | null;
-    photoRef: string | null;
+    photoRefs: string[];
+    hasBaseShot: boolean;
     guessesJson: string;
     confirmedItemSlug: string | null;
     llmWasRight: boolean | null;
     consentedToTraining: boolean;
     createdAt: string;
   }): void {
-    this.sqlite
-      .prepare(`
+    const insertScan = this.sqlite.prepare(`
         INSERT INTO scans(
           id, user_id, photo_ref, guesses_json, confirmed_item_slug,
-          llm_was_right, consented_to_training, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `)
-      .run(
+          llm_was_right, consented_to_training, has_base_shot, created_at
+        ) VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?)
+      `);
+    const insertPhoto = this.sqlite.prepare(
+      'INSERT INTO scan_photos(scan_id, ordinal, file_ref) VALUES (?, ?, ?)',
+    );
+    this.transaction(() => {
+      insertScan.run(
         input.id,
         input.userId,
-        input.photoRef,
         input.guessesJson,
         input.confirmedItemSlug,
         input.llmWasRight === null ? null : Number(input.llmWasRight),
         Number(input.consentedToTraining),
+        Number(input.hasBaseShot),
         input.createdAt,
       );
+      for (const [ordinal, photoRef] of input.photoRefs.entries()) {
+        insertPhoto.run(input.id, ordinal, photoRef);
+      }
+    });
+  }
+
+  listTrainingScans(): Omit<Scan, 'consentedToTraining'>[] {
+    const rows = this.sqlite
+      .prepare(`
+        SELECT s.id, p.file_ref, s.has_base_shot, s.guesses_json,
+          s.confirmed_item_slug, s.llm_was_right, s.created_at
+        FROM scans s
+        JOIN scan_photos p ON p.scan_id = s.id
+        WHERE s.consented_to_training = 1 AND s.confirmed_item_slug IS NOT NULL
+        ORDER BY s.created_at, s.id, p.ordinal
+      `)
+      .all() as unknown as TrainingScanPhotoRow[];
+    const scans = new Map<string, Omit<Scan, 'consentedToTraining'>>();
+    for (const row of rows) {
+      const scan = scans.get(row.id);
+      if (scan) {
+        scan.photoRefs.push(row.file_ref);
+        continue;
+      }
+      scans.set(row.id, {
+        id: row.id,
+        photoRefs: [row.file_ref],
+        hasBaseShot: Boolean(row.has_base_shot),
+        guesses: JSON.parse(row.guesses_json) as Scan['guesses'],
+        confirmedItemSlug: row.confirmed_item_slug,
+        llmWasRight: row.llm_was_right === null ? null : Boolean(row.llm_was_right),
+        createdAt: row.created_at,
+      });
+    }
+    return [...scans.values()];
   }
 
   createUnknownPattern(input: {

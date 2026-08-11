@@ -128,7 +128,8 @@ export interface IdentifyResponse {
 
 export interface Scan {
   id: string;
-  photoRef: string | null;      // null when the user did not consent to storage
+  photoRefs: string[];          // empty when the user did not consent to storage
+  hasBaseShot: boolean;
   guesses: ScanGuess[];
   confirmedItemSlug: string | null;
   llmWasRight: boolean | null;  // null while unconfirmed

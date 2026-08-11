@@ -58,6 +58,30 @@ test('the Gemini request pins itemSlug to the catalog and sends the photos as in
   assert.match(sent.contents[0].parts[0].text, /A base photo is present/);
 });
 
+test('the catalog remains inside the byte-identical prompt prefix', async () => {
+  const prompts: string[] = [];
+  const identifier = new Identifier('gemini-test-key', undefined, async (_url, init) => {
+    const body = JSON.parse(String(init?.body));
+    prompts.push(body.contents[0].parts[0].text);
+    return geminiReply([]);
+  });
+
+  await identifier.identify({ photos: ['aGVsbG8='], hasBaseShot: true }, catalog);
+  await identifier.identify({ photos: ['aGVsbG8='], hasBaseShot: false }, catalog);
+
+  const [basePrompt, noBasePrompt] = prompts;
+  assert.ok(basePrompt);
+  assert.ok(noBasePrompt);
+  const baseSentence = 'A base photo is present. Read its embossed model number first and give it the highest evidentiary weight.';
+  const noBaseSentence = 'No base photo is present. Lower confidence when the form or model number is uncertain.';
+  const baseVariableAt = basePrompt.indexOf(baseSentence);
+  const noBaseVariableAt = noBasePrompt.indexOf(noBaseSentence);
+  const stablePrefix = basePrompt.slice(0, baseVariableAt);
+
+  assert.equal(stablePrefix, noBasePrompt.slice(0, noBaseVariableAt));
+  assert.match(stablePrefix, /Catalog:\n.*butterprint-501/s);
+});
+
 test('a slug outside the catalog never reaches the caller even if the model emits one', async () => {
   const identifier = new Identifier('gemini-test-key', undefined, async () =>
     geminiReply([{ itemSlug: 'millennium-falcon-9999', confidence: 1, reasoning: 'invented' }]),

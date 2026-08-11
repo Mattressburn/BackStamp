@@ -4,7 +4,7 @@
       "id": "primary-colors",
       "name": "Primary Colors",
       "yearsStart": 1945,
-      "yearsEnd": 1968,
+      "yearsEnd": 1949,
       "colorway": "yellow, green, red, and blue",
       "rarity": "common",
       "notes": "The original four-bowl set uses a fixed color for each size."
@@ -48,8 +48,8 @@
     {
       "id": "atomic-eyes",
       "name": "Atomic Eyes",
-      "yearsStart": 1958,
-      "yearsEnd": 1958,
+      "yearsStart": 1950,
+      "yearsEnd": 1959,
       "colorway": "turquoise on white",
       "rarity": "rare",
       "notes": "Collector name for the Hot N Cold chip-and-dip set."
@@ -94,7 +94,7 @@
       "id": "sandalwood",
       "name": "Sandalwood",
       "yearsStart": 1961,
-      "yearsEnd": 1963,
+      "yearsEnd": 1962,
       "colorway": "tan and white",
       "rarity": "hard-to-find",
       "notes": null
@@ -202,10 +202,10 @@
       "id": "butterfly-gold",
       "name": "Butterfly Gold",
       "yearsStart": 1972,
-      "yearsEnd": 1979,
+      "yearsEnd": 1981,
       "colorway": "gold and white",
       "rarity": "common",
-      "notes": "This record covers the first version introduced in 1972."
+      "notes": "This span includes the altered version introduced in 1979."
     },
     {
       "id": "spring-blossom-green",
@@ -220,7 +220,7 @@
       "id": "snowflake-blue",
       "name": "Snowflake Blue",
       "yearsStart": 1972,
-      "yearsEnd": null,
+      "yearsEnd": 1975,
       "colorway": "blue and white",
       "rarity": "common",
       "notes": "Often called Snowflake Garland; published end dates differ by one year."
@@ -229,7 +229,7 @@
       "id": "old-town-blue",
       "name": "Old Town Blue",
       "yearsStart": 1972,
-      "yearsEnd": null,
+      "yearsEnd": 1982,
       "colorway": "dark blue on white",
       "rarity": "common",
       "notes": "This was a tabletop line; published end dates differ by one year."
@@ -3574,5 +3574,5 @@
       "userSubmitted": false
     }
   ],
-  "version": 1
+  "version": 2
 }

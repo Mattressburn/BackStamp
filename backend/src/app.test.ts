@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 
 import type { ApiResult, CatalogResponse } from '@shared/types.js';
 
-import { createApp } from './app.js';
+import { createApp, type AppOptions } from './app.js';
 import { createSession } from './auth.js';
 import { BackendDatabase } from './db.js';
 import { Identifier } from './identify.js';
@@ -47,14 +48,25 @@ const catalog: CatalogResponse = {
   ],
 };
 
-function setup() {
+function setup(appOptions: Pick<AppOptions, 'identifier' | 'imageGenerator' | 'rateLimit'> = {}) {
   const db = new BackendDatabase(':memory:');
   db.seedCatalog(catalog);
   const photoDir = mkdtempSync(join(tmpdir(), 'backend-photo-test-'));
-  return { db, photoDir, app: createApp({ db, photoDir, sessionSecret: secret }) };
+  const { rateLimit, ...dependencies } = appOptions;
+  return {
+    db,
+    photoDir,
+    app: createApp({
+      db,
+      photoDir,
+      sessionSecret: secret,
+      ...dependencies,
+      rateLimit: { clientAddress: () => 'test-client', ...rateLimit },
+    }),
+  };
 }
 
-function jpegWithExif(): Buffer {
+function jpegWithExif(scanByte = 0x11): Buffer {
   const exif = Buffer.from('Exif\0\0GPS=home');
   const length = Buffer.alloc(2);
   length.writeUInt16BE(exif.length + 2);
@@ -62,7 +74,7 @@ function jpegWithExif(): Buffer {
     Buffer.from([0xff, 0xd8, 0xff, 0xe1]),
     length,
     exif,
-    Buffer.from([0xff, 0xda, 0x00, 0x08, 1, 1, 0, 0, 63, 0, 0x11, 0xff, 0xd9]),
+    Buffer.from([0xff, 0xda, 0x00, 0x08, 1, 1, 0, 0, 63, 0, scanByte, 0xff, 0xd9]),
   ]);
 }
 
@@ -85,7 +97,13 @@ test('identify accepts realistic JPEG payloads larger than a text field', async 
   const photoDir = mkdtempSync(join(tmpdir(), 'backend-photo-test-'));
   const identifier = new Identifier();
   identifier.identify = async () => ({ guesses: [], lowConfidence: true });
-  const app = createApp({ db, photoDir, sessionSecret: secret, identifier });
+  const app = createApp({
+    db,
+    photoDir,
+    sessionSecret: secret,
+    identifier,
+    rateLimit: { clientAddress: () => 'test-client' },
+  });
   const jpeg = Buffer.concat([
     Buffer.from([0xff, 0xd8, 0xff, 0xda, 0x00, 0x08, 1, 1, 0, 0, 63, 0]),
     Buffer.alloc(2_500, 0x11),
@@ -223,7 +241,7 @@ test('photo upload strips EXIF before the stored file is observable', async () =
 });
 
 test('scan logging never stores photo bytes without training consent', async () => {
-  const { app, photoDir } = setup();
+  const { app, db, photoDir } = setup();
   try {
     const response = await app.request('/scans', {
       method: 'POST',
@@ -234,10 +252,15 @@ test('scan logging never stores photo bytes without training consent', async () 
         confirmedItemSlug: null,
         llmWasRight: null,
         consentedToTraining: false,
+        hasBaseShot: false,
       }),
     });
     assert.equal(((await response.json()) as ApiResult<{ id: string }>).ok, true);
     assert.deepEqual(readdirSync(photoDir), []);
+    const row = db.sqlite.prepare('SELECT COUNT(*) AS count FROM scan_photos').get() as unknown as {
+      count: number;
+    };
+    assert.equal(row.count, 0);
   } finally {
     rmSync(photoDir, { recursive: true, force: true });
   }
@@ -255,6 +278,7 @@ test('scan labels must agree with the confirmed item and guesses', async () => {
         confirmedItemSlug: 'butterprint-444',
         llmWasRight: true,
         consentedToTraining: false,
+        hasBaseShot: false,
       }),
     });
     assert.equal(response.status, 400);
@@ -263,6 +287,227 @@ test('scan labels must agree with the confirmed item and guesses', async () => {
       error: 'Confirmed item must match a guess when llmWasRight is true',
       code: 'bad_request',
     });
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('consented scan stores every photo in capture order', async () => {
+  const { app, db, photoDir } = setup();
+  try {
+    const response = await app.request('/scans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        photos: [jpegWithExif(0x11).toString('base64'), jpegWithExif(0x22).toString('base64')],
+        guesses: [],
+        confirmedItemSlug: null,
+        llmWasRight: null,
+        consentedToTraining: true,
+        hasBaseShot: true,
+      }),
+    });
+    const result = (await response.json()) as ApiResult<{ id: string }>;
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+
+    const rows = db.sqlite
+      .prepare('SELECT ordinal, file_ref FROM scan_photos WHERE scan_id = ? ORDER BY ordinal')
+      .all(result.data.id) as unknown as { ordinal: number; file_ref: string }[];
+    assert.deepEqual(
+      rows.map((row) => ({ ordinal: row.ordinal, fileRef: row.file_ref })),
+      [
+        { ordinal: 0, fileRef: `scan-${result.data.id}-0.jpg` },
+        { ordinal: 1, fileRef: `scan-${result.data.id}-1.jpg` },
+      ],
+    );
+    assert.equal(readFileSync(join(photoDir, rows[0]!.file_ref)).includes(0x11), true);
+    assert.equal(readFileSync(join(photoDir, rows[1]!.file_ref)).includes(0x22), true);
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('hasBaseShot round-trips through training scans', () => {
+  const db = new BackendDatabase(':memory:');
+  db.addScan({
+    id: 'base-shot',
+    userId: null,
+    photoRefs: ['pattern.jpg', 'base.jpg'],
+    hasBaseShot: true,
+    guessesJson: JSON.stringify([
+      { itemSlug: 'butterprint-444', confidence: 0.9, reasoning: 'model number' },
+    ]),
+    confirmedItemSlug: 'butterprint-444',
+    llmWasRight: true,
+    consentedToTraining: true,
+    createdAt: '2026-08-10T12:00:00.000Z',
+  });
+
+  assert.deepEqual(db.listTrainingScans(), [
+    {
+      id: 'base-shot',
+      photoRefs: ['pattern.jpg', 'base.jpg'],
+      hasBaseShot: true,
+      guesses: [{ itemSlug: 'butterprint-444', confidence: 0.9, reasoning: 'model number' }],
+      confirmedItemSlug: 'butterprint-444',
+      llmWasRight: true,
+      createdAt: '2026-08-10T12:00:00.000Z',
+    },
+  ]);
+});
+
+test('listTrainingScans excludes unconfirmed and unconsented rows', () => {
+  const db = new BackendDatabase(':memory:');
+  db.addScan({
+    id: 'eligible',
+    userId: null,
+    photoRefs: ['eligible.jpg'],
+    hasBaseShot: false,
+    guessesJson: '[]',
+    confirmedItemSlug: 'butterprint-444',
+    llmWasRight: false,
+    consentedToTraining: true,
+    createdAt: '2026-08-10T12:00:00.000Z',
+  });
+  db.addScan({
+    id: 'unconfirmed',
+    userId: null,
+    photoRefs: ['unconfirmed.jpg'],
+    hasBaseShot: false,
+    guessesJson: '[]',
+    confirmedItemSlug: null,
+    llmWasRight: null,
+    consentedToTraining: true,
+    createdAt: '2026-08-10T12:01:00.000Z',
+  });
+  db.addScan({
+    id: 'unconsented',
+    userId: null,
+    photoRefs: ['unconsented.jpg'],
+    hasBaseShot: false,
+    guessesJson: '[]',
+    confirmedItemSlug: 'butterprint-444',
+    llmWasRight: false,
+    consentedToTraining: false,
+    createdAt: '2026-08-10T12:02:00.000Z',
+  });
+
+  assert.deepEqual(db.listTrainingScans().map((scan) => scan.id), ['eligible']);
+});
+
+test('existing scans gain has_base_shot without losing rows', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'backend-migration-test-'));
+  const path = join(directory, 'legacy.sqlite');
+  const legacy = new DatabaseSync(path);
+  legacy.exec(`
+    CREATE TABLE scans (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      photo_ref TEXT,
+      guesses_json TEXT NOT NULL,
+      confirmed_item_slug TEXT,
+      llm_was_right INTEGER,
+      consented_to_training INTEGER NOT NULL CHECK (consented_to_training IN (0, 1)),
+      created_at TEXT NOT NULL
+    ) STRICT;
+    INSERT INTO scans VALUES (
+      'legacy', NULL, 'legacy.jpg', '[]', NULL, NULL, 0, '2026-08-10T12:00:00.000Z'
+    );
+  `);
+  legacy.close();
+
+  const db = new BackendDatabase(path);
+  try {
+    const columns = db.sqlite.prepare('PRAGMA table_info(scans)').all() as unknown as {
+      name: string;
+    }[];
+    assert.equal(columns.some((column) => column.name === 'has_base_shot'), true);
+    assert.deepEqual(
+      { ...db.sqlite.prepare('SELECT id, photo_ref, has_base_shot FROM scans').get() },
+      { id: 'legacy', photo_ref: 'legacy.jpg', has_base_shot: 0 },
+    );
+  } finally {
+    db.sqlite.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('scan logging requires hasBaseShot', async () => {
+  const { app, photoDir } = setup();
+  try {
+    const response = await app.request('/scans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        photos: [],
+        guesses: [],
+        confirmedItemSlug: null,
+        llmWasRight: null,
+        consentedToTraining: false,
+      }),
+    });
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), {
+      ok: false,
+      error: 'Invalid hasBaseShot',
+      code: 'bad_request',
+    });
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('paid routes have separate injectable request limits', async () => {
+  const identifier = new Identifier();
+  identifier.identify = async () => ({ guesses: [], lowConfidence: true });
+  identifier.describePattern = async (_photo, description) => description;
+  const { app, photoDir } = setup({
+    identifier,
+    imageGenerator: { generate: async () => null },
+    rateLimit: { limits: { identify: 1, scans: 1, unknownPattern: 1 } },
+  });
+
+  const requests = [
+    {
+      path: '/identify',
+      body: { photos: [jpegWithExif().toString('base64')], hasBaseShot: false },
+    },
+    {
+      path: '/scans',
+      body: {
+        photos: [],
+        guesses: [],
+        confirmedItemSlug: null,
+        llmWasRight: null,
+        consentedToTraining: false,
+        hasBaseShot: false,
+      },
+    },
+    {
+      path: '/patterns/unknown',
+      body: {
+        patternName: 'Test Pattern',
+        description: 'Small brown dots',
+        formId: '444-cinderella',
+        visibility: 'anonymous',
+        photo: null,
+      },
+    },
+  ];
+
+  try {
+    for (const request of requests) {
+      const init = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request.body),
+      };
+      assert.notEqual((await app.request(request.path, init)).status, 429, request.path);
+      const response = await app.request(request.path, init);
+      assert.equal(response.status, 429, request.path);
+      assert.equal(response.headers.get('Retry-After') !== null, true, request.path);
+    }
   } finally {
     rmSync(photoDir, { recursive: true, force: true });
   }
