@@ -28,7 +28,15 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Linking, StyleSheet, View } from 'react-native';
 
-import { fetchPrices, identify, identifySet, logScan, submitUnknownPattern } from '@/api';
+import {
+  fetchCatalog,
+  fetchPrices,
+  identify,
+  identifySet,
+  logScan,
+  submitKnownCombination,
+  submitUnknownPattern,
+} from '@/api';
 import {
   bumpScanAttempts,
   dequeueScan,
@@ -41,6 +49,7 @@ import {
   listQueuedScans,
   searchCatalog,
   setOwnership,
+  syncCatalog,
   type CatalogRow,
 } from '@/db';
 import { calculateCollectionValues } from '@/features/collection/collection-total';
@@ -64,6 +73,7 @@ import {
   BrowseDetailScreen,
   BrowseScreen,
   FiledScreen,
+  KnownCombinationScreen,
   ResultScreen,
   SetResultsScreen,
   money,
@@ -73,6 +83,7 @@ import {
 import {
   deriveLlmWasRight,
   groupDetections,
+  knownCombinationOptions,
   ordinal,
   ordinalWord,
   replaceOrMergeDetectionGroup,
@@ -89,6 +100,7 @@ type Phase =
   | 'set-results'
   | 'browse'
   | 'browse-detail'
+  | 'known-combination'
   | 'confirming'
   | 'owned'
   | 'saved';
@@ -198,6 +210,9 @@ export default function ScanScreen() {
     readOnly: boolean;
   } | null>(null);
   const [unknownPatternName, setUnknownPatternName] = useState('');
+  const [knownPatternId, setKnownPatternId] = useState<string | null>(null);
+  const [knownFormId, setKnownFormId] = useState<string | null>(null);
+  const [knownCombinationQuery, setKnownCombinationQuery] = useState('');
   const [owned, setOwned] = useState<{ row: CatalogRow; quantity: number; since: string | null } | null>(null);
   const [filedHeadline, setFiledHeadline] = useState('');
   const [ledger, setLedger] = useState<FiledLedger | null>(null);
@@ -368,6 +383,13 @@ export default function ScanScreen() {
       .map(([shape]) => shape);
   }, [catalog]);
 
+  // ponytail: every current pattern and form has an item row; add direct database lists
+  // if the catalog ever allows definitions with no combination.
+  const knownCombination = useMemo(
+    () => knownCombinationOptions(catalog, knownPatternId),
+    [catalog, knownPatternId],
+  );
+
   const resetScan = useCallback(() => {
     browseDetailTokenRef.current += 1;
     setPhase('camera');
@@ -390,6 +412,9 @@ export default function ScanScreen() {
     setShapeFilter(null);
     setBrowseDetail(null);
     setUnknownPatternName('');
+    setKnownPatternId(null);
+    setKnownFormId(null);
+    setKnownCombinationQuery('');
     setOwned(null);
     setFiledHeadline('');
     setLedger(null);
@@ -809,9 +834,10 @@ export default function ScanScreen() {
           rarity: 'common',
           ebayQuery: patternName,
           userSubmitted: true,
+          provenance: 'collector-attested',
           patternName,
           shape: 'Form not yet catalogued',
-          modelNo: '—',
+          modelNo: 'Unknown',
           colorway: null,
         },
         'have',
@@ -822,12 +848,72 @@ export default function ScanScreen() {
     }
   };
 
+  const submitCombination = async () => {
+    const pattern = knownCombination.patterns.find(({ id }) => id === knownPatternId);
+    const form = knownCombination.forms.find(({ id }) => id === knownFormId);
+    if (!pattern || !form) {
+      setError('Choose a known pattern and an existing form.');
+      return;
+    }
+    if (isOffline) {
+      setError('Adding a form needs a connection. Catalog browsing still works offline.');
+      return;
+    }
+
+    setWaitCopy({
+      title: 'Adding the combination',
+      caption: `${pattern.name}, ${formOf({ shape: form.shape, modelNo: form.modelNo })}.`,
+    });
+    setPhase('confirming');
+    setError(null);
+
+    try {
+      const result = await submitKnownCombination(pattern.id, form.id);
+      if (!result.ok) {
+        setPhase('known-combination');
+        setError(result.error);
+        return;
+      }
+
+      let rows = catalog;
+      try {
+        const refreshed = await fetchCatalog(0);
+        if (refreshed.ok) {
+          await syncCatalog(refreshed.data);
+          rows = await loadCatalog();
+        } else {
+          setNotice('Added to the shared catalog. This phone will refresh its saved copy later.');
+        }
+      } catch {
+        setNotice('Added to the shared catalog. This phone will refresh its saved copy later.');
+      }
+
+      const patternRow = catalog.find((row) => row.patternId === pattern.id);
+      await confirmRow(
+        rows.find((row) => row.slug === result.data.slug) ?? {
+          ...result.data,
+          patternName: pattern.name,
+          shape: form.shape,
+          modelNo: form.modelNo,
+          colorway: patternRow?.colorway ?? null,
+        },
+        'have',
+      );
+    } catch {
+      setPhase('known-combination');
+      setError('The combination could not be added.');
+    }
+  };
+
   const openBrowse = (correctionSlug: string | null = null) => {
     browseDetailTokenRef.current += 1;
     setCorrectingSlug(correctionSlug);
     setCatalogQuery('');
     setShapeFilter(null);
     setBrowseDetail(null);
+    setKnownPatternId(null);
+    setKnownFormId(null);
+    setKnownCombinationQuery('');
     setError(null);
     setPhase('browse');
   };
@@ -920,6 +1006,13 @@ export default function ScanScreen() {
           unknownName={unknownPatternName}
           onUnknownName={setUnknownPatternName}
           onSubmitUnknown={() => void submitUnknown()}
+          onAddKnownCombination={() => {
+            setKnownPatternId(null);
+            setKnownFormId(null);
+            setKnownCombinationQuery('');
+            setError(null);
+            setPhase('known-combination');
+          }}
           onBack={() => {
             if (!correctingSlug) {
               resetScan();
@@ -934,6 +1027,48 @@ export default function ScanScreen() {
             setPhase('set-results');
           }}
           onPick={(row) => void openBrowseDetail(row)}
+        />
+      );
+    }
+
+    if (phase === 'known-combination') {
+      return (
+        <KnownCombinationScreen
+          patterns={knownCombination.patterns}
+          forms={knownCombination.forms}
+          selectedPatternId={knownPatternId}
+          selectedFormId={knownFormId}
+          query={knownCombinationQuery}
+          banner={banner}
+          problem={error}
+          offline={isOffline}
+          onQuery={setKnownCombinationQuery}
+          onPattern={(patternId) => {
+            setKnownPatternId(patternId);
+            setKnownFormId(null);
+            setKnownCombinationQuery('');
+            setError(null);
+          }}
+          onForm={(formId) => {
+            setKnownFormId(formId);
+            setKnownCombinationQuery('');
+            setError(null);
+          }}
+          onBack={() => {
+            if (knownFormId) {
+              setKnownFormId(null);
+              setKnownCombinationQuery('');
+              return;
+            }
+            if (knownPatternId) {
+              setKnownPatternId(null);
+              setKnownCombinationQuery('');
+              return;
+            }
+            setError(null);
+            setPhase('browse');
+          }}
+          onConfirm={() => void submitCombination()}
         />
       );
     }
@@ -1068,7 +1203,7 @@ export default function ScanScreen() {
   );
 }
 
-function formOf(row: CatalogRow): string {
+function formOf(row: Pick<CatalogRow, 'shape' | 'modelNo'>): string {
   return `${row.shape} ${row.modelNo}`;
 }
 

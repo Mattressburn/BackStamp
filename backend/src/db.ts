@@ -41,6 +41,7 @@ interface ItemRow {
   form_id: string;
   rarity: Item['rarity'];
   ebay_query: string;
+  provenance: Item['provenance'] | null;
   user_submitted: number;
 }
 
@@ -108,8 +109,19 @@ const itemFromRow = (row: ItemRow): Item => ({
   formId: row.form_id,
   rarity: row.rarity,
   ebayQuery: row.ebay_query,
+  provenance: row.provenance ?? 'published-reference',
   userSubmitted: Boolean(row.user_submitted),
 });
+
+function ebayQuery(pattern: Pattern, form: Form): string {
+  const formName =
+    form.family === 'cinderella-bowl'
+      ? 'Cinderella bowl'
+      : form.family === 'other'
+        ? ''
+        : form.family.replaceAll('-', ' ');
+  return ['Vintage Pyrex', pattern.name, form.modelNo, formName].filter(Boolean).join(' ');
+}
 
 export class BackendDatabase {
   readonly sqlite: DatabaseSync;
@@ -153,6 +165,7 @@ export class BackendDatabase {
         form_id TEXT NOT NULL REFERENCES forms(id),
         rarity TEXT NOT NULL,
         ebay_query TEXT NOT NULL,
+        provenance TEXT NOT NULL,
         user_submitted INTEGER NOT NULL CHECK (user_submitted IN (0, 1))
       ) STRICT;
 
@@ -220,6 +233,15 @@ export class BackendDatabase {
         'ALTER TABLE scans ADD COLUMN has_base_shot INTEGER NOT NULL DEFAULT 0',
       );
     }
+
+    const itemColumns = this.sqlite.prepare('PRAGMA table_info(items)').all() as unknown as {
+      name: string;
+    }[];
+    if (!itemColumns.some((column) => column.name === 'provenance')) {
+      this.sqlite.exec(
+        "ALTER TABLE items ADD COLUMN provenance TEXT NOT NULL DEFAULT 'published-reference'",
+      );
+    }
   }
 
   seedCatalog(catalog: CatalogResponse): void {
@@ -243,11 +265,11 @@ export class BackendDatabase {
         shape=excluded.shape, capacity_qt=excluded.capacity_qt, dimensions=excluded.dimensions
     `);
     const insertItem = this.sqlite.prepare(`
-      INSERT INTO items(slug, pattern_id, form_id, rarity, ebay_query, user_submitted)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO items(slug, pattern_id, form_id, rarity, ebay_query, provenance, user_submitted)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(slug) DO UPDATE SET pattern_id=excluded.pattern_id, form_id=excluded.form_id,
         rarity=excluded.rarity, ebay_query=excluded.ebay_query,
-        user_submitted=excluded.user_submitted
+        provenance=excluded.provenance, user_submitted=excluded.user_submitted
     `);
 
     this.transaction(() => {
@@ -279,6 +301,7 @@ export class BackendDatabase {
           item.formId,
           item.rarity,
           item.ebayQuery,
+          item.provenance,
           Number(item.userSubmitted),
         );
       }
@@ -334,6 +357,38 @@ export class BackendDatabase {
       | (FormRow & Record<string, unknown>)
       | undefined;
     return row ? formFromRow(row) : null;
+  }
+
+  createKnownCombination(pattern: Pattern, form: Form): Item {
+    const item: Item = {
+      slug: `${pattern.id}-${form.modelNo}`,
+      patternId: pattern.id,
+      formId: form.id,
+      rarity: pattern.rarity,
+      ebayQuery: ebayQuery(pattern, form),
+      provenance: 'collector-attested',
+      userSubmitted: true,
+    };
+    this.transaction(() => {
+      this.sqlite
+        .prepare(`
+          INSERT INTO items(
+            slug, pattern_id, form_id, rarity, ebay_query, provenance, user_submitted
+          ) VALUES (?, ?, ?, ?, ?, ?, 1)
+        `)
+        .run(
+          item.slug,
+          item.patternId,
+          item.formId,
+          item.rarity,
+          item.ebayQuery,
+          item.provenance,
+        );
+      this.sqlite
+        .prepare("UPDATE meta SET value = CAST(value AS INTEGER) + 1 WHERE key = 'catalog_version'")
+        .run();
+    });
+    return item;
   }
 
   getPhotos(itemSlug: string, userId: string | null = null): Photo[] {
@@ -595,8 +650,9 @@ export class BackendDatabase {
       }
       this.sqlite
         .prepare(`
-          INSERT INTO items(slug, pattern_id, form_id, rarity, ebay_query, user_submitted)
-          VALUES (?, ?, ?, 'common', ?, 1)
+          INSERT INTO items(
+            slug, pattern_id, form_id, rarity, ebay_query, provenance, user_submitted
+          ) VALUES (?, ?, ?, 'common', ?, 'collector-attested', 1)
         `)
         .run(slug, patternId, form.id, `Vintage Pyrex ${input.patternName} ${form.modelNo}`);
       this.sqlite

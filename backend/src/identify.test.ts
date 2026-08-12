@@ -7,8 +7,8 @@ import { Identifier, resolveGuesses, resolveSetDetections } from './identify.js'
 
 const catalog = {
   items: [
-    { slug: 'butterprint-444', patternId: 'butterprint', formId: '444-cinderella', rarity: 'rare' as const, ebayQuery: '', userSubmitted: false },
-    { slug: 'butterprint-501', patternId: 'butterprint', formId: '501-fridge', rarity: 'common' as const, ebayQuery: '', userSubmitted: false },
+    { slug: 'butterprint-444', patternId: 'butterprint', formId: '444-cinderella', rarity: 'rare' as const, ebayQuery: '', provenance: 'published-reference' as const, userSubmitted: false },
+    { slug: 'butterprint-501', patternId: 'butterprint', formId: '501-fridge', rarity: 'common' as const, ebayQuery: '', provenance: 'collector-attested' as const, userSubmitted: false },
   ],
   patterns: [
     { id: 'butterprint', name: 'Butterprint', yearsStart: 1957, yearsEnd: 1968, colorway: 'turquoise on white', rarity: 'rare' as const, notes: null },
@@ -159,6 +159,7 @@ test('the catalog remains inside the byte-identical prompt prefix', async () => 
 
   assert.equal(stablePrefix, noBasePrompt.slice(0, noBaseVariableAt));
   assert.match(stablePrefix, /Catalog:\n.*butterprint-501/s);
+  assert.doesNotMatch(stablePrefix, /"provenance":/);
 });
 
 test('set identification sends a stable catalog prompt and resolves the Gemini detections', async () => {
@@ -206,6 +207,7 @@ test('set identification sends a stable catalog prompt and resolves the Gemini d
   assert.equal(sent[0].contents[0].parts[0].text, sent[1].contents[0].parts[0].text);
   assert.match(sent[0].contents[0].parts[0].text, /"colorway":"turquoise on white"/);
   assert.match(sent[0].contents[0].parts[0].text, /"dimensions":"4 x 3 in"/);
+  assert.doesNotMatch(sent[0].contents[0].parts[0].text, /"provenance":/);
 });
 
 test('set identification short-circuits an empty catalog and otherwise requires Gemini', async () => {

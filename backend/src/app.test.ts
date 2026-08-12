@@ -35,6 +35,14 @@ const catalog: CatalogResponse = {
       capacityQt: 4,
       dimensions: null,
     },
+    {
+      id: '501-refrigerator-dish',
+      modelNo: '501',
+      family: 'refrigerator-dish',
+      shape: 'Refrigerator dish',
+      capacityQt: 1.5,
+      dimensions: null,
+    },
   ],
   items: [
     {
@@ -43,6 +51,7 @@ const catalog: CatalogResponse = {
       formId: '444-cinderella',
       rarity: 'common',
       ebayQuery: 'Vintage Pyrex Butterprint 444 Cinderella',
+      provenance: 'published-reference',
       userSubmitted: false,
     },
   ],
@@ -186,8 +195,13 @@ test('identify set returns resolved detections and strips EXIF before identifica
 test('seed updates cannot reuse a version already issued to an unknown pattern', () => {
   const db = new BackendDatabase(':memory:');
   db.seedCatalog({ ...catalog, version: 1 });
-  db.createUnknownPattern({ patternName: 'New Find', formId: '444-cinderella', description: 'dots' });
+  const created = db.createUnknownPattern({
+    patternName: 'New Find',
+    formId: '444-cinderella',
+    description: 'dots',
+  });
   assert.equal(db.catalogVersion(), 2);
+  assert.equal(db.getItem(created.slug)?.provenance, 'collector-attested');
 
   db.seedCatalog({
     ...catalog,
@@ -197,6 +211,71 @@ test('seed updates cannot reuse a version already issued to an unknown pattern',
 
   assert.equal(db.catalogVersion(), 3);
   assert.equal(db.getPattern('butterprint')?.name, 'Butterprint revised');
+});
+
+test('POST /items creates an existing pattern and form combination', async () => {
+  const { app, db, photoDir } = setup();
+  try {
+    const response = await app.request('/items', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ patternId: 'butterprint', formId: '501-refrigerator-dish' }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      ok: true,
+      data: {
+        slug: 'butterprint-501',
+        patternId: 'butterprint',
+        formId: '501-refrigerator-dish',
+        rarity: 'common',
+        ebayQuery: 'Vintage Pyrex Butterprint 501 refrigerator dish',
+        provenance: 'collector-attested',
+        userSubmitted: true,
+      },
+    });
+    assert.equal(db.catalogVersion(), 8);
+    assert.equal(db.getItem('butterprint-501')?.provenance, 'collector-attested');
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('POST /items names unknown pattern, unknown form, and duplicate combination errors', async () => {
+  const { app, photoDir } = setup();
+  const cases = [
+    {
+      body: { patternId: 'missing-pattern', formId: '501-refrigerator-dish' },
+      error: 'Unknown pattern id: missing-pattern',
+    },
+    {
+      body: { patternId: 'butterprint', formId: 'missing-form' },
+      error: 'Unknown form id: missing-form',
+    },
+    {
+      body: { patternId: 'butterprint', formId: '444-cinderella' },
+      error: 'Item combination already exists: butterprint-444',
+    },
+  ];
+
+  try {
+    for (const input of cases) {
+      const response = await app.request('/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input.body),
+      });
+      assert.equal(response.status, 400);
+      assert.deepEqual(await response.json(), {
+        ok: false,
+        error: input.error,
+        code: 'bad_request',
+      });
+    }
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
 });
 
 test('auth-required routes return an ApiResult unauthorized body', async () => {
@@ -495,6 +574,67 @@ test('existing scans gain has_base_shot without losing rows', () => {
   }
 });
 
+test('existing items gain provenance without losing rows', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'backend-item-migration-test-'));
+  const path = join(directory, 'legacy.sqlite');
+  const legacy = new DatabaseSync(path);
+  legacy.exec(`
+    CREATE TABLE patterns (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      years_start INTEGER,
+      years_end INTEGER,
+      colorway TEXT,
+      rarity TEXT NOT NULL,
+      notes TEXT
+    ) STRICT;
+    CREATE TABLE forms (
+      id TEXT PRIMARY KEY,
+      model_no TEXT NOT NULL,
+      family TEXT NOT NULL,
+      shape TEXT NOT NULL,
+      capacity_qt REAL,
+      dimensions TEXT
+    ) STRICT;
+    CREATE TABLE items (
+      slug TEXT PRIMARY KEY,
+      pattern_id TEXT NOT NULL REFERENCES patterns(id),
+      form_id TEXT NOT NULL REFERENCES forms(id),
+      rarity TEXT NOT NULL,
+      ebay_query TEXT NOT NULL,
+      user_submitted INTEGER NOT NULL CHECK (user_submitted IN (0, 1))
+    ) STRICT;
+    INSERT INTO patterns VALUES (
+      'butterprint', 'Butterprint', 1957, 1968, 'turquoise on white', 'common', NULL
+    );
+    INSERT INTO forms VALUES (
+      '444-cinderella', '444', 'cinderella-bowl', 'Cinderella bowl', 4, NULL
+    );
+    INSERT INTO items VALUES (
+      'butterprint-444', 'butterprint', '444-cinderella', 'common',
+      'Vintage Pyrex Butterprint 444 Cinderella', 0
+    );
+  `);
+  legacy.close();
+
+  const db = new BackendDatabase(path);
+  try {
+    const columns = db.sqlite.prepare('PRAGMA table_info(items)').all() as unknown as {
+      name: string;
+    }[];
+    assert.equal(columns.some((column) => column.name === 'provenance'), true);
+    assert.equal(db.getItem('butterprint-444')?.provenance, 'published-reference');
+    assert.equal(
+      (db.sqlite.prepare('SELECT COUNT(*) AS count FROM items').get() as unknown as { count: number })
+        .count,
+      1,
+    );
+  } finally {
+    db.sqlite.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test('scan logging requires hasBaseShot', async () => {
   const { app, photoDir } = setup();
   try {
@@ -601,6 +741,34 @@ test('identify and identify set drain one shared request limit', async () => {
 
     assert.equal(first.status, 200);
     assert.equal(second.status, 429);
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('POST /items and scan logging drain one shared request limit', async () => {
+  const { app, photoDir } = setup({ rateLimit: { limits: { scans: 1 } } });
+  try {
+    const itemResponse = await app.request('/items', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ patternId: 'butterprint', formId: '501-refrigerator-dish' }),
+    });
+    const scanResponse = await app.request('/scans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        photos: [],
+        guesses: [],
+        confirmedItemSlug: null,
+        llmWasRight: null,
+        consentedToTraining: false,
+        hasBaseShot: false,
+      }),
+    });
+
+    assert.equal(itemResponse.status, 200);
+    assert.equal(scanResponse.status, 429);
   } finally {
     rmSync(photoDir, { recursive: true, force: true });
   }

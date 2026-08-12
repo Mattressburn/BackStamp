@@ -116,6 +116,7 @@ function identifyPrompt(
 ): string {
   const patterns = new Map(catalog.patterns.map((pattern) => [pattern.id, pattern]));
   const forms = new Map(catalog.forms.map((form) => [form.id, form]));
+  // Cache guard: provenance has no identification value and must not enter this catalog JSON.
   const choices = catalog.items.map((item) => ({
     slug: item.slug,
     pattern: patterns.get(item.patternId)?.name,
@@ -136,6 +137,7 @@ function identifyPrompt(
 function identifySetPrompt(catalog: { items: Item[]; patterns: Pattern[]; forms: Form[] }): string {
   const patterns = new Map(catalog.patterns.map((pattern) => [pattern.id, pattern]));
   const forms = new Map(catalog.forms.map((form) => [form.id, form]));
+  // Cache guard: provenance has no identification value and must not enter this catalog JSON.
   const choices = catalog.items.map((item) => {
     const pattern = patterns.get(item.patternId);
     const form = forms.get(item.formId);

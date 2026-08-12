@@ -76,6 +76,37 @@ export function shouldPresentBrowseDetail(
   return request === currentRequest && (phase === 'browse' || phase === 'set-results');
 }
 
+export function knownCombinationOptions(
+  rows: readonly {
+    patternId: Pattern['id'];
+    patternName: Pattern['name'];
+    formId: Form['id'];
+    shape: Form['shape'];
+    modelNo: Form['modelNo'];
+  }[],
+  selectedPatternId: Pattern['id'] | null,
+): {
+  patterns: Pick<Pattern, 'id' | 'name'>[];
+  forms: Pick<Form, 'id' | 'shape' | 'modelNo'>[];
+} {
+  const patterns = new Map<Pattern['id'], Pick<Pattern, 'id' | 'name'>>();
+  const forms = new Map<Form['id'], Pick<Form, 'id' | 'shape' | 'modelNo'>>();
+  const usedForms = new Set<Form['id']>();
+
+  for (const row of rows) {
+    patterns.set(row.patternId, { id: row.patternId, name: row.patternName });
+    forms.set(row.formId, { id: row.formId, shape: row.shape, modelNo: row.modelNo });
+    if (row.patternId === selectedPatternId) usedForms.add(row.formId);
+  }
+
+  return {
+    patterns: [...patterns.values()],
+    forms: selectedPatternId
+      ? [...forms.values()].filter((form) => !usedForms.has(form.id))
+      : [],
+  };
+}
+
 export interface GroupedDetection {
   itemSlug: string;
   count: number;

@@ -15,6 +15,7 @@ import type {
   CatalogResponse,
   IdentifyResponse,
   IdentifySetResponse,
+  Item,
   ItemDetail,
   PhotoVisibility,
   PriceQuote,
@@ -163,6 +164,16 @@ export function fetchCatalog(sinceVersion = 0): Promise<ApiResult<CatalogRespons
 
 export function fetchItem(slug: string): Promise<ApiResult<ItemDetail>> {
   return request<ItemDetail>(`/items/${encodeURIComponent(slug)}`);
+}
+
+export function submitKnownCombination(
+  patternId: string,
+  formId: string,
+): Promise<ApiResult<Item>> {
+  return request<Item>('/items', {
+    method: 'POST',
+    body: JSON.stringify({ patternId, formId }),
+  });
 }
 
 /** Creates a catalog entry for a pattern nobody has catalogued yet. */

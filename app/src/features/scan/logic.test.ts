@@ -6,7 +6,7 @@ import test from 'node:test';
 import type { ApiErrorCode, PriceQuote, SetDetection } from '@shared/types';
 
 // @ts-expect-error Node's TypeScript test runner requires the explicit extension.
-import { browseDetailFacts, deriveLlmWasRight, groupDetections, ordinal, ordinalWord, replaceOrMergeDetectionGroup, shouldPresentBrowseDetail, shouldRetryQueueDrain, summarizeFiledPrices, type GroupedDetection } from './logic.ts';
+import { browseDetailFacts, deriveLlmWasRight, groupDetections, knownCombinationOptions, ordinal, ordinalWord, replaceOrMergeDetectionGroup, shouldPresentBrowseDetail, shouldRetryQueueDrain, summarizeFiledPrices, type GroupedDetection } from './logic.ts';
 
 const guesses = [
   { itemSlug: 'butterprint-444', confidence: 0.86, reasoning: 'Pattern and base match.' },
@@ -88,6 +88,42 @@ test('browse detail opens from browse or set results and ignores stale lookups',
   assert.equal(shouldPresentBrowseDetail(2, 2, 'set-results'), true);
   assert.equal(shouldPresentBrowseDetail(1, 2, 'browse'), false);
   assert.equal(shouldPresentBrowseDetail(2, 2, 'camera'), false);
+});
+
+test('known combination choices deduplicate catalog rows and exclude forms already used by the pattern', () => {
+  const rows = [
+    {
+      patternId: 'butterprint',
+      patternName: 'Butterprint',
+      formId: '444-cinderella',
+      shape: 'Cinderella bowl',
+      modelNo: '444',
+    },
+    {
+      patternId: 'gooseberry',
+      patternName: 'Gooseberry',
+      formId: '444-cinderella',
+      shape: 'Cinderella bowl',
+      modelNo: '444',
+    },
+    {
+      patternId: 'gooseberry',
+      patternName: 'Gooseberry',
+      formId: '501-refrigerator',
+      shape: 'Refrigerator dish',
+      modelNo: '501',
+    },
+  ];
+
+  assert.deepEqual(knownCombinationOptions(rows, 'butterprint'), {
+    patterns: [
+      { id: 'butterprint', name: 'Butterprint' },
+      { id: 'gooseberry', name: 'Gooseberry' },
+    ],
+    forms: [
+      { id: '501-refrigerator', shape: 'Refrigerator dish', modelNo: '501' },
+    ],
+  });
 });
 
 test('set detections group duplicate slugs without changing first-appearance order', () => {

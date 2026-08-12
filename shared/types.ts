@@ -42,6 +42,13 @@ export type FormFamily =
 
 export type Rarity = 'common' | 'uncommon' | 'hard-to-find' | 'rare' | 'grail';
 
+/** What kind of claim backs a catalog row. Rendered wherever the entry renders. */
+export type Provenance =
+  | 'published-reference'   // the digitized book behind the seeded 379
+  | 'period-ad'             // period advertising or trade catalog evidence
+  | 'museum-library'        // the CMoG pattern library
+  | 'collector-attested';   // known to collectors; a photo may be the only evidence
+
 /**
  * pattern x form. Only combinations that actually exist in production records,
  * plus user-created entries. Never a cross-product.
@@ -52,6 +59,7 @@ export interface Item {
   formId: string;
   rarity: Rarity;          // may differ from the pattern's baseline rarity
   ebayQuery: string;       // "Vintage Pyrex Butterprint 444 Cinderella"
+  provenance: Provenance;
   /** True when a user created this at scan time rather than it coming from the catalog seed. */
   userSubmitted: boolean;
 }

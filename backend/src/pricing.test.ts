@@ -12,6 +12,7 @@ const item: Item = {
   formId: '444-cinderella',
   rarity: 'common',
   ebayQuery: 'Vintage Pyrex Butterprint 444 Cinderella',
+  provenance: 'published-reference',
   userSubmitted: false,
 };
 

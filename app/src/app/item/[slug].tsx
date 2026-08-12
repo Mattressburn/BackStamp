@@ -69,6 +69,7 @@ import {
   PhotoPlaceholder,
   PressButton,
   PriceFigure,
+  provenanceLabel,
   RarityPill,
   SpecChip,
   SpecimenTile,
@@ -207,6 +208,7 @@ export default function ItemDetailScreen() {
               formId: row.formId,
               rarity: row.rarity,
               ebayQuery: row.ebayQuery,
+              provenance: row.provenance,
               userSubmitted: Boolean(row.userSubmitted),
               pattern,
               form,
@@ -437,6 +439,9 @@ export default function ItemDetailScreen() {
                 <SpecChip label="Model" value={detail.form.modelNo} />
                 <SpecChip label="You own" value={String(owned)} />
               </View>
+              <Label tone="tertiary" style={styles.claimLabel}>
+                {provenanceLabel(detail.provenance)}
+              </Label>
             </View>
           </Card>
         </Enter>
@@ -983,6 +988,7 @@ const styles = StyleSheet.create({
   caption: { ...Type.callout, marginTop: Spacing.one },
   priceSlot: { marginTop: Spacing.three - Spacing.half },
   chipRow: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.three - Spacing.half },
+  claimLabel: { marginTop: Spacing.three },
 
   rarityCorner: { position: 'absolute', left: CARD_PAD - Spacing.one, top: CARD_PAD - Spacing.one },
   attribution: {

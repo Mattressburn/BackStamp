@@ -67,6 +67,7 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
       form_id         TEXT NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
       rarity          TEXT NOT NULL,
       ebay_query      TEXT NOT NULL,
+      provenance      TEXT NOT NULL DEFAULT 'published-reference',
       user_submitted  INTEGER NOT NULL DEFAULT 0
     );
     CREATE INDEX IF NOT EXISTS idx_items_pattern ON items(pattern_id);
@@ -94,6 +95,13 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
       value TEXT NOT NULL
     );
   `);
+
+  const itemColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(items)');
+  if (!itemColumns.some(({ name }) => name === 'provenance')) {
+    await db.execAsync(
+      "ALTER TABLE items ADD COLUMN provenance TEXT NOT NULL DEFAULT 'published-reference'",
+    );
+  }
 }
 
 // ---------------------------------------------------------------- catalog
@@ -124,9 +132,18 @@ export async function syncCatalog(catalog: CatalogResponse): Promise<void> {
     }
     for (const i of catalog.items) {
       await db.runAsync(
-        `INSERT INTO items (slug,pattern_id,form_id,rarity,ebay_query,user_submitted)
-         VALUES (?,?,?,?,?,?)`,
-        [i.slug, i.patternId, i.formId, i.rarity, i.ebayQuery, i.userSubmitted ? 1 : 0],
+        `INSERT INTO items
+           (slug,pattern_id,form_id,rarity,ebay_query,provenance,user_submitted)
+         VALUES (?,?,?,?,?,?,?)`,
+        [
+          i.slug,
+          i.patternId,
+          i.formId,
+          i.rarity,
+          i.ebayQuery,
+          i.provenance,
+          i.userSubmitted ? 1 : 0,
+        ],
       );
     }
     await db.runAsync(
@@ -150,7 +167,8 @@ export async function searchCatalog(query = '', limit = 200): Promise<CatalogRow
   const like = `%${query.trim()}%`;
   return db.getAllAsync<CatalogRow>(
     `SELECT i.slug, i.pattern_id AS patternId, i.form_id AS formId, i.rarity,
-            i.ebay_query AS ebayQuery, i.user_submitted AS userSubmitted,
+            i.ebay_query AS ebayQuery, i.provenance,
+            i.user_submitted AS userSubmitted,
             p.name AS patternName, p.colorway, f.shape, f.model_no AS modelNo
        FROM items i
        JOIN patterns p ON p.id = i.pattern_id

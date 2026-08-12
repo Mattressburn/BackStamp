@@ -48,7 +48,7 @@ import {
   type ElevationSet,
 } from '@/constants/theme';
 import { BRAND } from '@shared/branding';
-import type { Photo, PriceQuote, PriceSourceKind, Rarity } from '@shared/types';
+import type { Photo, PriceQuote, PriceSourceKind, Provenance, Rarity } from '@shared/types';
 
 const money = new Intl.NumberFormat(undefined, {
   style: 'currency',
@@ -85,6 +85,19 @@ export function photoSource(photo: Photo, token: string | null) {
 
 export function priceSourceLabel(source: PriceSourceKind): string {
   return source === 'sold' ? 'sold, last 90 days' : 'currently listed';
+}
+
+export function provenanceLabel(provenance: Provenance): string {
+  switch (provenance) {
+    case 'published-reference':
+      return 'From a published reference';
+    case 'period-ad':
+      return 'Documented in a period ad';
+    case 'museum-library':
+      return 'In the museum pattern library';
+    case 'collector-attested':
+      return 'Collector attested';
+  }
 }
 
 // ------------------------------------------------------------------ text

@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import type { CatalogResponse, FormFamily, Rarity } from '../shared/types.ts';
+import type { CatalogResponse, FormFamily, Provenance, Rarity } from '../shared/types.ts';
 
 const rarities = new Set<Rarity>([
   'common',
@@ -10,6 +10,12 @@ const rarities = new Set<Rarity>([
   'hard-to-find',
   'rare',
   'grail',
+]);
+const provenances = new Set<Provenance>([
+  'published-reference',
+  'period-ad',
+  'museum-library',
+  'collector-attested',
 ]);
 const formFamilies = new Set<FormFamily>([
   'mixing-bowl',
@@ -168,7 +174,7 @@ function validateCatalog(value: unknown): CatalogResponse {
     }
     checkKeys(
       item,
-      ['slug', 'patternId', 'formId', 'rarity', 'ebayQuery', 'userSubmitted'],
+      ['slug', 'patternId', 'formId', 'rarity', 'ebayQuery', 'userSubmitted', 'provenance'],
       label,
       errors,
     );
@@ -196,6 +202,9 @@ function validateCatalog(value: unknown): CatalogResponse {
     }
     if (!rarities.has(item.rarity as Rarity)) {
       errors.push(`${label}.rarity "${String(item.rarity)}" is outside the enum`);
+    }
+    if (!provenances.has(item.provenance as Provenance)) {
+      errors.push(`${label}.provenance "${String(item.provenance)}" is outside the enum`);
     }
     if (typeof item.ebayQuery !== 'string' || item.ebayQuery.trim() === '') {
       errors.push(`${label}.ebayQuery must be a non-empty string`);

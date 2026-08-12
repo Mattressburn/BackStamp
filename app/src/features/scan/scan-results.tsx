@@ -56,6 +56,7 @@ import {
   HeaderBar,
   Label,
   PressButton,
+  provenanceLabel,
   RarityBadge,
   SpecimenTile,
   useColors,
@@ -720,7 +721,7 @@ export function FiledScreen({
         <View style={styles.ledger}>
           <LedgerFigure
             label="Worth about"
-            figure={ledger.itemFigure ?? '—'}
+            figure={ledger.itemFigure ?? 'Unavailable'}
             source={ledger.itemSource}
           />
           {/* `Divider` reads on `colors.divider`, which all but vanishes on avocado. */}
@@ -728,7 +729,7 @@ export function FiledScreen({
           <LedgerFigure
             gold
             label="Shelf total"
-            figure={ledger.shelfFigure ?? '—'}
+            figure={ledger.shelfFigure ?? 'Unavailable'}
             source={ledger.shelfSource}
           />
         </View>
@@ -801,6 +802,7 @@ export function BrowseScreen({
   unknownName,
   onUnknownName,
   onSubmitUnknown,
+  onAddKnownCombination,
   onBack,
   onPick,
 }: {
@@ -817,6 +819,7 @@ export function BrowseScreen({
   unknownName: string;
   onUnknownName: (value: string) => void;
   onSubmitUnknown: () => void;
+  onAddKnownCombination: () => void;
   onBack: () => void;
   onPick: (row: CatalogRow) => void;
 }) {
@@ -897,33 +900,229 @@ export function BrowseScreen({
           </Text>
         }
         ListFooterComponent={
-          <Card style={styles.unknownCard}>
-            <Label tone="spice">Not catalogued</Label>
-            <Text accessibilityRole="header" style={[styles.rowTitle, { color: colors.text }]}>
-              Name it yourself
-            </Text>
-            <Text style={[styles.rowCaption, { color: colors.textSecondary }]}>
-              Name it in your own words. Creating the catalog entry needs a connection.
-            </Text>
-            <TextInput
-              accessibilityLabel="Name the unknown pattern"
-              autoCapitalize="words"
-              onChangeText={onUnknownName}
-              placeholder="Pattern name"
-              placeholderTextColor={colors.textTertiary}
-              returnKeyType="done"
-              style={[
-                styles.unknownInput,
-                { backgroundColor: colors.background, color: colors.text },
-              ]}
-              value={unknownName}
-            />
-            <PressButton tone="quiet" disabled={offline} onPress={onSubmitUnknown}>
-              {offline ? 'Connect to submit a new pattern' : 'Submit new pattern'}
-            </PressButton>
-          </Card>
+          <View style={styles.catalogGrowth}>
+            <Card style={styles.unknownCard}>
+              <Label tone="spice">Known pattern, new form</Label>
+              <Text accessibilityRole="header" style={[styles.rowTitle, { color: colors.text }]}>
+                Add a missing combination
+              </Text>
+              <Text style={[styles.rowCaption, { color: colors.textSecondary }]}>
+                Use this when both the pattern and form are known, but this pairing is missing.
+                Adding it shares the combination with everyone and needs a connection.
+              </Text>
+              <PressButton
+                tone="quiet"
+                onPress={onAddKnownCombination}
+                accessibilityLabel="Add a known pattern in a new form">
+                Add a known pattern in a new form
+              </PressButton>
+            </Card>
+
+            <Card style={styles.unknownCard}>
+              <Label tone="spice">Not catalogued</Label>
+              <Text accessibilityRole="header" style={[styles.rowTitle, { color: colors.text }]}>
+                Name it yourself
+              </Text>
+              <Text style={[styles.rowCaption, { color: colors.textSecondary }]}>
+                Name it in your own words. Creating the catalog entry needs a connection.
+              </Text>
+              <TextInput
+                accessibilityLabel="Name the unknown pattern"
+                autoCapitalize="words"
+                onChangeText={onUnknownName}
+                placeholder="Pattern name"
+                placeholderTextColor={colors.textTertiary}
+                returnKeyType="done"
+                style={[
+                  styles.unknownInput,
+                  { backgroundColor: colors.background, color: colors.text },
+                ]}
+                value={unknownName}
+              />
+              <PressButton
+                tone="quiet"
+                disabled={offline}
+                onPress={onSubmitUnknown}
+                accessibilityLabel={offline ? 'Connect to submit a new pattern' : 'Submit new pattern'}>
+                {offline ? 'Connect to submit a new pattern' : 'Submit new pattern'}
+              </PressButton>
+            </Card>
+          </View>
         }
       />
+    </View>
+  );
+}
+
+export function KnownCombinationScreen({
+  patterns,
+  forms,
+  selectedPatternId,
+  selectedFormId,
+  query,
+  banner,
+  problem,
+  offline,
+  onQuery,
+  onPattern,
+  onForm,
+  onBack,
+  onConfirm,
+}: {
+  patterns: Pick<Pattern, 'id' | 'name'>[];
+  forms: Pick<Form, 'id' | 'shape' | 'modelNo'>[];
+  selectedPatternId: string | null;
+  selectedFormId: string | null;
+  query: string;
+  banner: string | null;
+  problem: string | null;
+  offline: boolean;
+  onQuery: (value: string) => void;
+  onPattern: (patternId: string) => void;
+  onForm: (formId: string) => void;
+  onBack: () => void;
+  onConfirm: () => void;
+}) {
+  const colors = useColors();
+  const elevation = useElevation();
+  const insets = useSafeAreaInsets();
+  const [footerHeight, setFooterHeight] = useState(0);
+  const selectedPattern = patterns.find((pattern) => pattern.id === selectedPatternId) ?? null;
+  const selectedForm = forms.find((form) => form.id === selectedFormId) ?? null;
+  const normalizedQuery = query.trim().toLowerCase();
+  const choices = selectedPattern
+    ? forms.filter((form) =>
+        !normalizedQuery ||
+        form.shape.toLowerCase().includes(normalizedQuery) ||
+        form.modelNo.toLowerCase().includes(normalizedQuery),
+      )
+    : patterns.filter((pattern) =>
+        !normalizedQuery || pattern.name.toLowerCase().includes(normalizedQuery),
+      );
+  const step = selectedForm ? 3 : selectedPattern ? 2 : 1;
+
+  return (
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+      <View style={{ paddingTop: insets.top, backgroundColor: colors.headerBar }}>
+        <HeaderBar onBack={onBack} label="Add a missing combination" />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[
+          styles.combinationContent,
+          {
+            paddingBottom: selectedForm
+              ? footerHeight + Spacing.four
+              : insets.bottom + TAB_BAR_CLEARANCE + Spacing.six,
+          },
+        ]}
+        keyboardShouldPersistTaps="handled">
+        <ScanBanner message={banner} />
+        <ScanBanner message={problem} tone="problem" />
+
+        <Card style={styles.combinationIntro}>
+          <Label tone="tertiary">Step {step} of 3</Label>
+          <Text accessibilityRole="header" style={[styles.rowTitle, { color: colors.text }]}>
+            {selectedForm ? 'Confirm the combination' : selectedPattern ? 'Choose the form' : 'Choose the pattern'}
+          </Text>
+          <Text style={[styles.rowCaption, { color: colors.textSecondary }]}>
+            {selectedForm
+              ? 'Confirming adds this pattern and form pairing to the shared catalog for everyone, then files the piece on your shelf.'
+              : selectedPattern
+                ? `Choose the existing form used by this ${selectedPattern.name} piece.`
+                : 'Search the patterns already saved on this phone.'}
+          </Text>
+        </Card>
+
+        {selectedForm && selectedPattern ? (
+          <Card raised style={styles.combinationSummary}>
+            <View style={styles.browseDetailSection}>
+              <Label tone="tertiary">Pattern</Label>
+              <Text style={[styles.browseDetailFact, { color: colors.text }]}>
+                {selectedPattern.name}
+              </Text>
+            </View>
+            <Divider />
+            <View style={styles.browseDetailSection}>
+              <Label tone="tertiary">Form</Label>
+              <Text style={[styles.browseDetailFact, { color: colors.text }]}>
+                {formCaption(selectedForm)}
+              </Text>
+            </View>
+            <Divider />
+            <Label tone="tertiary">{provenanceLabel('collector-attested')}</Label>
+          </Card>
+        ) : (
+          <>
+            <View style={[styles.search, { backgroundColor: colors.surface }, elevation.card]}>
+              <TextInput
+                accessibilityLabel={selectedPattern ? 'Search existing forms' : 'Search known patterns'}
+                accessibilityRole="search"
+                autoCapitalize="words"
+                onChangeText={onQuery}
+                placeholder={selectedPattern ? 'Form or model number…' : 'Pattern name…'}
+                placeholderTextColor={colors.textTertiary}
+                returnKeyType="search"
+                style={[styles.searchInput, { color: colors.text }]}
+                value={query}
+              />
+            </View>
+
+            <View style={styles.combinationChoices}>
+              {choices.map((choice) => {
+                const isForm = 'modelNo' in choice;
+                const label = isForm ? formCaption(choice) : choice.name;
+                return (
+                  <Pressable
+                    accessibilityLabel={`Choose ${label}`}
+                    accessibilityRole="button"
+                    key={choice.id}
+                    onPress={() => isForm ? onForm(choice.id) : onPattern(choice.id)}
+                    style={({ pressed }) => [
+                      pressed && { transform: [{ translateY: Motion.pressTranslate }] },
+                    ]}>
+                    {({ pressed }) => (
+                      <Card style={[styles.combinationChoice, pressed && offsetShadow(0, 'transparent')]}>
+                        <Text style={[styles.rowTitle, { color: colors.text }]}>{label}</Text>
+                      </Card>
+                    )}
+                  </Pressable>
+                );
+              })}
+              {choices.length === 0 && (
+                <Text style={[styles.emptyNote, { color: colors.textSecondary }]}>
+                  {selectedPattern
+                    ? `Every existing form is already catalogued for ${selectedPattern.name}.`
+                    : 'No saved patterns match that search.'}
+                </Text>
+              )}
+            </View>
+          </>
+        )}
+      </ScrollView>
+
+      {selectedForm && (
+        <View
+          onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+          style={[
+            styles.resultFooter,
+            {
+              backgroundColor: colors.background,
+              paddingBottom: insets.bottom + TAB_BAR_CLEARANCE + Spacing.four + Spacing.half,
+            },
+          ]}>
+          <PressButton
+            tone="primary"
+            disabled={offline}
+            onPress={onConfirm}
+            accessibilityLabel={offline
+              ? 'Connect to add this combination to the shared catalog'
+              : 'Add this combination to the shared catalog and my shelf'}
+            style={styles.grow}>
+            {offline ? 'Connect to add this combination' : 'Add to the shared catalog'}
+          </PressButton>
+        </View>
+      )}
     </View>
   );
 }
@@ -1006,6 +1205,7 @@ export function BrowseDetailScreen({
               <Label tone="tertiary">Rarity</Label>
               <RarityBadge rarity={row.rarity} />
             </View>
+            <Label tone="tertiary">{provenanceLabel(row.provenance)}</Label>
           </View>
 
           <Divider />
@@ -1340,10 +1540,29 @@ const styles = StyleSheet.create({
   gridModel: { ...Type.caption, fontSize: 11, lineHeight: 15 },
   emptyNote: { ...Type.callout, paddingVertical: Spacing.three },
 
-  unknownCard: { gap: Spacing.two, marginTop: Spacing.three, padding: Spacing.three },
+  catalogGrowth: { gap: Spacing.three, marginTop: Spacing.three },
+  unknownCard: { gap: Spacing.two, padding: Spacing.three },
   unknownInput: {
     ...Type.body,
     borderRadius: Radius.sm,
+    minHeight: HitTarget,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+
+  combinationContent: {
+    alignSelf: 'center',
+    gap: Spacing.three,
+    maxWidth: MaxContentWidth,
+    paddingHorizontal: Spacing.gutter,
+    paddingTop: Spacing.three,
+    width: '100%',
+  },
+  combinationIntro: { gap: Spacing.two, padding: Spacing.three },
+  combinationSummary: { gap: Spacing.three, padding: Spacing.three },
+  combinationChoices: { gap: Spacing.two },
+  combinationChoice: {
+    justifyContent: 'center',
     minHeight: HitTarget,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,

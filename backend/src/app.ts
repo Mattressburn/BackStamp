@@ -290,6 +290,22 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
     );
   });
 
+  app.post('/items', scansRateLimit, jsonLimit(10_000), async (c) => {
+    const input = await body(c);
+    const patternId = requiredString(input.patternId, 'patternId', 200);
+    const formId = requiredString(input.formId, 'formId', 200);
+    const pattern = options.db.getPattern(patternId);
+    if (!pattern) throw new ApiRouteError('bad_request', 400, `Unknown pattern id: ${patternId}`);
+    const form = options.db.getForm(formId);
+    if (!form) throw new ApiRouteError('bad_request', 400, `Unknown form id: ${formId}`);
+    const slug = `${pattern.id}-${form.modelNo}`;
+    if (options.db.getItem(slug)) {
+      throw new ApiRouteError('bad_request', 400, `Item combination already exists: ${slug}`);
+    }
+    // ponytail: Creating a brand-new Form for an unknown model number is deferred; this only joins existing pattern x existing form.
+    return c.json(success(options.db.createKnownCombination(pattern, form)));
+  });
+
   app.get('/items/:slug', async (c) => {
     const item = options.db.getItem(c.req.param('slug'));
     if (!item) throw new ApiRouteError('not_found', 404, 'Item not found');
