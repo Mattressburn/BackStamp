@@ -13,10 +13,16 @@ reasoning behind each decision. `README.md` has run commands and honest status.
 **Backstamp** as of 2026-08-10 (`isCodename: false`). The repo directory is still
 `Projects/PyDex`, that is deliberate, do not rename it.
 
-**Pinned to Expo SDK 56. Do not upgrade to 57.** The App Store build of Expo Go refuses
-a project newer than itself, so SDK 57 cannot be tested on a phone. Before any SDK bump,
-check `npm view expo dist-tags`, when `latest` and `next` point at the same version,
-that SDK is too new for Expo Go.
+**Pinned to Expo SDK 56. Do not upgrade to 57.** The old reasoning here is dead,
+measured 2026-08-11 on a real iPhone: the App Store build of Expo Go is 54.0.2 and runs
+SDK 54 only, so this project was never testable in Expo Go on an iPhone at any SDK, and
+the `npm view expo dist-tags` heuristic that used to live in this paragraph predicted
+nothing about Expo Go. expo.dev/go serves Expo Go builds for SDK 54 through 57, but
+only as Android APKs and iOS simulator images. Phone testing on iPhone goes through an
+EAS development build with `expo-dev-client` (profile in `app/eas.json`), which carries
+its own runtime and makes Expo Go compatibility irrelevant. The SDK 56 pin stays until
+hardware testing passes on a dev build; after that an SDK bump is a normal upgrade
+decision, one variable at a time.
 
 **`shared/types.ts` is the single source of truth for both sides.** Never redeclare a
 type that lives there; add to it instead.
