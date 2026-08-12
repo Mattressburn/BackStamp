@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Backstamp avocado flower icon, version two</title>
+  <desc>A cream stamp with large hand-set arc letters, three colored bowls, and balanced cream-and-gold corner daisies.</desc>
+  <defs>
+    <g id="cream-gold-daisy">
+      <ellipse cx="0" cy="-30" rx="12" ry="26" fill="#F1E7D3"/>
+      <ellipse cx="0" cy="-30" rx="12" ry="26" fill="#D9A521" transform="rotate(60)"/>
+      <ellipse cx="0" cy="-30" rx="12" ry="26" fill="#F1E7D3" transform="rotate(120)"/>
+      <ellipse cx="0" cy="-30" rx="12" ry="26" fill="#D9A521" transform="rotate(180)"/>
+      <ellipse cx="0" cy="-30" rx="12" ry="26" fill="#F1E7D3" transform="rotate(240)"/>
+      <ellipse cx="0" cy="-30" rx="12" ry="26" fill="#D9A521" transform="rotate(300)"/>
+      <circle r="13" fill="#D9A521"/>
+    </g>
+    <path id="large-bowl-shape" d="M258 638 217 608q-10-8 0-16 4-4 12-4h87l22-28h348l22 28h87q8 0 12 4 10 8 0 16l-41 30h-34c-19 95-101 146-220 146s-201-51-220-146Z"/>
+    <path id="medium-bowl-shape" d="M328 535 292 508q-9-7 0-14 4-4 12-4h67l19-26h244l19 26h67q8 0 12 4 9 7 0 14l-36 27h-23c-16 75-76 116-161 116s-145-41-161-116Z"/>
+    <path id="small-bowl-shape" d="m391 433-29-21q-8-7 0-13 4-3 10-3h51l17-22h144l17 22h51q6 0 10 3 8 6 0 13l-29 21h-13c-13 61-55 94-108 94s-95-33-108-94Z"/>
+  </defs>
+
+  <rect width="1024" height="1024" fill="#6E7A22"/>
+  <g aria-label="Four balanced cream-and-gold corner daisies">
+    <use href="#cream-gold-daisy" transform="translate(94 94) rotate(-15) scale(.7)"/>
+    <use href="#cream-gold-daisy" transform="translate(930 94) rotate(15) scale(.7)"/>
+    <use href="#cream-gold-daisy" transform="translate(930 930) rotate(-15) scale(.7)"/>
+    <use href="#cream-gold-daisy" transform="translate(94 930) rotate(15) scale(.7)"/>
+  </g>
+
+  <g fill="none" stroke="#3D4415" transform="translate(0 14)">
+    <circle cx="512" cy="512" r="430" stroke-width="20"/>
+    <circle cx="512" cy="512" r="280" stroke-width="14"/>
+  </g>
+  <g fill="none" stroke="#F1E7D3">
+    <circle cx="512" cy="512" r="430" stroke-width="20"/>
+    <circle cx="512" cy="512" r="280" stroke-width="14"/>
+  </g>
+
+  <g id="wordmark" aria-label="BACKSTAMP" fill="#F1E7D3" font-family="Rubik Black" font-weight="900" text-anchor="middle">
+    <text x="512" y="222" font-size="128" data-angle="-64" transform="rotate(-64 512 512)">B</text>
+    <text x="512" y="222" font-size="128" data-angle="-48" transform="rotate(-48 512 512)">A</text>
+    <text x="512" y="222" font-size="128" data-angle="-32" transform="rotate(-32 512 512)">C</text>
+    <text x="512" y="222" font-size="128" data-angle="-16" transform="rotate(-16 512 512)">K</text>
+    <text x="512" y="222" font-size="128" data-angle="0" transform="rotate(0 512 512)">S</text>
+    <text x="512" y="222" font-size="128" data-angle="16" transform="rotate(16 512 512)">T</text>
+    <text x="512" y="222" font-size="128" data-angle="32" transform="rotate(32 512 512)">A</text>
+    <text x="512" y="222" font-size="128" data-angle="48" transform="rotate(48 512 512)">M</text>
+    <text x="512" y="222" font-size="128" data-angle="64" transform="rotate(64 512 512)">P</text>
+  </g>
+
+  <g aria-label="Three nested Cinderella bowls">
+    <use href="#large-bowl-shape" fill="#3D4415" transform="translate(0 18)"/>
+    <use id="bowl-large" href="#large-bowl-shape" fill="#8A4B23" stroke="#F1E7D3" stroke-width="10" paint-order="stroke fill"/>
+    <use href="#medium-bowl-shape" fill="#3D4415" transform="translate(0 16)"/>
+    <use id="bowl-medium" href="#medium-bowl-shape" fill="#F1E7D3" stroke="#F1E7D3" stroke-width="10" paint-order="stroke fill"/>
+    <use href="#small-bowl-shape" fill="#3D4415" transform="translate(0 14)"/>
+    <use id="bowl-small" href="#small-bowl-shape" fill="#D9A521" stroke="#F1E7D3" stroke-width="10" paint-order="stroke fill"/>
+  </g>
+</svg>

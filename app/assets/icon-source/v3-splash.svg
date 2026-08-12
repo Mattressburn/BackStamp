@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 1024 1024">
+  <title>Backstamp light splash mark</title>
+  <desc>The version three stamp mark on transparency.</desc>
+  <defs>
+    <path id="bowl-smallest-shape" d="M414 386Q512 372 610 386c-5 62-42 102-98 102s-93-40-98-102Z"/>
+    <path id="bowl-medium-shape" d="M370 447q142-18 284 0c-7 78-61 126-142 126s-135-48-142-126Z"/>
+    <path id="bowl-large-shape" d="M326 518q186-22 372 0c-8 88-79 142-186 142s-178-54-186-142Z"/>
+    <path id="bowl-largest-shape" d="M278 592q234-26 468 0c-10 106-99 172-234 172s-224-66-234-172Z"/>
+    <path id="rim-smallest" d="M414 386q98-14 196 0v16q-98-14-196 0Z"/>
+    <path id="rim-medium" d="M370 447q142-18 284 0v16q-142-18-284 0Z"/>
+    <path id="rim-large" d="M326 518q186-22 372 0v16q-186-22-372 0Z"/>
+    <path id="rim-largest" d="M278 592q234-26 468 0v16q-234-26-468 0Z"/>
+  </defs>
+
+  <g fill="none" stroke="#D8C9A6" transform="translate(0 14)">
+    <circle cx="512" cy="512" r="430" stroke-width="20"/>
+    <circle cx="512" cy="512" r="280" stroke-width="14"/>
+  </g>
+  <g fill="none" stroke="#6E7A22">
+    <circle cx="512" cy="512" r="430" stroke-width="20"/>
+    <circle cx="512" cy="512" r="280" stroke-width="14"/>
+  </g>
+
+  <g aria-label="BACKSTAMP" fill="#3A2C18" font-family="Rubik Black" font-weight="900" text-anchor="middle">
+    <text x="512" y="222" font-size="128" data-angle="-64" transform="rotate(-64 512 512)">B</text>
+    <text x="512" y="222" font-size="128" data-angle="-48" transform="rotate(-48 512 512)">A</text>
+    <text x="512" y="222" font-size="128" data-angle="-32" transform="rotate(-32 512 512)">C</text>
+    <text x="512" y="222" font-size="128" data-angle="-16" transform="rotate(-16 512 512)">K</text>
+    <text x="512" y="222" font-size="128" data-angle="0" transform="rotate(0 512 512)">S</text>
+    <text x="512" y="222" font-size="128" data-angle="16" transform="rotate(16 512 512)">T</text>
+    <text x="512" y="222" font-size="128" data-angle="32" transform="rotate(32 512 512)">A</text>
+    <text x="512" y="222" font-size="128" data-angle="48" transform="rotate(48 512 512)">M</text>
+    <text x="512" y="222" font-size="128" data-angle="64" transform="rotate(64 512 512)">P</text>
+  </g>
+
+  <g aria-label="Four plain round nesting bowls">
+    <g fill="#D8C9A6" transform="translate(0 18)">
+      <use href="#bowl-smallest-shape"/>
+      <use href="#bowl-medium-shape"/>
+      <use href="#bowl-large-shape"/>
+      <use href="#bowl-largest-shape"/>
+    </g>
+    <use href="#bowl-smallest-shape" fill="#8A4B23"/>
+    <use href="#rim-smallest" fill="#F1E7D3"/>
+    <use href="#bowl-medium-shape" fill="#6E7A22"/>
+    <use href="#rim-medium" fill="#F1E7D3"/>
+    <use href="#bowl-large-shape" fill="#D9A521"/>
+    <use href="#rim-large" fill="#F1E7D3"/>
+    <use href="#bowl-largest-shape" fill="#B0472A"/>
+    <use href="#rim-largest" fill="#F1E7D3"/>
+  </g>
+</svg>

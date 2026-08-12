@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Backstamp adaptive icon background</title>
+  <desc>The version three cream ground and gold daisy scatter without the stamp mark.</desc>
+  <defs>
+    <g id="gold-daisy">
+      <ellipse cx="0" cy="-30" rx="12" ry="26" fill="#D9A521"/>
+      <ellipse cx="0" cy="-30" rx="12" ry="26" fill="#D9A521" transform="rotate(60)"/>
+      <ellipse cx="0" cy="-30" rx="12" ry="26" fill="#D9A521" transform="rotate(120)"/>
+      <ellipse cx="0" cy="-30" rx="12" ry="26" fill="#D9A521" transform="rotate(180)"/>
+      <ellipse cx="0" cy="-30" rx="12" ry="26" fill="#D9A521" transform="rotate(240)"/>
+      <ellipse cx="0" cy="-30" rx="12" ry="26" fill="#D9A521" transform="rotate(300)"/>
+      <circle r="13" fill="#8A4B23"/>
+    </g>
+  </defs>
+
+  <rect width="1024" height="1024" fill="#F1E7D3"/>
+  <g aria-label="Six gold daisies in a wallpaper rhythm">
+    <use href="#gold-daisy" transform="translate(92 154) rotate(-14) scale(.76)"/>
+    <use href="#gold-daisy" transform="translate(350 62) rotate(14) scale(.62)"/>
+    <use href="#gold-daisy" transform="translate(674 62) rotate(-14) scale(.62)"/>
+    <use href="#gold-daisy" transform="translate(932 174) rotate(14) scale(.74)"/>
+    <use href="#gold-daisy" transform="translate(944 816) rotate(-14) scale(.72)"/>
+    <use href="#gold-daisy" transform="translate(116 866) rotate(14) scale(.78)"/>
+  </g>
+</svg>
