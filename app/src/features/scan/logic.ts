@@ -1,4 +1,10 @@
-import type { ApiErrorCode, ScanGuess } from '@shared/types';
+import type {
+  ApiErrorCode,
+  PriceQuote,
+  PriceSourceKind,
+  ScanGuess,
+  SetDetection,
+} from '@shared/types';
 
 const MAX_QUEUE_ATTEMPTS = 3;
 
@@ -39,4 +45,69 @@ const ORDINAL_WORDS = [
  */
 export function ordinalWord(n: number): string | null {
   return ORDINAL_WORDS[n] ?? null;
+}
+
+export interface GroupedDetection {
+  itemSlug: string;
+  count: number;
+  maxConfidence: number;
+  evidence: string[];
+}
+
+export function groupDetections(detections: SetDetection[]): GroupedDetection[] {
+  const grouped = new Map<string, GroupedDetection>();
+
+  for (const detection of detections) {
+    const row = grouped.get(detection.itemSlug);
+    if (row) {
+      row.count += 1;
+      row.maxConfidence = Math.max(row.maxConfidence, detection.confidence);
+      row.evidence.push(detection.visibleEvidence);
+    } else {
+      grouped.set(detection.itemSlug, {
+        itemSlug: detection.itemSlug,
+        count: 1,
+        maxConfidence: detection.confidence,
+        evidence: [detection.visibleEvidence],
+      });
+    }
+  }
+
+  return [...grouped.values()];
+}
+
+export function summarizeFiledPrices(
+  pieces: readonly { itemSlug: string; count: number }[],
+  quotes: readonly PriceQuote[],
+): {
+  low: number | null;
+  high: number | null;
+  sources: PriceSourceKind[];
+  unpriced: number;
+} {
+  const quoteBySlug = new Map(quotes.map((quote) => [quote.itemSlug, quote]));
+  const sources = new Set<PriceSourceKind>();
+  let low = 0;
+  let high = 0;
+  let priced = 0;
+  let unpriced = 0;
+
+  for (const piece of pieces) {
+    const quote = quoteBySlug.get(piece.itemSlug);
+    if (!quote) {
+      unpriced += piece.count;
+      continue;
+    }
+    low += quote.low * piece.count;
+    high += quote.high * piece.count;
+    priced += piece.count;
+    sources.add(quote.source);
+  }
+
+  return {
+    low: priced ? low : null,
+    high: priced ? high : null,
+    sources: [...sources],
+    unpriced,
+  };
 }

@@ -91,6 +91,18 @@ test('catalog sync returns the current version and no rows when unchanged', asyn
   }
 });
 
+test('catalog responses allow browser origins', async () => {
+  const { app, photoDir } = setup();
+  try {
+    const response = await app.request('/catalog', {
+      headers: { Origin: 'http://localhost:8081' },
+    });
+    assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
 test('identify accepts realistic JPEG payloads larger than a text field', async () => {
   const db = new BackendDatabase(':memory:');
   db.seedCatalog(catalog);
@@ -116,6 +128,56 @@ test('identify accepts realistic JPEG payloads larger than a text field', async 
       body: JSON.stringify({ photos: [jpeg.toString('base64')], hasBaseShot: false }),
     });
     assert.equal(response.status, 200);
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('identify set returns resolved detections and strips EXIF before identification', async () => {
+  const identifier = new Identifier();
+  let receivedPhoto = '';
+  identifier.identifySet = async (request, receivedCatalog) => {
+    receivedPhoto = request.photo;
+    assert.deepEqual(receivedCatalog.items.map((item) => item.slug), ['butterprint-444']);
+    return {
+      detections: [
+        {
+          itemSlug: 'butterprint-444',
+          confidence: 0.9,
+          location: 'top bowl',
+          visibleEvidence: 'turquoise print',
+        },
+      ],
+      contradicted: 0,
+      lowConfidence: false,
+    };
+  };
+  const { app, photoDir } = setup({ identifier });
+
+  try {
+    const response = await app.request('/identify/set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ photo: jpegWithExif().toString('base64') }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      ok: true,
+      data: {
+        detections: [
+          {
+            itemSlug: 'butterprint-444',
+            confidence: 0.9,
+            location: 'top bowl',
+            visibleEvidence: 'turquoise print',
+          },
+        ],
+        contradicted: 0,
+        lowConfidence: false,
+      },
+    });
+    assert.equal(Buffer.from(receivedPhoto, 'base64').includes(Buffer.from('Exif')), false);
   } finally {
     rmSync(photoDir, { recursive: true, force: true });
   }
@@ -508,6 +570,37 @@ test('paid routes have separate injectable request limits', async () => {
       assert.equal(response.status, 429, request.path);
       assert.equal(response.headers.get('Retry-After') !== null, true, request.path);
     }
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('identify and identify set drain one shared request limit', async () => {
+  const identifier = new Identifier();
+  identifier.identify = async () => ({ guesses: [], lowConfidence: true });
+  identifier.identifySet = async () => ({ detections: [], contradicted: 0, lowConfidence: true });
+  const { app, photoDir } = setup({
+    identifier,
+    rateLimit: { limits: { identify: 1 } },
+  });
+
+  try {
+    const first = await app.request('/identify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        photos: [jpegWithExif().toString('base64')],
+        hasBaseShot: false,
+      }),
+    });
+    const second = await app.request('/identify/set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ photo: jpegWithExif().toString('base64') }),
+    });
+
+    assert.equal(first.status, 200);
+    assert.equal(second.status, 429);
   } finally {
     rmSync(photoDir, { recursive: true, force: true });
   }

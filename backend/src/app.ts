@@ -4,12 +4,14 @@ import { randomUUID } from 'node:crypto';
 
 import { Hono, type Context, type Next } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
+import { cors } from 'hono/cors';
 
 import type {
   ApiErrorCode,
   ApiResult,
   AuthProvider,
   IdentifyRequest,
+  IdentifySetRequest,
   ItemDetail,
   PhotoVisibility,
   ScanGuess,
@@ -236,6 +238,9 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
   });
   app.notFound((c) => c.json(failure('Route not found', 'not_found'), 404));
 
+  // Permissive CORS is safe here: it is a browser-only gate, auth uses bearer tokens rather than cookies so there is no cookie CSRF surface, and native apps never send an Origin.
+  app.use('*', cors());
+
   app.post('/identify', identifyRateLimit, jsonLimit(6 * MAX_JPEG_BASE64_CHARS + 10_000), async (c) => {
     const input = await body(c);
     if (!Array.isArray(input.photos) || input.photos.length === 0 || input.photos.length > 6) {
@@ -250,6 +255,20 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
     const request: IdentifyRequest = { photos, hasBaseShot: input.hasBaseShot };
     try {
       return c.json(success(await identifier.identify(request, options.db.getCatalog())));
+    } catch {
+      throw new ApiRouteError('upstream_failed', 502, 'Identification is unavailable');
+    }
+  });
+
+  app.post('/identify/set', identifyRateLimit, jsonLimit(MAX_JPEG_BASE64_CHARS + 10_000), async (c) => {
+    const input = await body(c);
+    const request: IdentifySetRequest = {
+      photo: jpegFromBase64(
+        requiredString(input.photo, 'photo', MAX_JPEG_BASE64_CHARS),
+      ).toString('base64'),
+    };
+    try {
+      return c.json(success(await identifier.identifySet(request, options.db.getCatalog())));
     } catch {
       throw new ApiRouteError('upstream_failed', 502, 'Identification is unavailable');
     }

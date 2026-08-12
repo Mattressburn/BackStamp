@@ -3,7 +3,7 @@ import { test } from 'node:test';
 
 import catalog from '@data/catalog.json' with { type: 'json' };
 
-import { neutralSwatch, parseColorway } from './colorways.js';
+import { colorsContradict, namedColors, neutralSwatch, parseColorway } from './colorways.js';
 
 /**
  * The parser stands between the catalog's prose and 379 items' worth of on-screen
@@ -68,4 +68,43 @@ test('the neutral fallback is a real color in both schemes', () => {
   for (const scheme of ['light', 'dark'] as const) {
     assert.match(neutralSwatch(scheme).ground, /^#[0-9a-fA-F]{6}$/);
   }
+});
+
+test('namedColors extracts canonical color keys', () => {
+  assert.deepEqual(
+    namedColors('Turquoise and white'),
+    new Set(['turquoise', 'white']),
+  );
+});
+
+test('namedColors strips plurals', () => {
+  assert.deepEqual(namedColors('reds and blues'), new Set(['red', 'blue']));
+});
+
+test('namedColors skips modifiers', () => {
+  assert.deepEqual(namedColors('pale yellow'), new Set(['yellow']));
+});
+
+test('namedColors returns an empty set when no known colors are named', () => {
+  assert.deepEqual(namedColors('large round bowl'), new Set());
+});
+
+test('colorsContradict detects disjoint known colors', () => {
+  assert.equal(colorsContradict('solid orange', 'green and white'), true);
+});
+
+test('colorsContradict treats blue and turquoise as equivalent', () => {
+  assert.equal(colorsContradict('blue rim', 'turquoise and white'), false);
+});
+
+test('colorsContradict does not treat missing evidence colors as a contradiction', () => {
+  assert.equal(colorsContradict('small round bowl', 'green and white'), false);
+});
+
+test('colorsContradict does not treat a null colorway as a contradiction', () => {
+  assert.equal(colorsContradict('solid orange', null), false);
+});
+
+test('colorsContradict treats red and pink as equivalent', () => {
+  assert.equal(colorsContradict('solid red', 'white on pink'), false);
 });

@@ -146,6 +146,29 @@ export interface QueuedScan {
   attempts: number;
 }
 
+// ---------------------------------------------------------------- set scanning
+
+/** One physical piece the model matched in a single set photo. */
+export interface SetDetection {
+  itemSlug: string;        // must resolve to a known Item; unresolvable rows are dropped
+  confidence: number;      // 0..1
+  location: string;        // where in the frame, e.g. "second bowl from the top of the stack"
+  visibleEvidence: string; // what is actually visible; the colorway check reads this
+}
+
+export interface IdentifySetRequest {
+  /** One base64 JPEG. One nested set or small group filling the frame, no base shot. */
+  photo: string;
+}
+
+export interface IdentifySetResponse {
+  detections: SetDetection[];
+  /** Rows dropped because visibleEvidence named colors that contradict the slug's colorway. */
+  contradicted: number;
+  /** True when nothing survived. App falls back to single-piece scan or browse. */
+  lowConfidence: boolean;
+}
+
 // ---------------------------------------------------------------- photos
 
 /**

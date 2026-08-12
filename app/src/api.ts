@@ -14,6 +14,7 @@ import type {
   AuthProvider,
   CatalogResponse,
   IdentifyResponse,
+  IdentifySetResponse,
   ItemDetail,
   PhotoVisibility,
   PriceQuote,
@@ -143,6 +144,14 @@ export async function identify(
   return request<IdentifyResponse>('/identify', {
     method: 'POST',
     body: JSON.stringify({ photos, hasBaseShot }),
+  });
+}
+
+export async function identifySet(photoUri: string): Promise<ApiResult<IdentifySetResponse>> {
+  const photo = await encodeForUpload(photoUri, MODEL_INPUT_MAX_WIDTH);
+  return request<IdentifySetResponse>('/identify/set', {
+    method: 'POST',
+    body: JSON.stringify({ photo }),
   });
 }
 

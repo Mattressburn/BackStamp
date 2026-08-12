@@ -44,6 +44,7 @@ import {
   Motion,
   OnAccent,
   Radius,
+  Rule,
   Spacing,
   Type,
 } from '@/constants/theme';
@@ -245,6 +246,8 @@ export function PermissionScreen({
  * the shape of the thing being centred.
  */
 export function ViewfinderScreen({
+  mode,
+  showModeToggle,
   step,
   banner,
   problem,
@@ -255,7 +258,10 @@ export function ViewfinderScreen({
   onCapture,
   onBack,
   onSkip,
+  onModeChange,
 }: {
+  mode: 'single' | 'set';
+  showModeToggle: boolean;
   step: 1 | 2;
   banner: string | null;
   problem: string | null;
@@ -266,20 +272,51 @@ export function ViewfinderScreen({
   onCapture: () => void;
   onBack: () => void;
   onSkip: () => void;
+  onModeChange: (mode: 'single' | 'set') => void;
 }) {
   const insets = useSafeAreaInsets();
   const elevation = useElevation();
-  const second = step === 2;
+  const second = mode === 'single' && step === 2;
+  const setMode = mode === 'set';
 
   return (
     <View style={styles.ground}>
       <View style={[styles.viewfinderHead, { paddingTop: insets.top + Spacing.two }]}>
         <View style={styles.headRow}>
-          <Text style={styles.headLabel}>{second ? 'Now flip it over' : 'Found something?'}</Text>
-          <Text
-            accessibilityLabel={`Shot ${step} of 2`}
-            style={styles.headCount}>{`${step} / 2`}</Text>
+          <Text style={styles.headLabel}>
+            {setMode ? 'Found a set?' : second ? 'Now flip it over' : 'Found something?'}
+          </Text>
+          {!setMode && (
+            <Text
+              accessibilityLabel={`Shot ${step} of 2`}
+              style={styles.headCount}>{`${step} / 2`}</Text>
+          )}
         </View>
+        {showModeToggle && (
+          <View accessibilityRole="radiogroup" style={styles.modeToggle}>
+            {(['single', 'set'] as const).map((option) => {
+              const selected = option === mode;
+              const label = option === 'single' ? 'One piece' : 'Whole set';
+              return (
+                <Pressable
+                  accessibilityLabel={`${label} scan mode`}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: selected }}
+                  key={option}
+                  onPress={() => onModeChange(option)}
+                  style={({ pressed }) => [
+                    styles.modeOption,
+                    selected && styles.modeOptionSelected,
+                    pressed && { transform: [{ translateY: Motion.pressTranslate }] },
+                  ]}>
+                  <Text style={[styles.modeLabel, selected && styles.modeLabelSelected]}>
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
         <ScanBanner message={banner} />
         <ScanBanner message={problem} tone="problem" />
       </View>
@@ -306,10 +343,12 @@ export function ViewfinderScreen({
 
       <View style={styles.viewfinderCopy}>
         <Text accessibilityRole="header" style={styles.viewfinderTitle}>
-          {second ? 'Centre the number' : 'Show us the pattern'}
+          {setMode ? 'Show the whole set' : second ? 'Centre the number' : 'Show us the pattern'}
         </Text>
         <Text style={styles.viewfinderBlurb}>
-          {second
+          {setMode
+            ? 'Fill the frame with one nested set. Keep every piece visible and avoid glare.'
+            : second
             ? 'The mark on the underside settles the form. Hold steady, and centre it in the ring.'
             : 'Whole dish in frame, no glare. The backstamp comes next.'}
         </Text>
@@ -323,7 +362,9 @@ export function ViewfinderScreen({
           accessibilityHint="Discards the pattern photo and starts the burst again"
         />
         <Pressable
-          accessibilityLabel={second ? 'Capture the backstamp' : 'Capture the pattern'}
+          accessibilityLabel={
+            setMode ? 'Capture the whole set' : second ? 'Capture the backstamp' : 'Capture the pattern'
+          }
           accessibilityRole="button"
           accessibilityState={{ disabled: busy }}
           disabled={busy}
@@ -489,6 +530,25 @@ const styles = StyleSheet.create({
   headRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   headLabel: { ...Type.label, color: CameraChrome.guide, letterSpacing: 1.6 },
   headCount: { ...Type.caption, color: CameraChrome.textFaint, fontSize: 11 },
+  modeToggle: {
+    backgroundColor: CameraChrome.fill,
+    borderColor: CameraChrome.frameEdge,
+    borderRadius: Radius.md,
+    borderWidth: Rule,
+    flexDirection: 'row',
+    padding: Spacing.one,
+  },
+  modeOption: {
+    alignItems: 'center',
+    borderRadius: Radius.xs,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: HitTarget,
+    paddingHorizontal: Spacing.two,
+  },
+  modeOptionSelected: { backgroundColor: CameraChrome.guide },
+  modeLabel: { ...Type.bodyStrong, color: CameraChrome.textDim },
+  modeLabelSelected: { color: CameraChrome.ground },
 
   frame: {
     aspectRatio: VIEWFINDER_ASPECT,

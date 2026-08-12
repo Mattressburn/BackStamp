@@ -28,7 +28,7 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Linking, StyleSheet, View } from 'react-native';
 
-import { fetchPrices, identify, logScan, submitUnknownPattern } from '@/api';
+import { fetchPrices, identify, identifySet, logScan, submitUnknownPattern } from '@/api';
 import {
   bumpScanAttempts,
   dequeueScan,
@@ -43,7 +43,13 @@ import {
 } from '@/db';
 import { calculateCollectionValues } from '@/features/collection/collection-total';
 import { priceSourceLabel } from '@/features/collection/collection-ui';
-import type { IdentifyResponse, OwnershipStatus, ScanGuess } from '@shared/types';
+import type {
+  IdentifyResponse,
+  IdentifySetResponse,
+  OwnershipStatus,
+  ScanGuess,
+  SetDetection,
+} from '@shared/types';
 import {
   IdentifyingScreen,
   PermissionScreen,
@@ -55,19 +61,34 @@ import {
   BrowseScreen,
   FiledScreen,
   ResultScreen,
+  SetResultsScreen,
   money,
   type FiledLedger,
+  type SetResultItem,
 } from './scan-results';
-import { deriveLlmWasRight, ordinal, ordinalWord, shouldRetryQueueDrain } from './logic';
+import {
+  deriveLlmWasRight,
+  groupDetections,
+  ordinal,
+  ordinalWord,
+  shouldRetryQueueDrain,
+  summarizeFiledPrices,
+} from './logic';
 
 type Phase =
   | 'camera'
   | 'identifying'
   | 'results'
+  | 'set-results'
   | 'browse'
   | 'confirming'
   | 'owned'
   | 'saved';
+
+interface FiledPiece {
+  itemSlug: string;
+  count: number;
+}
 
 // ponytail: one capture-quality knob is enough; tune it only if upload time or model detail suffers.
 const CAPTURE_QUALITY = 0.8;
@@ -139,6 +160,7 @@ export default function ScanScreen() {
   const loggedSlugRef = useRef<string | null>(null);
 
   const [phase, setPhase] = useState<Phase>('camera');
+  const [scanMode, setScanMode] = useState<'single' | 'set'>('single');
   const [cameraReady, setCameraReady] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [flashing, setFlashing] = useState(false);
@@ -147,6 +169,9 @@ export default function ScanScreen() {
   const [guesses, setGuesses] = useState<ScanGuess[]>([]);
   const [guessRows, setGuessRows] = useState<CatalogRow[]>([]);
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [setDetections, setSetDetections] = useState<SetDetection[]>([]);
+  const [removedSetSlugs, setRemovedSetSlugs] = useState<string[]>([]);
+  const [contradicted, setContradicted] = useState(0);
   const [queuedCount, setQueuedCount] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -161,7 +186,7 @@ export default function ScanScreen() {
 
   const isOffline = netInfo.isConnected === false || netInfo.isInternetReachable === false;
   const canDrainQueue = netInfo.isConnected === true && netInfo.isInternetReachable !== false;
-  const needsBaseShot = photoUris.length === 1;
+  const needsBaseShot = scanMode === 'single' && photoUris.length === 1;
   const cameraIdle = phase === 'camera' && photoUris.length === 0 && !capturing;
   cameraIdleRef.current = cameraIdle;
 
@@ -290,6 +315,14 @@ export default function ScanScreen() {
     );
   }, [catalog, catalogQuery, shapeFilter]);
 
+  const setResultItems = useMemo<SetResultItem[]>(() => {
+    const removed = new Set(removedSetSlugs);
+    return groupDetections(setDetections).flatMap((group) => {
+      const row = catalog.find((candidate) => candidate.slug === group.itemSlug);
+      return row && !removed.has(group.itemSlug) ? [{ group, row }] : [];
+    });
+  }, [catalog, removedSetSlugs, setDetections]);
+
   /** The forms the catalog actually holds most of, rather than a written-in list. */
   const shapes = useMemo(() => {
     const counts = new Map<string, number>();
@@ -302,6 +335,7 @@ export default function ScanScreen() {
 
   const resetScan = useCallback(() => {
     setPhase('camera');
+    setScanMode('single');
     setCapturing(false);
     setFlashing(false);
     setPhotoUris([]);
@@ -309,6 +343,9 @@ export default function ScanScreen() {
     setGuesses([]);
     setGuessRows([]);
     setSelectedSlug(null);
+    setSetDetections([]);
+    setRemovedSetSlugs([]);
+    setContradicted(0);
     setNotice(null);
     setError(null);
     setCatalogQuery('');
@@ -320,6 +357,11 @@ export default function ScanScreen() {
     ledgerTokenRef.current += 1;
     loggedSlugRef.current = null;
   }, []);
+
+  const retakeSet = useCallback(() => {
+    resetScan();
+    setScanMode('set');
+  }, [resetScan]);
 
   const queueBurst = async (uris: string[], hasBaseShot: boolean) => {
     setWaitCopy({ title: 'Saving the scan', caption: 'Keeping it on this phone until a connection comes back.' });
@@ -376,8 +418,69 @@ export default function ScanScreen() {
     }
   };
 
+  const presentSetResponse = async (response: IdentifySetResponse, photoUri: string) => {
+    if (response.lowConfidence || response.detections.length === 0) {
+      setPhotoUris([]);
+      setPhase('camera');
+      setError(
+        'The set could not be read confidently. Switch to One piece and scan each dish separately.',
+      );
+      return;
+    }
+
+    const rows = await loadCatalog();
+    const groups = groupDetections(response.detections);
+    if (groups.some((group) => !rows.some((row) => row.slug === group.itemSlug))) {
+      setPhotoUris([]);
+      setPhase('camera');
+      setError(
+        'Some pieces were not in the saved catalog. Switch to One piece and scan each dish separately.',
+      );
+      return;
+    }
+
+    setPhotoUris([photoUri]);
+    setSetDetections(response.detections);
+    setRemovedSetSlugs([]);
+    setContradicted(response.contradicted);
+    setError(null);
+    setPhase('set-results');
+  };
+
+  const identifyWholeSet = async (photoUri: string) => {
+    setWaitCopy({
+      title: 'Reading the whole set',
+      caption: catalog.length
+        ? `Matching each visible piece against ${catalog.length} catalogued pieces.`
+        : 'Matching each visible piece against the catalog.',
+    });
+    setPhase('identifying');
+    setError(null);
+    try {
+      const result = await identifySet(photoUri);
+      if (result.ok) {
+        await presentSetResponse(result.data, photoUri);
+      } else {
+        setPhotoUris([]);
+        setPhase('camera');
+        setError(result.error);
+      }
+    } catch {
+      setPhotoUris([]);
+      setPhase('camera');
+      setError('The set photo could not be read. Please capture it again.');
+    }
+  };
+
   const captureFrame = async () => {
     if (!cameraRef.current || !cameraReady || capturing) return;
+    if (scanMode === 'set' && isOffline) {
+      // ponytail: set scans require a connection until the offline queue gains a set-shaped schema.
+      setError(null);
+      setNotice('Set scans need a connection. Single-piece scans still save offline.');
+      return;
+    }
+    if (scanMode === 'set') setNotice(null);
     cameraIdleRef.current = false;
     setCapturing(true);
     setError(null);
@@ -390,7 +493,10 @@ export default function ScanScreen() {
         quality: CAPTURE_QUALITY,
         skipProcessing: false,
       });
-      if (needsBaseShot) {
+      if (scanMode === 'set') {
+        setPhotoUris([picture.uri]);
+        await identifyWholeSet(picture.uri);
+      } else if (needsBaseShot) {
         const burst = [...photoUris, picture.uri];
         setPhotoUris(burst);
         await identifyBurst(burst, true);
@@ -404,35 +510,16 @@ export default function ScanScreen() {
     }
   };
 
-  /**
-   * Files it, then shows the confirmation immediately and fills the money in when it
-   * lands. The counts are local and instant; the comparables are a network round trip,
-   * and holding a saved piece behind one would put a spinner between the user and the
-   * thing they just did. The pending state still names a source, because a figure with
-   * no claim behind it is the one thing that must not appear.
-   */
-  const fileItem = async (row: CatalogRow, status: OwnershipStatus, quantity: number) => {
-    try {
-      await setOwnership(row.slug, status, quantity);
-    } catch {
-      setPhase('results');
-      setError('This item could not be added to your collection.');
-      return;
-    }
-
+  const presentFiled = async (
+    filed: FiledPiece[],
+    headline: (shelfPieces: number) => string,
+  ) => {
     const items = await getCollection();
     const have = items.filter((item) => item.status === 'have');
     const pieces = have.reduce((total, item) => total + item.quantity, 0);
     const pieceWord = `${pieces} ${pieces === 1 ? 'piece' : 'pieces'} filed`;
-    const repeat = status === 'have' && quantity > 1
-      ? ` and your ${ordinalWord(quantity) ?? ordinal(quantity)} ${row.patternName}`
-      : '';
 
-    setFiledHeadline(
-      status === 'want'
-        ? `${row.patternName}, ${row.shape}. On your want list.`
-        : `${row.patternName}, ${row.shape}. Your ${ordinal(pieces)} piece${repeat}.`,
-    );
+    setFiledHeadline(headline(pieces));
     setLedger({
       itemFigure: null,
       itemSource: 'awaiting comparables',
@@ -460,13 +547,17 @@ export default function ScanScreen() {
       return;
     }
 
-    const quote = quotes.data.find((entry) => entry.itemSlug === row.slug) ?? null;
+    const filedPrices = summarizeFiledPrices(filed, quotes.data);
     const values = calculateCollectionValues(have, quotes.data);
     const unpriced = values[0]?.itemsUnpriced ?? have.length;
 
     setLedger({
-      itemFigure: quote ? `${money.format(quote.low)}–${money.format(quote.high)}` : null,
-      itemSource: quote ? priceSourceLabel(quote.source) : 'no comparables yet',
+      itemFigure: filedPrices.low === null || filedPrices.high === null
+        ? null
+        : `${money.format(filedPrices.low)}–${money.format(filedPrices.high)}`,
+      itemSource: filedPrices.sources.length
+        ? `${filedPrices.sources.map(priceSourceLabel).join(' + ')}${filedPrices.unpriced ? ` · ${filedPrices.unpriced} without comps` : ''}`
+        : 'no comparables yet',
       // A failed chunk already returned above, so this total is either complete or absent.
       shelfFigure: values.length
         ? money.format(values.reduce((total, value) => total + value.haveTotal, 0))
@@ -477,6 +568,90 @@ export default function ScanScreen() {
       // Pieces with no comps never enter the total, and the exclusion is stated.
       pieceNote: unpriced > 0 ? `${pieceWord} \u00b7 ${unpriced} without comps` : pieceWord,
     });
+  };
+
+  /**
+   * Files it, then shows the confirmation immediately and fills the money in when it
+   * lands. The counts are local and instant; the comparables are a network round trip,
+   * and holding a saved piece behind one would put a spinner between the user and the
+   * thing they just did. The pending state still names a source, because a figure with
+   * no claim behind it is the one thing that must not appear.
+   */
+  const fileItem = async (row: CatalogRow, status: OwnershipStatus, quantity: number) => {
+    try {
+      await setOwnership(row.slug, status, quantity);
+    } catch {
+      setPhase('results');
+      setError('This item could not be added to your collection.');
+      return;
+    }
+
+    const repeat = status === 'have' && quantity > 1
+      ? ` and your ${ordinalWord(quantity) ?? ordinal(quantity)} ${row.patternName}`
+      : '';
+    await presentFiled(
+      [{ itemSlug: row.slug, count: 1 }],
+      (pieces) => status === 'want'
+        ? `${row.patternName}, ${row.shape}. On your want list.`
+        : `${row.patternName}, ${row.shape}. Your ${ordinal(pieces)} piece${repeat}.`,
+    );
+  };
+
+  const fileSet = async () => {
+    if (setResultItems.length === 0) return;
+
+    const pieceCount = setResultItems.reduce((total, item) => total + item.group.count, 0);
+    setWaitCopy({
+      title: 'Filing the set',
+      caption: `${pieceCount} ${pieceCount === 1 ? 'piece' : 'pieces'} going into your file.`,
+    });
+    setPhase('confirming');
+    setError(null);
+
+    const filed: SetResultItem[] = [];
+    for (const item of setResultItems) {
+      try {
+        const existing = await getUserItem(item.group.itemSlug);
+        await setOwnership(
+          item.group.itemSlug,
+          'have',
+          (existing?.quantity ?? 0) + item.group.count,
+        );
+        filed.push(item);
+      } catch {
+        // CONTRACT: db.ts needs a transaction helper before filing a set can be atomic.
+        const filedCount = filed.reduce((total, filedItem) => total + filedItem.group.count, 0);
+        setRemovedSetSlugs((current) => [
+          ...new Set([...current, ...filed.map(({ group }) => group.itemSlug)]),
+        ]);
+        setPhase('set-results');
+        setError(
+          filedCount
+            ? `${filedCount} ${filedCount === 1 ? 'piece was' : 'pieces were'} filed. The remaining pieces could not be added.`
+            : 'This set could not be added to your collection.',
+        );
+        return;
+      }
+    }
+
+    // ponytail: set scans skip logScan until the scans schema can store multiple confirmed slugs.
+    const headline = `${pieceCount} ${pieceCount === 1 ? 'piece' : 'pieces'} filed from this set.`;
+    try {
+      await presentFiled(
+        filed.map(({ group }) => ({ itemSlug: group.itemSlug, count: group.count })),
+        () => headline,
+      );
+    } catch {
+      setFiledHeadline(headline);
+      setLedger({
+        itemFigure: null,
+        itemSource: 'prices unavailable',
+        shelfFigure: null,
+        shelfSource: 'collection total unavailable',
+        pieceNote: `${pieceCount} ${pieceCount === 1 ? 'piece' : 'pieces'} filed`,
+      });
+      setPhase('saved');
+    }
   };
 
   /**
@@ -604,6 +779,24 @@ export default function ScanScreen() {
   const screen = renderPhase();
 
   function renderPhase() {
+    if (phase === 'set-results') {
+      return (
+        <SetResultsScreen
+          photoUri={photoUris[0]}
+          items={setResultItems}
+          contradicted={contradicted}
+          banner={banner}
+          problem={error}
+          onRemove={(slug) => {
+            setRemovedSetSlugs((current) => [...current, slug]);
+            setError(null);
+          }}
+          onFile={() => void fileSet()}
+          onRetake={retakeSet}
+        />
+      );
+    }
+
     if (phase === 'browse') {
       return (
         <BrowseScreen
@@ -718,6 +911,8 @@ export default function ScanScreen() {
 
     return (
       <ViewfinderScreen
+        mode={scanMode}
+        showModeToggle={photoUris.length === 0}
         step={needsBaseShot ? 2 : 1}
         banner={banner}
         problem={error}
@@ -728,6 +923,11 @@ export default function ScanScreen() {
         onCapture={() => void captureFrame()}
         onBack={() => setPhotoUris([])}
         onSkip={() => void identifyBurst(photoUris, false)}
+        onModeChange={(mode) => {
+          setScanMode(mode);
+          setNotice(null);
+          setError(null);
+        }}
       />
     );
   }

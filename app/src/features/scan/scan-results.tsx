@@ -51,6 +51,7 @@ import {
 } from '@/constants/theme';
 import {
   Card,
+  Divider,
   HeaderBar,
   Label,
   PressButton,
@@ -60,6 +61,7 @@ import {
 } from '@/features/collection/collection-ui';
 import type { ScanGuess } from '@shared/types';
 import { ScanBanner, TAB_BAR_CLEARANCE } from './scan-camera';
+import type { GroupedDetection } from './logic';
 
 export const money = new Intl.NumberFormat(undefined, {
   style: 'currency',
@@ -356,6 +358,184 @@ export function ResultScreen({
           accessibilityLabel="None of these"
           accessibilityHint="Opens the catalog saved on this phone">
           None
+        </PressButton>
+      </View>
+    </View>
+  );
+}
+
+// ------------------------------------------------------------------ set results
+
+export interface SetResultItem {
+  group: GroupedDetection;
+  row: CatalogRow;
+}
+
+function SetResultRow({
+  item,
+  onRemove,
+}: {
+  item: SetResultItem;
+  onRemove: () => void;
+}) {
+  const colors = useColors();
+  const { group, row } = item;
+
+  return (
+    <Card style={styles.setRow}>
+      <View style={styles.setRowHead}>
+        <SpecimenTile
+          colorway={row.colorway}
+          modelNo={row.modelNo}
+          patternName={row.patternName}
+          stampSize="small"
+          style={styles.candidateTile}
+        />
+        <View style={styles.grow}>
+          <Text numberOfLines={1} style={[styles.rowTitle, { color: colors.text }]}>
+            {row.patternName}
+          </Text>
+          <Text style={[styles.rowCaption, { color: colors.textSecondary }]}>
+            {formCaption(row)}
+          </Text>
+        </View>
+        {group.count > 1 && (
+          <View style={[styles.countMarker, { backgroundColor: colors.backgroundElement }]}>
+            <Text style={[styles.countMarkerText, { color: colors.spice }]}>×{group.count}</Text>
+          </View>
+        )}
+        <PressButton
+          tone="quiet"
+          onPress={onRemove}
+          accessibilityLabel={`Remove ${row.patternName}, model ${row.modelNo}`}
+          style={styles.removeAction}
+          textStyle={styles.removeActionText}>
+          Remove
+        </PressButton>
+      </View>
+      <Divider />
+      <View style={styles.setEvidenceCopy}>
+        <Label tone="tertiary">Model reported</Label>
+        {group.evidence.map((evidence, index) => (
+          <Text
+            key={`${evidence}-${index}`}
+            style={[styles.evidenceClaim, { color: colors.textSecondary }]}>
+            • {evidence}
+          </Text>
+        ))}
+      </View>
+    </Card>
+  );
+}
+
+export function SetResultsScreen({
+  photoUri,
+  items,
+  contradicted,
+  banner,
+  problem,
+  onRemove,
+  onFile,
+  onRetake,
+}: {
+  photoUri: string | undefined;
+  items: SetResultItem[];
+  contradicted: number;
+  banner: string | null;
+  problem: string | null;
+  onRemove: (slug: string) => void;
+  onFile: () => void;
+  onRetake: () => void;
+}) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const [footerHeight, setFooterHeight] = useState(0);
+  const pieceCount = items.reduce((total, item) => total + item.group.count, 0);
+  const pieceLabel = `${pieceCount} ${pieceCount === 1 ? 'piece' : 'pieces'}`;
+
+  return (
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+      <View style={{ paddingTop: insets.top, backgroundColor: colors.headerBar }}>
+        <HeaderBar label={`${pieceLabel} to file`} />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[
+          styles.resultContent,
+          { paddingBottom: footerHeight + Spacing.four },
+        ]}>
+        <View style={styles.evidenceRow}>
+          <EvidenceThumb uri={photoUri} label="Whole set" />
+        </View>
+
+        <View style={styles.resultCopy}>
+          <Text accessibilityRole="header" style={[styles.resultTitle, { color: colors.text }]}>
+            Review the set
+          </Text>
+          <Text style={[styles.resultBlurb, { color: colors.textSecondary }]}>
+            Remove any wrong matches. Everything left will be filed together.
+          </Text>
+        </View>
+
+        <ScanBanner message={banner} />
+        <ScanBanner message={problem} tone="problem" />
+
+        {contradicted > 0 && (
+          <Text style={[styles.contradictedNote, { color: colors.textSecondary }]}>
+            {contradicted} {contradicted === 1 ? 'piece did' : 'pieces did'} not match{' '}
+            {contradicted === 1 ? 'its pattern’s' : 'their patterns’'} documented colors and{' '}
+            {contradicted === 1 ? 'was' : 'were'} set aside for single scanning.
+          </Text>
+        )}
+
+        {items.length > 0 ? (
+          <View style={styles.candidateStack}>
+            {items.map((item) => (
+              <SetResultRow
+                item={item}
+                key={item.group.itemSlug}
+                onRemove={() => onRemove(item.group.itemSlug)}
+              />
+            ))}
+          </View>
+        ) : (
+          <Card style={styles.setEmpty}>
+            <Label tone="spice">Nothing left to file</Label>
+            <Text style={[styles.rowCaption, { color: colors.textSecondary }]}>
+              Retake the set photo, or scan each dish one at a time to correct the pieces you
+              removed.
+            </Text>
+          </Card>
+        )}
+      </ScrollView>
+
+      <View
+        style={[
+          styles.fade,
+          {
+            bottom: footerHeight,
+            experimental_backgroundImage: `linear-gradient(180deg, transparent, ${colors.background})`,
+          },
+        ]}
+      />
+      <View
+        onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+        style={[
+          styles.setResultFooter,
+          {
+            backgroundColor: colors.background,
+            paddingBottom: insets.bottom + TAB_BAR_CLEARANCE + Spacing.four + Spacing.half,
+          },
+        ]}>
+        <PressButton
+          tone="primary"
+          disabled={items.length === 0}
+          onPress={onFile}
+          accessibilityLabel={`File ${pieceLabel}`}>
+          File {pieceLabel}
+        </PressButton>
+        <PressButton tone="quiet" onPress={onRetake} accessibilityLabel="Retake the set photo">
+          Retake photo
         </PressButton>
       </View>
     </View>
@@ -819,6 +999,33 @@ const styles = StyleSheet.create({
 
   wantLink: { alignItems: 'center', minHeight: HitTarget, justifyContent: 'center' },
   wantLinkText: { ...Type.bodyStrong, fontSize: 13 },
+
+  setRow: { gap: Spacing.three - Spacing.one, padding: Spacing.three - Spacing.one },
+  setRowHead: { alignItems: 'center', flexDirection: 'row', gap: Spacing.two },
+  countMarker: {
+    alignItems: 'center',
+    borderRadius: Radius.pill,
+    justifyContent: 'center',
+    minHeight: Spacing.four,
+    minWidth: Spacing.four,
+    paddingHorizontal: Spacing.two,
+  },
+  countMarkerText: { ...Type.bodyStrong },
+  removeAction: { paddingHorizontal: Spacing.two },
+  removeActionText: { fontSize: Type.caption.fontSize, lineHeight: Type.caption.lineHeight },
+  setEvidenceCopy: { gap: Spacing.one },
+  evidenceClaim: { ...Type.caption },
+  contradictedNote: { ...Type.caption },
+  setEmpty: { gap: Spacing.two, padding: Spacing.three },
+  setResultFooter: {
+    bottom: 0,
+    gap: Spacing.two + Spacing.half,
+    left: 0,
+    paddingHorizontal: Spacing.gutter,
+    paddingTop: Spacing.three - Spacing.half,
+    position: 'absolute',
+    right: 0,
+  },
 
   // `experimental_backgroundImage` is the only gradient React Native 0.85 exposes and
   // react-native-web 0.21 does not implement it, so the browser preview shows a hard
