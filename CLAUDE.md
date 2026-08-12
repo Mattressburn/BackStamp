@@ -67,9 +67,15 @@ records that the model answers a wide frame by emitting canonical nesting sets
 (441/442/443/444) at 0.80 to 1.00 confidence while its own evidence field contradicts the
 slug in the same row.
 
-**Do not crawl the Corning Museum Pyrex Pattern Library, and do not touch its
-photographs.** CMoG confirms that factual information may be restated without a
-license. Screenshots and direct quotations of chunks of its text are expressly carved
+**Do not touch CMoG's photographs, and do not re-fetch their site.** The pattern
+library was read once, politely, on 2026-08-11: all 174 pattern pages, sequential,
+about 1.2s apart, through a real browser, text fields only, no image downloads. The
+raw fields live in `data/cmog-cache/` (gitignored, because their prose is copyrighted
+and must never ship or be committed; only facts restated in our own words go into the
+catalog). One page, `gooseberry-white-pink`, is broken on their end with a redirect
+loop; `gooseberry-pink-white` is the working entry. There is no reason to fetch the
+site again; work from the cache. CMoG confirms that factual information may be
+restated without a license. Screenshots and direct quotations of chunks of its text are expressly carved
 out. Its photographs remain separately copyrighted, and its reply does not cover the
 Pyrex pattern artwork, which belongs to Corning or Instant Brands rather than CMoG.
 CMoG requested source recognition and a link; Settings now provides both for pattern
@@ -104,9 +110,12 @@ There is no iOS Simulator on Linux. Physical phone via Expo Go, or the web previ
 This has now cost two sessions. Session 2 misread a screenshot taken mid hot-reload;
 session 3 could not locate the file Playwright claimed to write. `page.evaluate` against
 `getComputedStyle` is the reliable check and it is what proved the offset shadows render.
-Two traps in that query: walk `*`, not `div`, because React Native Web maps `Pressable`
-to a `<button>` and a div-only sweep reports zero shadows on a page full of them; and
-switch themes with `page.emulateMedia({ colorScheme })` rather than trusting a default.
+Three traps: walk `*`, not `div`, because React Native Web maps `Pressable` to a
+`<button>` and a div-only sweep reports zero shadows on a page full of them; switch
+themes with `page.emulateMedia({ colorScheme })` AND reload, the palette is read at
+mount; and drive taps with Playwright's real click (`force: true` when the fixed tab
+bar intercepts the hit test), because Pressable ignores synthetic `element.click()`
+from page scripts and the tap silently does nothing.
 
 **Populated screens need the backend running.** `bootstrap()` seeds from the bundled
 catalog, but the browser preview reaches `/catalog` at the MRDockBox address and with the

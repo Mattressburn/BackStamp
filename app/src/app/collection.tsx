@@ -39,7 +39,10 @@ import {
   Type,
 } from '@/constants/theme';
 import { getCollection, getSettings, searchCatalog, setOwnership, type CatalogRow } from '@/db';
-import { calculateCollectionValues } from '@/features/collection/collection-total';
+import {
+  calculateCollectionValues,
+  countOwnedPieces,
+} from '@/features/collection/collection-total';
 import {
   Card,
   CircleButton,
@@ -198,7 +201,7 @@ export default function CollectionScreen() {
   );
 
   const counts = {
-    have: items.filter((item) => item.status === 'have').length,
+    have: countOwnedPieces(items),
     want: items.filter((item) => item.status === 'want').length,
     all: catalog.size,
   };

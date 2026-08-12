@@ -2,6 +2,13 @@ import type { CollectionValue, PriceQuote, PriceSourceKind, UserItem } from '@sh
 
 const SOURCES: PriceSourceKind[] = ['sold', 'active'];
 
+export function countOwnedPieces(items: readonly UserItem[]): number {
+  return items.reduce(
+    (total, item) => item.status === 'have' ? total + item.quantity : total,
+    0,
+  );
+}
+
 export function calculateCollectionValues(
   items: readonly UserItem[],
   quotes: readonly PriceQuote[],

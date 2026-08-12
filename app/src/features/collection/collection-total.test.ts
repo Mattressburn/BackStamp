@@ -5,7 +5,7 @@ import test from 'node:test';
 import type { PriceQuote, UserItem } from '@shared/types';
 
 // @ts-expect-error Node 26 resolves the TypeScript extension directly.
-import { calculateCollectionValues } from './collection-total.ts';
+import { calculateCollectionValues, countOwnedPieces } from './collection-total.ts';
 
 const updatedAt = '2026-08-09T12:00:00.000Z';
 const fetchedAt = '2026-08-09T12:00:00.000Z';
@@ -30,6 +30,15 @@ function quote(itemSlug: string, median: number): PriceQuote {
     fetchedAt,
   };
 }
+
+test('counts every owned quantity as a piece', () => {
+  assert.equal(countOwnedPieces([
+    userItem('butterprint-444', 'have', 2),
+    userItem('snowflake-045', 'have', 1),
+    userItem('gooseberry-441', 'have', 1),
+    userItem('friendship-473', 'want', 0),
+  ]), 4);
+});
 
 test('multiplies an owned item median by its quantity', () => {
   const [sold] = calculateCollectionValues(
