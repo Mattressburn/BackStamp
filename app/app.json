@@ -13,7 +13,8 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Backstamp uses the camera to photograph a dish and the model number on its underside so it can identify the pattern and form.",
-        "NSPhotoLibraryUsageDescription": "Backstamp uses your photo library so you can add pictures of pieces already in your collection."
+        "NSPhotoLibraryUsageDescription": "Backstamp uses your photo library so you can add pictures of pieces already in your collection.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -25,7 +26,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ],
       "predictiveBackGestureEnabled": false
     },
@@ -65,6 +67,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "9304a800-3b2e-4739-8f0c-61b8c86a1f30"
+      }
+    },
+    "owner": "mattressburns-team"
   }
 }

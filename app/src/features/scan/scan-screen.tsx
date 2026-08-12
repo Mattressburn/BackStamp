@@ -34,6 +34,8 @@ import {
   dequeueScan,
   enqueueScan,
   getCollection,
+  getForm,
+  getPattern,
   getSettings,
   getUserItem,
   listQueuedScans,
@@ -46,7 +48,9 @@ import { priceSourceLabel } from '@/features/collection/collection-ui';
 import type {
   IdentifyResponse,
   IdentifySetResponse,
+  Form,
   OwnershipStatus,
+  Pattern,
   ScanGuess,
   SetDetection,
 } from '@shared/types';
@@ -58,6 +62,7 @@ import {
 } from './scan-camera';
 import {
   AlreadyOwnedSheet,
+  BrowseDetailScreen,
   BrowseScreen,
   FiledScreen,
   ResultScreen,
@@ -71,6 +76,7 @@ import {
   groupDetections,
   ordinal,
   ordinalWord,
+  shouldPresentBrowseDetail,
   shouldRetryQueueDrain,
   summarizeFiledPrices,
 } from './logic';
@@ -81,6 +87,7 @@ type Phase =
   | 'results'
   | 'set-results'
   | 'browse'
+  | 'browse-detail'
   | 'confirming'
   | 'owned'
   | 'saved';
@@ -158,6 +165,8 @@ export default function ScanScreen() {
   const cameraIdleRef = useRef(true);
   const ledgerTokenRef = useRef(0);
   const loggedSlugRef = useRef<string | null>(null);
+  const browseDetailTokenRef = useRef(0);
+  const phaseRef = useRef<Phase>('camera');
 
   const [phase, setPhase] = useState<Phase>('camera');
   const [scanMode, setScanMode] = useState<'single' | 'set'>('single');
@@ -179,6 +188,11 @@ export default function ScanScreen() {
   const [catalog, setCatalog] = useState<CatalogRow[]>([]);
   const [catalogQuery, setCatalogQuery] = useState('');
   const [shapeFilter, setShapeFilter] = useState<string | null>(null);
+  const [browseDetail, setBrowseDetail] = useState<{
+    row: CatalogRow;
+    pattern: Pattern;
+    form: Form | null;
+  } | null>(null);
   const [unknownPatternName, setUnknownPatternName] = useState('');
   const [owned, setOwned] = useState<{ row: CatalogRow; quantity: number; since: string | null } | null>(null);
   const [filedHeadline, setFiledHeadline] = useState('');
@@ -189,6 +203,7 @@ export default function ScanScreen() {
   const needsBaseShot = scanMode === 'single' && photoUris.length === 1;
   const cameraIdle = phase === 'camera' && photoUris.length === 0 && !capturing;
   cameraIdleRef.current = cameraIdle;
+  phaseRef.current = phase;
 
   // Both facts, not one or the other: a notice must not swallow the queue count.
   const banner =
@@ -334,6 +349,7 @@ export default function ScanScreen() {
   }, [catalog]);
 
   const resetScan = useCallback(() => {
+    browseDetailTokenRef.current += 1;
     setPhase('camera');
     setScanMode('single');
     setCapturing(false);
@@ -350,6 +366,7 @@ export default function ScanScreen() {
     setError(null);
     setCatalogQuery('');
     setShapeFilter(null);
+    setBrowseDetail(null);
     setUnknownPatternName('');
     setOwned(null);
     setFiledHeadline('');
@@ -581,7 +598,7 @@ export default function ScanScreen() {
     try {
       await setOwnership(row.slug, status, quantity);
     } catch {
-      setPhase('results');
+      setPhase(browseDetail ? 'browse-detail' : 'results');
       setError('This item could not be added to your collection.');
       return;
     }
@@ -726,6 +743,7 @@ export default function ScanScreen() {
     }
 
     setWaitCopy({ title: 'Adding the pattern', caption: `Creating a catalog entry for ${patternName}.` });
+    browseDetailTokenRef.current += 1;
     setPhase('confirming');
     setError(null);
     try {
@@ -767,10 +785,33 @@ export default function ScanScreen() {
   };
 
   const openBrowse = () => {
+    browseDetailTokenRef.current += 1;
     setCatalogQuery('');
     setShapeFilter(null);
+    setBrowseDetail(null);
     setError(null);
     setPhase('browse');
+  };
+
+  const openBrowseDetail = async (row: CatalogRow) => {
+    const request = ++browseDetailTokenRef.current;
+    setError(null);
+    try {
+      const [pattern, form] = await Promise.all([
+        getPattern(row.patternId),
+        getForm(row.formId),
+      ]);
+      if (!shouldPresentBrowseDetail(request, browseDetailTokenRef.current, phaseRef.current)) return;
+      if (!pattern) {
+        setError('The saved pattern details could not be opened.');
+        return;
+      }
+      setBrowseDetail({ row, pattern, form });
+      setPhase('browse-detail');
+    } catch {
+      if (!shouldPresentBrowseDetail(request, browseDetailTokenRef.current, phaseRef.current)) return;
+      setError('The saved pattern details could not be opened.');
+    }
   };
 
   // The scan flow runs full-bleed, so the tab bar hides for the whole of it. It is a
@@ -779,6 +820,30 @@ export default function ScanScreen() {
   const screen = renderPhase();
 
   function renderPhase() {
+    const renderOwnedSheet = (dismissPhase: 'results' | 'browse-detail') =>
+      phase === 'owned' && owned ? (
+        <AlreadyOwnedSheet
+          row={owned.row}
+          quantity={owned.quantity}
+          since={owned.since}
+          addLabel={
+            ordinalWord(owned.quantity + 1)
+              ? `Add a ${ordinalWord(owned.quantity + 1)}`
+              : 'Add another'
+          }
+          onAdd={() => void fileItem(owned.row, 'have', owned.quantity + 1)}
+          onOpen={() => {
+            const slug = owned.row.slug;
+            resetScan();
+            router.push({ pathname: '/item/[slug]', params: { slug } });
+          }}
+          onDismiss={() => {
+            setOwned(null);
+            setPhase(dismissPhase);
+          }}
+        />
+      ) : null;
+
     if (phase === 'set-results') {
       return (
         <SetResultsScreen
@@ -814,8 +879,30 @@ export default function ScanScreen() {
           onUnknownName={setUnknownPatternName}
           onSubmitUnknown={() => void submitUnknown()}
           onBack={resetScan}
-          onPick={(row) => void confirmRow(row, 'have')}
+          onPick={(row) => void openBrowseDetail(row)}
         />
+      );
+    }
+
+    if ((phase === 'browse-detail' || phase === 'owned') && browseDetail) {
+      return (
+        <>
+          <BrowseDetailScreen
+            row={browseDetail.row}
+            pattern={browseDetail.pattern}
+            form={browseDetail.form}
+            banner={banner}
+            problem={error}
+            onAdd={() => void confirmRow(browseDetail.row, 'have')}
+            onBack={() => {
+              browseDetailTokenRef.current += 1;
+              setBrowseDetail(null);
+              setError(null);
+              setPhase('browse');
+            }}
+          />
+          {renderOwnedSheet('browse-detail')}
+        </>
       );
     }
 
@@ -855,28 +942,7 @@ export default function ScanScreen() {
             onNone={openBrowse}
             onRetake={resetScan}
           />
-          {phase === 'owned' && owned && (
-            <AlreadyOwnedSheet
-              row={owned.row}
-              quantity={owned.quantity}
-              since={owned.since}
-              addLabel={
-                ordinalWord(owned.quantity + 1)
-                  ? `Add a ${ordinalWord(owned.quantity + 1)}`
-                  : 'Add another'
-              }
-              onAdd={() => void fileItem(owned.row, 'have', owned.quantity + 1)}
-              onOpen={() => {
-                const slug = owned.row.slug;
-                resetScan();
-                router.push({ pathname: '/item/[slug]', params: { slug } });
-              }}
-              onDismiss={() => {
-                setOwned(null);
-                setPhase('results');
-              }}
-            />
-          )}
+          {renderOwnedSheet('results')}
         </>
       );
     }

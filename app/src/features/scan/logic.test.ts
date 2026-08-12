@@ -6,7 +6,7 @@ import test from 'node:test';
 import type { ApiErrorCode, PriceQuote, SetDetection } from '@shared/types';
 
 // @ts-expect-error Node's TypeScript test runner requires the explicit extension.
-import { deriveLlmWasRight, groupDetections, ordinal, ordinalWord, shouldRetryQueueDrain, summarizeFiledPrices } from './logic.ts';
+import { browseDetailFacts, deriveLlmWasRight, groupDetections, ordinal, ordinalWord, shouldPresentBrowseDetail, shouldRetryQueueDrain, summarizeFiledPrices } from './logic.ts';
 
 const guesses = [
   { itemSlug: 'butterprint-444', confidence: 0.86, reasoning: 'Pattern and base match.' },
@@ -46,6 +46,32 @@ test('ordinalWord runs out past ten so the caller can reword', () => {
   assert.equal(ordinalWord(3), 'third');
   assert.equal(ordinalWord(10), 'tenth');
   assert.equal(ordinalWord(11), null);
+});
+
+test('browse detail facts format known production years and form measurements', () => {
+  assert.deepEqual(
+    browseDetailFacts(
+      { yearsStart: 1957, yearsEnd: 1966 },
+      { capacityQt: 4, dimensions: '13 x 10 x 4 in' },
+    ),
+    { productionYears: '1957–1966', measurements: '4 qt · 13 x 10 x 4 in' },
+  );
+});
+
+test('browse detail facts omit catalog facts that are not documented', () => {
+  assert.deepEqual(
+    browseDetailFacts(
+      { yearsStart: null, yearsEnd: null },
+      { capacityQt: null, dimensions: null },
+    ),
+    { productionYears: null, measurements: null },
+  );
+});
+
+test('browse detail ignores a stale lookup or a lookup completed after leaving browse', () => {
+  assert.equal(shouldPresentBrowseDetail(2, 2, 'browse'), true);
+  assert.equal(shouldPresentBrowseDetail(1, 2, 'browse'), false);
+  assert.equal(shouldPresentBrowseDetail(2, 2, 'camera'), false);
 });
 
 test('set detections group duplicate slugs without changing first-appearance order', () => {

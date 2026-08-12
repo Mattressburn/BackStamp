@@ -38,6 +38,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { CatalogRow } from '@/db';
+import { SWATCH_SOURCE_LABEL } from '@/constants/colorways';
 import {
   CameraChrome,
   HitTarget,
@@ -55,13 +56,14 @@ import {
   HeaderBar,
   Label,
   PressButton,
+  RarityBadge,
   SpecimenTile,
   useColors,
   useElevation,
 } from '@/features/collection/collection-ui';
-import type { ScanGuess } from '@shared/types';
+import type { Form, Pattern, ScanGuess } from '@shared/types';
 import { ScanBanner, TAB_BAR_CLEARANCE } from './scan-camera';
-import type { GroupedDetection } from './logic';
+import { browseDetailFacts, type GroupedDetection } from './logic';
 
 export const money = new Intl.NumberFormat(undefined, {
   style: 'currency',
@@ -692,7 +694,7 @@ function GridCell({ row, onPress }: { row: CatalogRow; onPress: () => void }) {
 
   return (
     <Pressable
-      accessibilityHint="Confirms this as the piece you photographed"
+      accessibilityHint="Opens pattern details before adding it to your collection"
       accessibilityLabel={`${row.patternName}, ${row.shape}, model ${row.modelNo}`}
       accessibilityRole="button"
       onPress={onPress}
@@ -862,6 +864,147 @@ export function BrowseScreen({
           </Card>
         }
       />
+    </View>
+  );
+}
+
+export function BrowseDetailScreen({
+  row,
+  pattern,
+  form,
+  banner,
+  problem,
+  onAdd,
+  onBack,
+}: {
+  row: CatalogRow;
+  pattern: Pattern;
+  form: Form | null;
+  banner: string | null;
+  problem: string | null;
+  onAdd: () => void;
+  onBack: () => void;
+}) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const [footerHeight, setFooterHeight] = useState(0);
+  const { productionYears, measurements } = browseDetailFacts(pattern, form);
+  const shape = form?.shape ?? row.shape;
+  const modelNo = form?.modelNo ?? row.modelNo;
+  const colorway = pattern.colorway ?? row.colorway;
+
+  return (
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+      <View style={{ paddingTop: insets.top, backgroundColor: colors.headerBar }}>
+        <HeaderBar label="Pattern details" />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[
+          styles.browseDetailContent,
+          { paddingBottom: footerHeight + Spacing.four },
+        ]}>
+        <ScanBanner message={banner} />
+        <ScanBanner message={problem} tone="problem" />
+
+        <Card raised style={styles.browseDetailCard}>
+          <View style={styles.browseDetailSection}>
+            <Label tone="spice">Pattern</Label>
+            <Text accessibilityRole="header" style={[styles.browseDetailTitle, { color: colors.text }]}>
+              {pattern.name}
+            </Text>
+            <Text style={[styles.browseDetailCaption, { color: colors.textSecondary }]}>
+              {formCaption({ shape, modelNo })}
+            </Text>
+          </View>
+
+          <Divider />
+
+          <View style={styles.browseDetailFacts}>
+            {productionYears && (
+              <View style={styles.browseDetailSection}>
+                <Label tone="tertiary">Production years</Label>
+                <Text style={[styles.browseDetailFact, { color: colors.text }]}>
+                  {productionYears}
+                </Text>
+              </View>
+            )}
+            {measurements && (
+              <View style={styles.browseDetailSection}>
+                <Label tone="tertiary">Capacity and size</Label>
+                <Text style={[styles.browseDetailFact, { color: colors.text }]}>
+                  {measurements}
+                </Text>
+              </View>
+            )}
+            <View style={styles.browseDetailSection}>
+              <Label tone="tertiary">Rarity</Label>
+              <RarityBadge rarity={row.rarity} />
+            </View>
+          </View>
+
+          <Divider />
+
+          <View style={styles.browseDetailSection}>
+            <Label tone="spice">Colorway</Label>
+            <Text style={[styles.browseDetailBody, { color: colors.textSecondary }]}>
+              {colorway ?? 'Colorway not documented'}
+            </Text>
+            <SpecimenTile
+              colorway={colorway}
+              modelNo={modelNo}
+              patternName={pattern.name}
+              stampSize="large"
+              style={styles.browseDetailTile}
+            />
+            <Text style={[styles.browseDetailSource, { color: colors.textTertiary }]}>
+              {SWATCH_SOURCE_LABEL}
+            </Text>
+          </View>
+
+          {pattern.notes && (
+            <>
+              <Divider />
+              <View style={styles.browseDetailSection}>
+                <Label tone="spice">Identification notes</Label>
+                <Text style={[styles.browseDetailBody, { color: colors.textSecondary }]}>
+                  {pattern.notes}
+                </Text>
+              </View>
+            </>
+          )}
+        </Card>
+      </ScrollView>
+
+      <View
+        style={[
+          styles.fade,
+          {
+            bottom: footerHeight,
+            experimental_backgroundImage: `linear-gradient(180deg, transparent, ${colors.background})`,
+          },
+        ]}
+      />
+      <View
+        onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+        style={[
+          styles.resultFooter,
+          {
+            backgroundColor: colors.background,
+            paddingBottom: insets.bottom + TAB_BAR_CLEARANCE + Spacing.four + Spacing.half,
+          },
+        ]}>
+        <PressButton
+          tone="primary"
+          onPress={onAdd}
+          accessibilityLabel={`Add ${pattern.name} to my collection`}
+          style={styles.grow}>
+          Add this
+        </PressButton>
+        <PressButton tone="quiet" onPress={onBack} accessibilityLabel="Go back to catalog browse">
+          Go back
+        </PressButton>
+      </View>
     </View>
   );
 }
@@ -1129,6 +1272,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },
+
+  browseDetailContent: {
+    alignSelf: 'center',
+    gap: Spacing.three,
+    maxWidth: MaxContentWidth,
+    paddingHorizontal: Spacing.gutter,
+    paddingTop: Spacing.three,
+    width: '100%',
+  },
+  browseDetailCard: { gap: Spacing.three, padding: Spacing.three },
+  browseDetailSection: { gap: Spacing.one },
+  browseDetailTitle: { ...Type.title },
+  browseDetailCaption: { ...Type.callout },
+  browseDetailFacts: { gap: Spacing.three },
+  browseDetailFact: { ...Type.bodyStrong },
+  browseDetailBody: { ...Type.body },
+  browseDetailTile: { aspectRatio: EVIDENCE_ASPECT, width: '100%' },
+  browseDetailSource: { ...Type.caption },
 
   // --- 9
   sheet: {

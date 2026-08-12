@@ -189,6 +189,13 @@ export function PressButton({
 } & Omit<PressableProps, 'style' | 'children' | 'onPress' | 'disabled'>) {
   const colors = useColors();
   const elevation = useElevation();
+  const textChildren =
+    typeof children === 'string' || typeof children === 'number'
+      ? String(children)
+      : Array.isArray(children) &&
+          children.every((child) => typeof child === 'string' || typeof child === 'number')
+        ? children.join('')
+        : null;
 
   const skin = {
     primary: { backgroundColor: colors.accent, color: colors.accentText, lift: elevation.button },
@@ -207,7 +214,7 @@ export function PressButton({
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? (typeof children === 'string' ? children : undefined)}
+      accessibilityLabel={accessibilityLabel ?? textChildren ?? undefined}
       accessibilityState={{ disabled }}
       style={({ pressed }) => [
         styles.button,
@@ -217,8 +224,8 @@ export function PressButton({
         disabled && styles.buttonDisabled,
         style,
       ]}>
-      {typeof children === 'string' ? (
-        <Text style={[styles.buttonLabel, { color: skin.color }, textStyle]}>{children}</Text>
+      {textChildren !== null ? (
+        <Text style={[styles.buttonLabel, { color: skin.color }, textStyle]}>{textChildren}</Text>
       ) : (
         children
       )}

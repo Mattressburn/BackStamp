@@ -1,5 +1,7 @@
 import type {
   ApiErrorCode,
+  Form,
+  Pattern,
   PriceQuote,
   PriceSourceKind,
   ScanGuess,
@@ -45,6 +47,33 @@ const ORDINAL_WORDS = [
  */
 export function ordinalWord(n: number): string | null {
   return ORDINAL_WORDS[n] ?? null;
+}
+
+export function browseDetailFacts(
+  pattern: Pick<Pattern, 'yearsStart' | 'yearsEnd'>,
+  form: Pick<Form, 'capacityQt' | 'dimensions'> | null,
+): { productionYears: string | null; measurements: string | null } {
+  const productionYears = pattern.yearsStart !== null && pattern.yearsEnd !== null
+    ? `${pattern.yearsStart}–${pattern.yearsEnd}`
+    : pattern.yearsStart !== null
+      ? `${pattern.yearsStart} onward`
+      : pattern.yearsEnd !== null
+        ? `Through ${pattern.yearsEnd}`
+        : null;
+  const measurements = [
+    form?.capacityQt !== null && form?.capacityQt !== undefined ? `${form.capacityQt} qt` : null,
+    form?.dimensions,
+  ].filter(Boolean).join(' · ') || null;
+
+  return { productionYears, measurements };
+}
+
+export function shouldPresentBrowseDetail(
+  request: number,
+  currentRequest: number,
+  phase: string,
+): boolean {
+  return request === currentRequest && phase === 'browse';
 }
 
 export interface GroupedDetection {
