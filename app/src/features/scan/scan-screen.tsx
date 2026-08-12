@@ -52,7 +52,6 @@ import type {
   OwnershipStatus,
   Pattern,
   ScanGuess,
-  SetDetection,
 } from '@shared/types';
 import {
   IdentifyingScreen,
@@ -76,9 +75,11 @@ import {
   groupDetections,
   ordinal,
   ordinalWord,
+  replaceOrMergeDetectionGroup,
   shouldPresentBrowseDetail,
   shouldRetryQueueDrain,
   summarizeFiledPrices,
+  type GroupedDetection,
 } from './logic';
 
 type Phase =
@@ -178,8 +179,10 @@ export default function ScanScreen() {
   const [guesses, setGuesses] = useState<ScanGuess[]>([]);
   const [guessRows, setGuessRows] = useState<CatalogRow[]>([]);
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
-  const [setDetections, setSetDetections] = useState<SetDetection[]>([]);
+  const [selectedPattern, setSelectedPattern] = useState<Pattern | null>(null);
+  const [setGroups, setSetGroups] = useState<GroupedDetection[]>([]);
   const [removedSetSlugs, setRemovedSetSlugs] = useState<string[]>([]);
+  const [correctingSlug, setCorrectingSlug] = useState<string | null>(null);
   const [contradicted, setContradicted] = useState(0);
   const [queuedCount, setQueuedCount] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
@@ -317,6 +320,22 @@ export default function ScanScreen() {
     if (phase === 'browse') void loadCatalog().catch(() => setError('The saved catalog could not be opened.'));
   }, [loadCatalog, phase]);
 
+  useEffect(() => {
+    let current = true;
+    const row = guessRows.find((candidate) => candidate.slug === selectedSlug);
+    setSelectedPattern(null);
+    if (!row) return () => { current = false; };
+
+    void getPattern(row.patternId)
+      .then((pattern) => {
+        if (current) setSelectedPattern(pattern);
+      })
+      .catch(() => {
+        if (current) setSelectedPattern(null);
+      });
+    return () => { current = false; };
+  }, [guessRows, selectedSlug]);
+
   // The catalog is small enough to filter in memory, which keeps the field responsive
   // per keystroke and matches what `searchCatalog` matches on: pattern, form, model no.
   const browseRows = useMemo(() => {
@@ -332,11 +351,11 @@ export default function ScanScreen() {
 
   const setResultItems = useMemo<SetResultItem[]>(() => {
     const removed = new Set(removedSetSlugs);
-    return groupDetections(setDetections).flatMap((group) => {
+    return setGroups.flatMap((group) => {
       const row = catalog.find((candidate) => candidate.slug === group.itemSlug);
       return row && !removed.has(group.itemSlug) ? [{ group, row }] : [];
     });
-  }, [catalog, removedSetSlugs, setDetections]);
+  }, [catalog, removedSetSlugs, setGroups]);
 
   /** The forms the catalog actually holds most of, rather than a written-in list. */
   const shapes = useMemo(() => {
@@ -359,8 +378,10 @@ export default function ScanScreen() {
     setGuesses([]);
     setGuessRows([]);
     setSelectedSlug(null);
-    setSetDetections([]);
+    setSelectedPattern(null);
+    setSetGroups([]);
     setRemovedSetSlugs([]);
+    setCorrectingSlug(null);
     setContradicted(0);
     setNotice(null);
     setError(null);
@@ -457,7 +478,7 @@ export default function ScanScreen() {
     }
 
     setPhotoUris([photoUri]);
-    setSetDetections(response.detections);
+    setSetGroups(groups);
     setRemovedSetSlugs([]);
     setContradicted(response.contradicted);
     setError(null);
@@ -731,6 +752,21 @@ export default function ScanScreen() {
     await fileItem(row, status, status === 'want' ? 0 : 1);
   };
 
+  const applySetCorrection = (replacementSlug: string) => {
+    if (!correctingSlug) return;
+    setSetGroups((current) =>
+      replaceOrMergeDetectionGroup(current, correctingSlug, replacementSlug),
+    );
+    setRemovedSetSlugs((current) => current.filter((slug) => slug !== replacementSlug));
+    browseDetailTokenRef.current += 1;
+    setCorrectingSlug(null);
+    setCatalogQuery('');
+    setShapeFilter(null);
+    setBrowseDetail(null);
+    setError(null);
+    setPhase('set-results');
+  };
+
   const submitUnknown = async () => {
     const patternName = unknownPatternName.trim();
     if (!patternName) {
@@ -784,8 +820,9 @@ export default function ScanScreen() {
     }
   };
 
-  const openBrowse = () => {
+  const openBrowse = (correctionSlug: string | null = null) => {
     browseDetailTokenRef.current += 1;
+    setCorrectingSlug(correctionSlug);
     setCatalogQuery('');
     setShapeFilter(null);
     setBrowseDetail(null);
@@ -856,6 +893,7 @@ export default function ScanScreen() {
             setRemovedSetSlugs((current) => [...current, slug]);
             setError(null);
           }}
+          onWrong={(slug) => openBrowse(slug)}
           onFile={() => void fileSet()}
           onRetake={retakeSet}
         />
@@ -878,7 +916,19 @@ export default function ScanScreen() {
           unknownName={unknownPatternName}
           onUnknownName={setUnknownPatternName}
           onSubmitUnknown={() => void submitUnknown()}
-          onBack={resetScan}
+          onBack={() => {
+            if (!correctingSlug) {
+              resetScan();
+              return;
+            }
+            browseDetailTokenRef.current += 1;
+            setCorrectingSlug(null);
+            setCatalogQuery('');
+            setShapeFilter(null);
+            setBrowseDetail(null);
+            setError(null);
+            setPhase('set-results');
+          }}
           onPick={(row) => void openBrowseDetail(row)}
         />
       );
@@ -893,7 +943,10 @@ export default function ScanScreen() {
             form={browseDetail.form}
             banner={banner}
             problem={error}
-            onAdd={() => void confirmRow(browseDetail.row, 'have')}
+            actionLabel={correctingSlug ? 'Use this instead' : 'Add this'}
+            onAdd={() => correctingSlug
+              ? applySetCorrection(browseDetail.row.slug)
+              : void confirmRow(browseDetail.row, 'have')}
             onBack={() => {
               browseDetailTokenRef.current += 1;
               setBrowseDetail(null);
@@ -933,13 +986,14 @@ export default function ScanScreen() {
             photoUris={photoUris}
             candidates={candidates}
             selectedSlug={selectedSlug}
+            selectedPattern={selectedPattern?.id === selected?.patternId ? selectedPattern : null}
             banner={banner}
             problem={error}
             busy={phase === 'owned'}
             onSelect={setSelectedSlug}
             onConfirm={() => selected && void confirmRow(selected, 'have')}
             onWant={() => selected && void confirmRow(selected, 'want')}
-            onNone={openBrowse}
+            onNone={() => openBrowse()}
             onRetake={resetScan}
           />
           {renderOwnedSheet('results')}
@@ -954,14 +1008,14 @@ export default function ScanScreen() {
     }
 
     if (!permission) {
-      return <PermissionScreen mode="checking" onRequest={() => {}} onBrowse={openBrowse} />;
+      return <PermissionScreen mode="checking" onRequest={() => {}} onBrowse={() => openBrowse()} />;
     }
     if (permission.status === PermissionStatus.UNDETERMINED) {
       return (
         <PermissionScreen
           mode="undetermined"
           onRequest={() => void requestPermission()}
-          onBrowse={openBrowse}
+          onBrowse={() => openBrowse()}
         />
       );
     }
@@ -970,7 +1024,7 @@ export default function ScanScreen() {
         <PermissionScreen
           mode="denied"
           onRequest={() => void Linking.openSettings()}
-          onBrowse={openBrowse}
+          onBrowse={() => openBrowse()}
         />
       );
     }

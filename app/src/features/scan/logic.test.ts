@@ -6,12 +6,27 @@ import test from 'node:test';
 import type { ApiErrorCode, PriceQuote, SetDetection } from '@shared/types';
 
 // @ts-expect-error Node's TypeScript test runner requires the explicit extension.
-import { browseDetailFacts, deriveLlmWasRight, groupDetections, ordinal, ordinalWord, shouldPresentBrowseDetail, shouldRetryQueueDrain, summarizeFiledPrices } from './logic.ts';
+import { browseDetailFacts, deriveLlmWasRight, groupDetections, ordinal, ordinalWord, replaceOrMergeDetectionGroup, shouldPresentBrowseDetail, shouldRetryQueueDrain, summarizeFiledPrices, type GroupedDetection } from './logic.ts';
 
 const guesses = [
   { itemSlug: 'butterprint-444', confidence: 0.86, reasoning: 'Pattern and base match.' },
   { itemSlug: 'gooseberry-444', confidence: 0.51, reasoning: 'Form matches.' },
 ];
+
+const correctionGroups = [
+  {
+    itemSlug: 'gooseberry-444',
+    count: 2,
+    maxConfidence: 0.92,
+    evidence: ['pink leaves on white', 'pink gooseberry print'],
+  },
+  {
+    itemSlug: 'butterprint-444',
+    count: 1,
+    maxConfidence: 0.71,
+    evidence: ['turquoise figures'],
+  },
+] satisfies GroupedDetection[];
 
 test('llmWasRight is true only when the confirmed slug is the top guess', () => {
   assert.equal(deriveLlmWasRight(guesses, 'butterprint-444'), true);
@@ -110,6 +125,43 @@ test('set detections group duplicate slugs without changing first-appearance ord
       evidence: ['turquoise figures'],
     },
   ]);
+});
+
+test('set correction replaces a group slug without changing its count', () => {
+  assert.deepEqual(
+    replaceOrMergeDetectionGroup(
+      [correctionGroups[0]],
+      'gooseberry-444',
+      'butterprint-444',
+    ),
+    [{
+      itemSlug: 'butterprint-444',
+      count: 2,
+      maxConfidence: 0.92,
+      evidence: ['pink leaves on white', 'pink gooseberry print'],
+    }],
+  );
+});
+
+test('set correction merges counts when the replacement slug already exists', () => {
+  assert.deepEqual(
+    replaceOrMergeDetectionGroup(correctionGroups, 'gooseberry-444', 'butterprint-444'),
+    [{
+      itemSlug: 'butterprint-444',
+      count: 3,
+      maxConfidence: 0.92,
+      evidence: ['pink leaves on white', 'pink gooseberry print', 'turquoise figures'],
+    }],
+  );
+});
+
+test('set correction is a no-op when the corrected slug is unknown', () => {
+  const groups = [correctionGroups[0]];
+
+  assert.strictEqual(
+    replaceOrMergeDetectionGroup(groups, 'unknown-444', 'butterprint-444'),
+    groups,
+  );
 });
 
 test('filed price summary multiplies counts, preserves source order, and reports missing pieces', () => {

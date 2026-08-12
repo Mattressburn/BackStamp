@@ -232,6 +232,7 @@ export function ResultScreen({
   photoUris,
   candidates,
   selectedSlug,
+  selectedPattern,
   banner,
   problem,
   busy,
@@ -244,6 +245,7 @@ export function ResultScreen({
   photoUris: string[];
   candidates: { guess: ScanGuess; row: CatalogRow }[];
   selectedSlug: string | null;
+  selectedPattern: Pattern | null;
   banner: string | null;
   problem: string | null;
   busy: boolean;
@@ -300,15 +302,40 @@ export function ResultScreen({
         <ScanBanner message={problem} tone="problem" />
 
         <View accessibilityRole="radiogroup" style={styles.candidateStack}>
-          {candidates.map(({ guess, row }) => (
-            <CandidateRow
-              key={row.slug}
-              guess={guess}
-              row={row}
-              selected={row.slug === selectedSlug}
-              onPress={() => onSelect(row.slug)}
-            />
-          ))}
+          {candidates.map(({ guess, row }) => {
+            const selected = row.slug === selectedSlug;
+            return (
+              <View key={row.slug} style={styles.candidateGroup}>
+                <CandidateRow
+                  guess={guess}
+                  row={row}
+                  selected={selected}
+                  onPress={() => onSelect(row.slug)}
+                />
+                {selected && selectedPattern && (
+                  <View
+                    accessible
+                    accessibilityLiveRegion="polite"
+                    accessibilityLabel={[
+                      selectedPattern.colorway ?? 'Colorway not documented',
+                      selectedPattern.notes,
+                    ].filter(Boolean).join('. ')}
+                    style={styles.candidateDescription}>
+                    <Text
+                      style={[styles.candidateDescriptionText, { color: colors.textSecondary }]}>
+                      {selectedPattern.colorway ?? 'Colorway not documented'}
+                    </Text>
+                    {selectedPattern.notes && (
+                      <Text
+                        style={[styles.candidateDescriptionText, { color: colors.textSecondary }]}>
+                        {selectedPattern.notes}
+                      </Text>
+                    )}
+                  </View>
+                )}
+              </View>
+            );
+          })}
         </View>
 
         {/* The want list is not in the prototype's scan flow, and dropping it silently
@@ -376,9 +403,11 @@ export interface SetResultItem {
 function SetResultRow({
   item,
   onRemove,
+  onWrong,
 }: {
   item: SetResultItem;
   onRemove: () => void;
+  onWrong: () => void;
 }) {
   const colors = useColors();
   const { group, row } = item;
@@ -406,14 +435,24 @@ function SetResultRow({
             <Text style={[styles.countMarkerText, { color: colors.spice }]}>×{group.count}</Text>
           </View>
         )}
-        <PressButton
-          tone="quiet"
-          onPress={onRemove}
-          accessibilityLabel={`Remove ${row.patternName}, model ${row.modelNo}`}
-          style={styles.removeAction}
-          textStyle={styles.removeActionText}>
-          Remove
-        </PressButton>
+        <View style={styles.setRowActions}>
+          <PressButton
+            tone="quiet"
+            onPress={onWrong}
+            accessibilityLabel={`Mark ${row.patternName}, model ${row.modelNo} as wrong and find the correct match`}
+            style={styles.setRowAction}
+            textStyle={styles.setRowActionText}>
+            Wrong
+          </PressButton>
+          <PressButton
+            tone="quiet"
+            onPress={onRemove}
+            accessibilityLabel={`Remove ${row.patternName}, model ${row.modelNo}`}
+            style={styles.setRowAction}
+            textStyle={styles.setRowActionText}>
+            Remove
+          </PressButton>
+        </View>
       </View>
       <Divider />
       <View style={styles.setEvidenceCopy}>
@@ -437,6 +476,7 @@ export function SetResultsScreen({
   banner,
   problem,
   onRemove,
+  onWrong,
   onFile,
   onRetake,
 }: {
@@ -446,6 +486,7 @@ export function SetResultsScreen({
   banner: string | null;
   problem: string | null;
   onRemove: (slug: string) => void;
+  onWrong: (slug: string) => void;
   onFile: () => void;
   onRetake: () => void;
 }) {
@@ -475,7 +516,7 @@ export function SetResultsScreen({
             Review the set
           </Text>
           <Text style={[styles.resultBlurb, { color: colors.textSecondary }]}>
-            Remove any wrong matches. Everything left will be filed together.
+            Correct or remove any wrong matches. Everything left will be filed together.
           </Text>
         </View>
 
@@ -497,6 +538,7 @@ export function SetResultsScreen({
                 item={item}
                 key={item.group.itemSlug}
                 onRemove={() => onRemove(item.group.itemSlug)}
+                onWrong={() => onWrong(item.group.itemSlug)}
               />
             ))}
           </View>
@@ -874,6 +916,7 @@ export function BrowseDetailScreen({
   form,
   banner,
   problem,
+  actionLabel,
   onAdd,
   onBack,
 }: {
@@ -882,6 +925,7 @@ export function BrowseDetailScreen({
   form: Form | null;
   banner: string | null;
   problem: string | null;
+  actionLabel: string;
   onAdd: () => void;
   onBack: () => void;
 }) {
@@ -997,9 +1041,9 @@ export function BrowseDetailScreen({
         <PressButton
           tone="primary"
           onPress={onAdd}
-          accessibilityLabel={`Add ${pattern.name} to my collection`}
+          accessibilityLabel={`${actionLabel}, ${pattern.name}, model ${modelNo}`}
           style={styles.grow}>
-          Add this
+          {actionLabel}
         </PressButton>
         <PressButton tone="quiet" onPress={onBack} accessibilityLabel="Go back to catalog browse">
           Go back
@@ -1126,6 +1170,7 @@ const styles = StyleSheet.create({
   resultBlurb: { ...Type.callout },
 
   candidateStack: { gap: Spacing.two + Spacing.half },
+  candidateGroup: { gap: Spacing.two },
   candidate: {
     alignItems: 'center',
     borderRadius: Radius.lg,
@@ -1139,6 +1184,8 @@ const styles = StyleSheet.create({
   candidateScore: { alignItems: 'flex-end', gap: Spacing.half },
   scoreValue: { ...Type.bodyStrong, fontSize: 12, lineHeight: 14 },
   scoreNote: { ...Type.caption, fontSize: 9, lineHeight: 13 },
+  candidateDescription: { gap: Spacing.one, paddingHorizontal: Spacing.three },
+  candidateDescriptionText: { ...Type.caption },
 
   wantLink: { alignItems: 'center', minHeight: HitTarget, justifyContent: 'center' },
   wantLinkText: { ...Type.bodyStrong, fontSize: 13 },
@@ -1154,8 +1201,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
   },
   countMarkerText: { ...Type.bodyStrong },
-  removeAction: { paddingHorizontal: Spacing.two },
-  removeActionText: { fontSize: Type.caption.fontSize, lineHeight: Type.caption.lineHeight },
+  setRowActions: { flexDirection: 'row', gap: Spacing.one },
+  setRowAction: { paddingHorizontal: Spacing.two },
+  setRowActionText: { fontSize: Type.caption.fontSize, lineHeight: Type.caption.lineHeight },
   setEvidenceCopy: { gap: Spacing.one },
   evidenceClaim: { ...Type.caption },
   contradictedNote: { ...Type.caption },

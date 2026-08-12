@@ -105,6 +105,40 @@ export function groupDetections(detections: SetDetection[]): GroupedDetection[] 
   return [...grouped.values()];
 }
 
+export function replaceOrMergeDetectionGroup(
+  groups: GroupedDetection[],
+  correctedSlug: string,
+  replacementSlug: string,
+): GroupedDetection[] {
+  const correctedIndex = groups.findIndex((group) => group.itemSlug === correctedSlug);
+  if (correctedIndex < 0 || correctedSlug === replacementSlug) return groups;
+
+  const replacementIndex = groups.findIndex((group) => group.itemSlug === replacementSlug);
+  if (replacementIndex < 0) {
+    return groups.map((group, index) =>
+      index === correctedIndex ? { ...group, itemSlug: replacementSlug } : group,
+    );
+  }
+
+  const firstIndex = Math.min(correctedIndex, replacementIndex);
+  const corrected = groups[correctedIndex];
+  const replacement = groups[replacementIndex];
+  const evidence = correctedIndex < replacementIndex
+    ? [...corrected.evidence, ...replacement.evidence]
+    : [...replacement.evidence, ...corrected.evidence];
+  const merged: GroupedDetection = {
+    itemSlug: replacementSlug,
+    count: corrected.count + replacement.count,
+    maxConfidence: Math.max(corrected.maxConfidence, replacement.maxConfidence),
+    evidence,
+  };
+
+  return groups.flatMap((group, index) => {
+    if (index === firstIndex) return [merged];
+    return index === correctedIndex || index === replacementIndex ? [] : [group];
+  });
+}
+
 export function summarizeFiledPrices(
   pieces: readonly { itemSlug: string; count: number }[],
   quotes: readonly PriceQuote[],
