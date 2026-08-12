@@ -318,9 +318,9 @@ export default function SettingsScreen() {
           />
           <Row
             title="What syncs"
-            value="Slugs and counts"
+            value="Pieces and counts"
             valueTone="spice"
-            caption="Item slugs, have or want, and quantities. Condition and notes never leave this device."
+            caption="Which catalogued pieces you have or want, and how many. Condition and notes never leave this device."
           />
           {!signedIn && !googleClientId && (
             <Row

@@ -16,6 +16,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -38,7 +39,14 @@ import {
   Spacing,
   Type,
 } from '@/constants/theme';
-import { getCollection, getSettings, searchCatalog, setOwnership, type CatalogRow } from '@/db';
+import {
+  getCollection,
+  getSettings,
+  removeFromCollection,
+  searchCatalog,
+  setOwnership,
+  type CatalogRow,
+} from '@/db';
 import {
   calculateCollectionValues,
   countOwnedPieces,
@@ -221,10 +229,42 @@ export default function CollectionScreen() {
   /** Nothing filed at all, sitting on the tab it opens to: the first-launch screen. */
   const firstLaunch = items.length === 0 && tab === 'have';
 
-  async function changeQuantity(item: UserItem, delta: number) {
+  function confirmRemoval(item: UserItem, pieceName: string) {
     if (savingSlug !== null) return;
+    Alert.alert(
+      'Remove piece',
+      `Remove ${pieceName} from your shelf?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => void removeItem(item.itemSlug),
+        },
+      ],
+    );
+  }
+
+  async function removeItem(itemSlug: string) {
+    if (savingSlug !== null) return;
+    setSavingSlug(itemSlug);
+    try {
+      await removeFromCollection(itemSlug);
+      setItems((current) => current.filter((entry) => entry.itemSlug !== itemSlug));
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Could not remove this piece.');
+    } finally {
+      setSavingSlug(null);
+    }
+  }
+
+  async function changeQuantity(item: UserItem, delta: number, pieceName: string) {
+    if (savingSlug !== null) return;
+    if (delta < 0 && item.quantity <= 1) {
+      confirmRemoval(item, pieceName);
+      return;
+    }
     const quantity = Math.max(1, item.quantity + delta);
-    if (quantity === item.quantity) return;
     setSavingSlug(item.itemSlug);
     try {
       await setOwnership(item.itemSlug, 'have', quantity, item.condition, item.notes);
@@ -321,6 +361,7 @@ export default function CollectionScreen() {
             photoToken={photoToken}
             reducedMotion={reducedMotion}
             onChangeQuantity={changeQuantity}
+            onRemove={confirmRemoval}
           />
         )}
         ItemSeparatorComponent={() => <View style={styles.rowGap} />}
@@ -481,6 +522,7 @@ function FileRow({
   photoToken,
   reducedMotion,
   onChangeQuantity,
+  onRemove,
 }: {
   row: Row;
   index: number;
@@ -493,7 +535,8 @@ function FileRow({
   colors: Palette;
   photoToken: string | null;
   reducedMotion: boolean;
-  onChangeQuantity: (item: UserItem, delta: number) => Promise<void>;
+  onChangeQuantity: (item: UserItem, delta: number, pieceName: string) => Promise<void>;
+  onRemove: (item: UserItem, pieceName: string) => void;
 }) {
   // The card is pressed by the row's own Pressable but drawn by `Card`, so the state is
   // lifted rather than read from the style callback. Nesting the two would collapse the
@@ -501,9 +544,11 @@ function FileRow({
   const [pressed, setPressed] = useState(false);
   const entry = row.entry;
   const photo = detail?.photos[0];
-  const patternName = detail?.pattern.name ?? catalog?.patternName ?? row.slug;
+  const knownPatternName = detail?.pattern.name ?? catalog?.patternName;
+  const patternName = knownPatternName ?? 'Catalog details unavailable';
   const form = detail?.form.shape ?? catalog?.shape ?? 'Catalog details unavailable';
   const modelNo = detail?.form.modelNo ?? catalog?.modelNo ?? null;
+  const pieceName = knownPatternName && modelNo ? `${knownPatternName} ${modelNo}` : 'this piece';
   const colorway = detail?.pattern.colorway ?? catalog?.colorway ?? null;
   const isNew = entry != null && Date.now() - Date.parse(entry.updatedAt) < NEW_WINDOW_MS;
 
@@ -580,10 +625,20 @@ function FileRow({
           <View style={styles.rowTail}>
             {isNew && <Text style={[styles.newTag, { color: colors.accent }]}>New</Text>}
             {entry?.status === 'have' && (
-              <Stepper item={entry} colors={colors} onChange={onChangeQuantity} />
+              <Stepper
+                item={entry}
+                pieceName={pieceName}
+                colors={colors}
+                onChange={onChangeQuantity}
+              />
             )}
             {entry?.status === 'want' && (
-              <Text style={[styles.star, { color: colors.want }]}>{'★'}</Text>
+              <CircleButton
+                size={30}
+                onPress={() => onRemove(entry, pieceName)}
+                accessibilityLabel={`Remove ${pieceName} from your want list`}>
+                <Text style={[styles.star, { color: colors.want }]}>{'★'}</Text>
+              </CircleButton>
             )}
           </View>
         </View>
@@ -599,18 +654,20 @@ function FileRow({
  */
 function Stepper({
   item,
+  pieceName,
   colors,
   onChange,
 }: {
   item: UserItem;
+  pieceName: string;
   colors: Palette;
-  onChange: (item: UserItem, delta: number) => Promise<void>;
+  onChange: (item: UserItem, delta: number, pieceName: string) => Promise<void>;
 }) {
   return (
     <View style={styles.stepper}>
       <CircleButton
         size={30}
-        onPress={() => void onChange(item, 1)}
+        onPress={() => void onChange(item, 1, pieceName)}
         accessibilityLabel={`Add one more, ${item.quantity + 1} owned`}>
         +
       </CircleButton>
@@ -621,9 +678,11 @@ function Stepper({
       </Text>
       <CircleButton
         size={30}
-        onPress={() => void onChange(item, -1)}
+        onPress={() => void onChange(item, -1, pieceName)}
         accessibilityLabel={
-          item.quantity <= 1 ? 'Remove one, already at one owned' : `Remove one, ${item.quantity - 1} owned`
+          item.quantity <= 1
+            ? `Remove ${pieceName} from your shelf`
+            : `Remove one, ${item.quantity - 1} owned`
         }>
         {'−'}
       </CircleButton>

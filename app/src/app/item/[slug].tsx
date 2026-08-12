@@ -17,6 +17,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -272,25 +273,26 @@ export default function ItemDetailScreen() {
     );
   }
 
-  async function toggleWant() {
+  async function toggleWant(pieceName: string) {
     if (!slug) return;
     const wanted = ownership?.status === 'want';
+    if (wanted) {
+      confirmRemoval(pieceName);
+      return;
+    }
     await save(
-      async () => {
-        if (wanted) {
-          await removeFromCollection(slug);
-        } else {
-          await setOwnership(slug, 'want', 0, null, notes.trim() || null);
-        }
-      },
+      () => setOwnership(slug, 'want', 0, null, notes.trim() || null),
       'Could not update your want list.',
     );
   }
 
-  async function changeQuantity(delta: number) {
+  async function changeQuantity(delta: number, pieceName: string) {
     if (!slug || ownership?.status !== 'have') return;
+    if (delta < 0 && ownership.quantity <= 1) {
+      confirmRemoval(pieceName);
+      return;
+    }
     const quantity = Math.max(1, ownership.quantity + delta);
-    if (quantity === ownership.quantity) return;
     await save(
       () => setOwnership(slug, 'have', quantity, ownership.condition, notes.trim() || null),
       'Could not update quantity.',
@@ -324,6 +326,22 @@ export default function ItemDetailScreen() {
     await save(() => removeFromCollection(slug), 'Could not remove this piece.');
   }
 
+  function confirmRemoval(pieceName: string) {
+    if (saving) return;
+    Alert.alert(
+      'Remove piece',
+      `Remove ${pieceName} from your shelf?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => void removeItem(),
+        },
+      ],
+    );
+  }
+
   if (loading) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
@@ -355,6 +373,7 @@ export default function ItemDetailScreen() {
   const owned = ownership?.status === 'have' ? ownership.quantity : 0;
   const wanted = ownership?.status === 'want';
   const name = detail.pattern.name;
+  const pieceName = `${name} ${detail.form.modelNo}`;
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -439,8 +458,12 @@ export default function ItemDetailScreen() {
                   <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Quantity</Text>
                   <View style={styles.stepper}>
                     <CircleButton
-                      onPress={() => void changeQuantity(-1)}
-                      accessibilityLabel={`Decrease quantity of ${name}`}>
+                      onPress={() => void changeQuantity(-1, pieceName)}
+                      accessibilityLabel={
+                        ownership.quantity <= 1
+                          ? `Remove ${pieceName} from your shelf`
+                          : `Decrease quantity of ${pieceName}`
+                      }>
                       −
                     </CircleButton>
                     <Text
@@ -449,8 +472,8 @@ export default function ItemDetailScreen() {
                       {ownership.quantity}
                     </Text>
                     <CircleButton
-                      onPress={() => void changeQuantity(1)}
-                      accessibilityLabel={`Increase quantity of ${name}`}>
+                      onPress={() => void changeQuantity(1, pieceName)}
+                      accessibilityLabel={`Increase quantity of ${pieceName}`}>
                       +
                     </CircleButton>
                   </View>
@@ -527,10 +550,10 @@ export default function ItemDetailScreen() {
                   Save notes
                 </PressButton>
                 <Pressable
-                  onPress={() => void removeItem()}
+                  onPress={() => confirmRemoval(pieceName)}
                   disabled={saving}
                   accessibilityRole="button"
-                  accessibilityLabel={`Remove ${name} from your file`}
+                  accessibilityLabel={`Remove ${pieceName} from your file`}
                   accessibilityState={{ disabled: saving }}
                   style={styles.removeButton}>
                   <Text style={[styles.removeText, { color: colors.danger }]}>
@@ -577,7 +600,7 @@ export default function ItemDetailScreen() {
         </PressButton>
         <PressButton
           tone="quiet"
-          onPress={() => void toggleWant()}
+          onPress={() => void toggleWant(pieceName)}
           disabled={saving}
           style={styles.starButton}
           accessibilityLabel={

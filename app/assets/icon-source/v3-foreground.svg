@@ -22,16 +22,16 @@
       <circle cx="512" cy="512" r="280" stroke-width="14"/>
     </g>
 
-    <g aria-label="BACKSTAMP" fill="#3A2C18" font-family="Rubik Black" font-weight="900" text-anchor="middle">
-      <text x="512" y="222" font-size="128" data-angle="-64" transform="rotate(-64 512 512)">B</text>
-      <text x="512" y="222" font-size="128" data-angle="-48" transform="rotate(-48 512 512)">A</text>
-      <text x="512" y="222" font-size="128" data-angle="-32" transform="rotate(-32 512 512)">C</text>
-      <text x="512" y="222" font-size="128" data-angle="-16" transform="rotate(-16 512 512)">K</text>
-      <text x="512" y="222" font-size="128" data-angle="0" transform="rotate(0 512 512)">S</text>
-      <text x="512" y="222" font-size="128" data-angle="16" transform="rotate(16 512 512)">T</text>
-      <text x="512" y="222" font-size="128" data-angle="32" transform="rotate(32 512 512)">A</text>
-      <text x="512" y="222" font-size="128" data-angle="48" transform="rotate(48 512 512)">M</text>
-      <text x="512" y="222" font-size="128" data-angle="64" transform="rotate(64 512 512)">P</text>
+    <g id="wordmark" aria-label="BACKSTAMP" fill="#3A2C18" font-family="Varela Round" font-weight="900" text-anchor="middle">
+      <text x="512" y="212" font-size="128" data-angle="-76" transform="rotate(-76 512 512)">B</text>
+      <text x="512" y="212" font-size="128" data-angle="-57" transform="rotate(-57 512 512)">A</text>
+      <text x="512" y="212" font-size="128" data-angle="-38" transform="rotate(-38 512 512)">C</text>
+      <text x="512" y="212" font-size="128" data-angle="-19" transform="rotate(-19 512 512)">K</text>
+      <text x="512" y="212" font-size="128" data-angle="0" transform="rotate(0 512 512)">S</text>
+      <text x="512" y="212" font-size="128" data-angle="19" transform="rotate(19 512 512)">T</text>
+      <text x="512" y="212" font-size="128" data-angle="38" transform="rotate(38 512 512)">A</text>
+      <text x="512" y="212" font-size="128" data-angle="57" transform="rotate(57 512 512)">M</text>
+      <text x="512" y="212" font-size="128" data-angle="76" transform="rotate(76 512 512)">P</text>
     </g>
 
     <g aria-label="Four plain round nesting bowls">
