@@ -73,7 +73,7 @@ export function shouldPresentBrowseDetail(
   currentRequest: number,
   phase: string,
 ): boolean {
-  return request === currentRequest && phase === 'browse';
+  return request === currentRequest && (phase === 'browse' || phase === 'set-results');
 }
 
 export interface GroupedDetection {

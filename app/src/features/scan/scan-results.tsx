@@ -402,39 +402,54 @@ export interface SetResultItem {
 
 function SetResultRow({
   item,
+  onDetails,
   onRemove,
   onWrong,
 }: {
   item: SetResultItem;
+  onDetails: () => void;
   onRemove: () => void;
   onWrong: () => void;
 }) {
   const colors = useColors();
+  const [pressed, setPressed] = useState(false);
   const { group, row } = item;
 
   return (
-    <Card style={styles.setRow}>
+    <Card
+      style={[
+        styles.setRow,
+        pressed && { transform: [{ translateY: Motion.pressTranslate }] },
+      ]}>
       <View style={styles.setRowHead}>
-        <SpecimenTile
-          colorway={row.colorway}
-          modelNo={row.modelNo}
-          patternName={row.patternName}
-          stampSize="small"
-          style={styles.candidateTile}
-        />
-        <View style={styles.grow}>
-          <Text numberOfLines={1} style={[styles.rowTitle, { color: colors.text }]}>
-            {row.patternName}
-          </Text>
-          <Text style={[styles.rowCaption, { color: colors.textSecondary }]}>
-            {formCaption(row)}
-          </Text>
-        </View>
-        {group.count > 1 && (
-          <View style={[styles.countMarker, { backgroundColor: colors.backgroundElement }]}>
-            <Text style={[styles.countMarkerText, { color: colors.spice }]}>×{group.count}</Text>
+        <Pressable
+          accessibilityLabel={`Show ${row.patternName}, model ${row.modelNo} details`}
+          accessibilityRole="button"
+          onPress={onDetails}
+          onPressIn={() => setPressed(true)}
+          onPressOut={() => setPressed(false)}
+          style={styles.setRowMain}>
+          <SpecimenTile
+            colorway={row.colorway}
+            modelNo={row.modelNo}
+            patternName={row.patternName}
+            stampSize="small"
+            style={styles.candidateTile}
+          />
+          <View style={styles.grow}>
+            <Text numberOfLines={1} style={[styles.rowTitle, { color: colors.text }]}>
+              {row.patternName}
+            </Text>
+            <Text style={[styles.rowCaption, { color: colors.textSecondary }]}>
+              {formCaption(row)}
+            </Text>
           </View>
-        )}
+          {group.count > 1 && (
+            <View style={[styles.countMarker, { backgroundColor: colors.backgroundElement }]}>
+              <Text style={[styles.countMarkerText, { color: colors.spice }]}>×{group.count}</Text>
+            </View>
+          )}
+        </Pressable>
         <View style={styles.setRowActions}>
           <PressButton
             tone="quiet"
@@ -475,6 +490,7 @@ export function SetResultsScreen({
   contradicted,
   banner,
   problem,
+  onDetails,
   onRemove,
   onWrong,
   onFile,
@@ -485,6 +501,7 @@ export function SetResultsScreen({
   contradicted: number;
   banner: string | null;
   problem: string | null;
+  onDetails: (row: CatalogRow) => void;
   onRemove: (slug: string) => void;
   onWrong: (slug: string) => void;
   onFile: () => void;
@@ -537,6 +554,7 @@ export function SetResultsScreen({
               <SetResultRow
                 item={item}
                 key={item.group.itemSlug}
+                onDetails={() => onDetails(item.row)}
                 onRemove={() => onRemove(item.group.itemSlug)}
                 onWrong={() => onWrong(item.group.itemSlug)}
               />
@@ -910,12 +928,17 @@ export function BrowseScreen({
   );
 }
 
+type BrowseDetailActions =
+  | { readOnly: true; actionLabel?: never; onAdd?: never }
+  | { readOnly?: false; actionLabel: string; onAdd: () => void };
+
 export function BrowseDetailScreen({
   row,
   pattern,
   form,
   banner,
   problem,
+  readOnly = false,
   actionLabel,
   onAdd,
   onBack,
@@ -925,10 +948,8 @@ export function BrowseDetailScreen({
   form: Form | null;
   banner: string | null;
   problem: string | null;
-  actionLabel: string;
-  onAdd: () => void;
   onBack: () => void;
-}) {
+} & BrowseDetailActions) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [footerHeight, setFooterHeight] = useState(0);
@@ -1038,14 +1059,20 @@ export function BrowseDetailScreen({
             paddingBottom: insets.bottom + TAB_BAR_CLEARANCE + Spacing.four + Spacing.half,
           },
         ]}>
+        {!readOnly && (
+          <PressButton
+            tone="primary"
+            onPress={onAdd}
+            accessibilityLabel={`${actionLabel}, ${pattern.name}, model ${modelNo}`}
+            style={styles.grow}>
+            {actionLabel}
+          </PressButton>
+        )}
         <PressButton
-          tone="primary"
-          onPress={onAdd}
-          accessibilityLabel={`${actionLabel}, ${pattern.name}, model ${modelNo}`}
-          style={styles.grow}>
-          {actionLabel}
-        </PressButton>
-        <PressButton tone="quiet" onPress={onBack} accessibilityLabel="Go back to catalog browse">
+          tone="quiet"
+          onPress={onBack}
+          accessibilityLabel={readOnly ? 'Go back to set results' : 'Go back to catalog browse'}
+          style={readOnly ? styles.grow : undefined}>
           Go back
         </PressButton>
       </View>
@@ -1192,6 +1219,7 @@ const styles = StyleSheet.create({
 
   setRow: { gap: Spacing.three - Spacing.one, padding: Spacing.three - Spacing.one },
   setRowHead: { alignItems: 'center', flexDirection: 'row', gap: Spacing.two },
+  setRowMain: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: Spacing.two },
   countMarker: {
     alignItems: 'center',
     borderRadius: Radius.pill,

@@ -83,8 +83,9 @@ test('browse detail facts omit catalog facts that are not documented', () => {
   );
 });
 
-test('browse detail ignores a stale lookup or a lookup completed after leaving browse', () => {
+test('browse detail opens from browse or set results and ignores stale lookups', () => {
   assert.equal(shouldPresentBrowseDetail(2, 2, 'browse'), true);
+  assert.equal(shouldPresentBrowseDetail(2, 2, 'set-results'), true);
   assert.equal(shouldPresentBrowseDetail(1, 2, 'browse'), false);
   assert.equal(shouldPresentBrowseDetail(2, 2, 'camera'), false);
 });

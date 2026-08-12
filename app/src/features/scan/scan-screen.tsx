@@ -195,6 +195,7 @@ export default function ScanScreen() {
     row: CatalogRow;
     pattern: Pattern;
     form: Form | null;
+    readOnly: boolean;
   } | null>(null);
   const [unknownPatternName, setUnknownPatternName] = useState('');
   const [owned, setOwned] = useState<{ row: CatalogRow; quantity: number; since: string | null } | null>(null);
@@ -637,6 +638,7 @@ export default function ScanScreen() {
 
   const fileSet = async () => {
     if (setResultItems.length === 0) return;
+    browseDetailTokenRef.current += 1;
 
     const pieceCount = setResultItems.reduce((total, item) => total + item.group.count, 0);
     setWaitCopy({
@@ -830,7 +832,7 @@ export default function ScanScreen() {
     setPhase('browse');
   };
 
-  const openBrowseDetail = async (row: CatalogRow) => {
+  const openBrowseDetail = async (row: CatalogRow, readOnly = false) => {
     const request = ++browseDetailTokenRef.current;
     setError(null);
     try {
@@ -843,7 +845,7 @@ export default function ScanScreen() {
         setError('The saved pattern details could not be opened.');
         return;
       }
-      setBrowseDetail({ row, pattern, form });
+      setBrowseDetail({ row, pattern, form, readOnly });
       setPhase('browse-detail');
     } catch {
       if (!shouldPresentBrowseDetail(request, browseDetailTokenRef.current, phaseRef.current)) return;
@@ -889,7 +891,9 @@ export default function ScanScreen() {
           contradicted={contradicted}
           banner={banner}
           problem={error}
+          onDetails={(row) => void openBrowseDetail(row, true)}
           onRemove={(slug) => {
+            browseDetailTokenRef.current += 1;
             setRemovedSetSlugs((current) => [...current, slug]);
             setError(null);
           }}
@@ -943,15 +947,19 @@ export default function ScanScreen() {
             form={browseDetail.form}
             banner={banner}
             problem={error}
-            actionLabel={correctingSlug ? 'Use this instead' : 'Add this'}
-            onAdd={() => correctingSlug
-              ? applySetCorrection(browseDetail.row.slug)
-              : void confirmRow(browseDetail.row, 'have')}
+            {...(browseDetail.readOnly
+              ? { readOnly: true as const }
+              : {
+                  actionLabel: correctingSlug ? 'Use this instead' : 'Add this',
+                  onAdd: () => correctingSlug
+                    ? applySetCorrection(browseDetail.row.slug)
+                    : void confirmRow(browseDetail.row, 'have'),
+                })}
             onBack={() => {
               browseDetailTokenRef.current += 1;
               setBrowseDetail(null);
               setError(null);
-              setPhase('browse');
+              setPhase(browseDetail.readOnly ? 'set-results' : 'browse');
             }}
           />
           {renderOwnedSheet('browse-detail')}
