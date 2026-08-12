@@ -110,7 +110,19 @@ invisible to bare `node --test`. Run the Expo export after touching `shared/` or
 `data/`, `tsc` reads tsconfig `paths` and Metro does not, so a green typecheck is not
 evidence the app bundles.
 
-There is no iOS Simulator on Linux. Physical phone via Expo Go, or the web preview.
+There is no iOS Simulator on Linux. Physical phone via an EAS development build (NOT
+Expo Go; see the SDK pin note above), or the web preview. The phone path, all cached
+and working since 2026-08-12: Expo account `mattressburns-team` (log in with
+`npx eas-cli@latest login`, browser flow, the account has no password because it uses
+Sign in with Apple), Apple Developer team KD5M56J9BM, bundle id `com.backstamp.app`,
+the user's iPhone registered for ad hoc builds. Rebuild with
+`npx eas-cli@latest build --platform ios --profile development` from `app/`, run it in
+a visible terminal because Apple periodically re-asks for sign-in and two-factor.
+JavaScript changes hot-reload to the connected dev client; only native assets (icon,
+splash) and native config need a rebuild. Backend sign-in needs `APPLE_CLIENT_ID` in
+`backend/.env` (see .env.example). Start the dev server with
+`EXPO_PUBLIC_API_URL=http://192.168.69.221:8787` so the phone reaches the LRPC
+backend; the baked-in default points at MRDockBox where nothing listens.
 
 **Verify the browser preview by reading computed styles, not by looking at a screenshot.**
 This has now cost two sessions. Session 2 misread a screenshot taken mid hot-reload;
