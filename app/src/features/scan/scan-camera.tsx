@@ -624,6 +624,10 @@ const styles = StyleSheet.create({
 
   frame: {
     aspectRatio: VIEWFINDER_ASPECT,
+    // Stretch pins the width to the row (minus the margins) no matter what
+    // flexShrink does to the height; letting aspectRatio recompute width from a
+    // shrunken height parked the frame at the left edge on device.
+    alignSelf: 'stretch',
     flexShrink: 1,
     minHeight: 220,
     backgroundColor: CameraChrome.frameFill,

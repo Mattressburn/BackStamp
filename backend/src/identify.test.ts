@@ -10,14 +10,17 @@ const catalog = {
     { slug: 'butterprint-444', patternId: 'butterprint', formId: '444-cinderella', rarity: 'rare' as const, ebayQuery: '', provenance: 'published-reference' as const, userSubmitted: false },
     { slug: 'butterprint-501', patternId: 'butterprint', formId: '501-fridge', rarity: 'common' as const, ebayQuery: '', provenance: 'collector-attested' as const, userSubmitted: false },
     { slug: 'spring-blossom-green-444', patternId: 'spring-blossom-green', formId: '444-cinderella', rarity: 'uncommon' as const, ebayQuery: '', provenance: 'published-reference' as const, userSubmitted: false },
+    { slug: 'stack-n-snack-or-speckled-lines-404', patternId: 'stack-n-snack-or-speckled-lines', formId: '404-mixing-bowl', rarity: null, ebayQuery: '', provenance: 'published-reference' as const, userSubmitted: false },
   ],
   patterns: [
     { id: 'butterprint', name: 'Butterprint', yearsStart: 1957, yearsEnd: 1968, colorway: 'turquoise on white', rarity: 'rare' as const, notes: null },
     { id: 'spring-blossom-green', name: 'Spring Blossom Green', yearsStart: 1972, yearsEnd: 1979, colorway: 'green and white', rarity: 'uncommon' as const, notes: null },
+    { id: 'stack-n-snack-or-speckled-lines', name: "Stack N' Snack or Speckled Lines", yearsStart: 1980, yearsEnd: 1983, colorway: 'brown lines on speckled tan', rarity: null, notes: null },
   ],
   forms: [
     { id: '444-cinderella', modelNo: '444', family: 'cinderella-bowl' as const, shape: 'Cinderella bowl', capacityQt: 4, dimensions: '13 x 10 in' },
     { id: '501-fridge', modelNo: '501', family: 'refrigerator-dish' as const, shape: 'Refrigerator dish', capacityQt: 1.5, dimensions: '4 x 3 in' },
+    { id: '404-mixing-bowl', modelNo: '404', family: 'mixing-bowl' as const, shape: 'Round mixing bowl', capacityQt: 4, dimensions: null },
   ],
 };
 
@@ -140,11 +143,50 @@ test('the Gemini request pins patternId and modelNo to the catalog and sends the
   );
   assert.deepEqual(
     sent.generationConfig.responseSchema.properties.guesses.items.properties.modelNo,
-    { type: 'STRING', enum: ['444', '501'] },
+    { type: 'STRING', enum: ['444', '501', '404'] },
   );
   assert.equal(sent.generationConfig.responseSchema.properties.guesses.items.properties.itemSlug, undefined);
   assert.deepEqual(sent.contents[0].parts[1], { inlineData: { mimeType: 'image/jpeg', data: 'aGVsbG8=' } });
   assert.match(sent.contents[0].parts[0].text, /A base photo is present/);
+});
+
+test('Gemini suffix and full-slug echoes resolve while an invented pattern still drops', async () => {
+  const identifier = new Identifier('gemini-test-key', undefined, async () =>
+    geminiReply([
+      {
+        patternId: 'stack-n-snack-or-speckled-lines-404',
+        modelNo: '404',
+        confidence: 0.99,
+        reasoning: 'live suffix echo',
+      },
+      {
+        patternId: ' BUTTERPRINT-444 ',
+        modelNo: '501',
+        confidence: 0.9,
+        reasoning: 'full slug echo',
+      },
+      {
+        patternId: 'invented-pattern-404',
+        modelNo: '404',
+        confidence: 1,
+        reasoning: 'invented',
+      },
+    ]),
+  );
+
+  const result = await identifier.identify({ photos: ['aGVsbG8='], hasBaseShot: false }, catalog);
+
+  assert.deepEqual(result, {
+    guesses: [
+      {
+        itemSlug: 'stack-n-snack-or-speckled-lines-404',
+        confidence: 0.99,
+        reasoning: 'live suffix echo',
+      },
+      { itemSlug: 'butterprint-444', confidence: 0.9, reasoning: 'full slug echo' },
+    ],
+    lowConfidence: false,
+  });
 });
 
 test('the catalog remains inside the byte-identical prompt prefix', async () => {
@@ -178,7 +220,7 @@ test('set identification sends a stable catalog prompt and resolves the Gemini d
     sent.push(JSON.parse(String(init?.body)));
     return geminiSetReply([
       {
-        patternId: 'butterprint',
+        patternId: 'butterprint-444',
         modelNo: '444',
         confidence: 0.9,
         location: ' top bowl ',
@@ -211,7 +253,7 @@ test('set identification sends a stable catalog prompt and resolves the Gemini d
   });
   const schema = sent[0].generationConfig.responseSchema.properties.detections;
   assert.deepEqual(schema.items.properties.patternId, { type: 'STRING' });
-  assert.deepEqual(schema.items.properties.modelNo.enum, ['444', '501']);
+  assert.deepEqual(schema.items.properties.modelNo.enum, ['444', '501', '404']);
   assert.equal(schema.items.properties.itemSlug, undefined);
   assert.equal(schema.maxItems, 8);
   assert.equal(sent[0].generationConfig.maxOutputTokens, 8192);
