@@ -30,6 +30,7 @@ import { AppState, Linking, StyleSheet, View } from 'react-native';
 
 import {
   fetchCatalog,
+  fetchItem,
   fetchPrices,
   identify,
   identifySet,
@@ -81,16 +82,25 @@ import {
   type SetResultItem,
 } from './scan-results';
 import {
+  adjustSetGroupCount,
+  advanceBulkQueue,
+  bulkPhotoProgress,
+  deriveHuntingChips,
+  photoInvitesFor,
   deriveLlmWasRight,
   groupDetections,
   knownCombinationOptions,
   ordinal,
   ordinalWord,
+  rankHuntingRows,
   replaceOrMergeDetectionGroup,
+  setFilingPieces,
+  setScanLogInputs,
   shouldPresentBrowseDetail,
   shouldRetryQueueDrain,
   summarizeFiledPrices,
   type GroupedDetection,
+  type HuntingChip,
 } from './logic';
 
 type Phase =
@@ -108,6 +118,11 @@ type Phase =
 interface FiledPiece {
   itemSlug: string;
   count: number;
+}
+
+interface FiledBatch {
+  pieces: FiledPiece[];
+  headline: string;
 }
 
 // ponytail: one capture-quality knob is enough; tune it only if upload time or model detail suffers.
@@ -179,7 +194,18 @@ export default function ScanScreen() {
   const ledgerTokenRef = useRef(0);
   const loggedSlugRef = useRef<string | null>(null);
   const browseDetailTokenRef = useRef(0);
+  const knownDefinitionsTokenRef = useRef(0);
+  const knownPatternTokenRef = useRef(0);
   const phaseRef = useRef<Phase>('camera');
+  const bulkQueueRef = useRef<string[]>([]);
+  const bulkIndexRef = useRef<number | null>(null);
+  const bulkGenerationRef = useRef(0);
+  const bulkPrefetchRef = useRef<{
+    index: number;
+    generation: number;
+    request: ReturnType<typeof identifySet>;
+  } | null>(null);
+  const bulkLastFiledRef = useRef<FiledBatch | null>(null);
 
   const [phase, setPhase] = useState<Phase>('camera');
   const [scanMode, setScanMode] = useState<'single' | 'set'>('single');
@@ -203,6 +229,8 @@ export default function ScanScreen() {
   const [catalog, setCatalog] = useState<CatalogRow[]>([]);
   const [catalogQuery, setCatalogQuery] = useState('');
   const [shapeFilter, setShapeFilter] = useState<string | null>(null);
+  const [huntingGuesses, setHuntingGuesses] = useState<ScanGuess[] | null>(null);
+  const [huntingChip, setHuntingChip] = useState<HuntingChip | null>(null);
   const [browseDetail, setBrowseDetail] = useState<{
     row: CatalogRow;
     pattern: Pattern;
@@ -213,14 +241,25 @@ export default function ScanScreen() {
   const [knownPatternId, setKnownPatternId] = useState<string | null>(null);
   const [knownFormId, setKnownFormId] = useState<string | null>(null);
   const [knownCombinationQuery, setKnownCombinationQuery] = useState('');
+  const [knownDefinitions, setKnownDefinitions] = useState<{
+    patterns: Pattern[];
+    forms: Form[];
+  } | null>(null);
+  const [knownPatternDetail, setKnownPatternDetail] = useState<Pattern | null>(null);
   const [owned, setOwned] = useState<{ row: CatalogRow; quantity: number; since: string | null } | null>(null);
   const [filedHeadline, setFiledHeadline] = useState('');
   const [ledger, setLedger] = useState<FiledLedger | null>(null);
+  const [photoInvites, setPhotoInvites] = useState<ReturnType<typeof photoInvitesFor>>([]);
+  const [bulkPhotoUris, setBulkPhotoUris] = useState<string[]>([]);
+  const [bulkIndex, setBulkIndex] = useState<number | null>(null);
 
   const isOffline = netInfo.isConnected === false || netInfo.isInternetReachable === false;
   const canDrainQueue = netInfo.isConnected === true && netInfo.isInternetReachable !== false;
   const needsBaseShot = scanMode === 'single' && photoUris.length === 1;
-  const cameraIdle = phase === 'camera' && photoUris.length === 0 && !capturing;
+  const cameraIdle = phase === 'camera' && photoUris.length === 0 && bulkPhotoUris.length === 0 && !capturing;
+  const bulkProgress = bulkIndex === null
+    ? null
+    : bulkPhotoProgress(bulkIndex, bulkPhotoUris.length);
   cameraIdleRef.current = cameraIdle;
   phaseRef.current = phase;
 
@@ -256,6 +295,8 @@ export default function ScanScreen() {
     setError(null);
     if (response.lowConfidence || response.guesses.length === 0) {
       setCatalogQuery('');
+      setHuntingGuesses(null);
+      setHuntingChip(null);
       setPhase('browse');
       return;
     }
@@ -267,6 +308,8 @@ export default function ScanScreen() {
       .filter((row): row is CatalogRow => Boolean(row));
     if (resolved.length === 0) {
       setCatalogQuery('');
+      setHuntingGuesses(null);
+      setHuntingChip(null);
       setPhase('browse');
       return;
     }
@@ -326,13 +369,6 @@ export default function ScanScreen() {
   }, [cameraIdle, canDrainQueue, drainQueue]);
 
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') void refreshPermission();
-    });
-    return () => subscription.remove();
-  }, [refreshPermission]);
-
-  useEffect(() => {
     if (phase === 'browse') void loadCatalog().catch(() => setError('The saved catalog could not be opened.'));
   }, [loadCatalog, phase]);
 
@@ -354,16 +390,29 @@ export default function ScanScreen() {
 
   // The catalog is small enough to filter in memory, which keeps the field responsive
   // per keystroke and matches what `searchCatalog` matches on: pattern, form, model no.
+  const huntingRows = useMemo(
+    () => huntingGuesses ? rankHuntingRows(huntingGuesses, catalog) : catalog,
+    [catalog, huntingGuesses],
+  );
+  const huntingChips = useMemo(
+    () => huntingGuesses ? deriveHuntingChips(huntingGuesses, catalog) : [],
+    [catalog, huntingGuesses],
+  );
   const browseRows = useMemo(() => {
     const query = catalogQuery.trim().toLowerCase();
-    return catalog.filter((row) =>
+    return huntingRows.filter((row) =>
       (!shapeFilter || row.shape === shapeFilter) &&
+      (!huntingChip || (
+        huntingChip.kind === 'pattern'
+          ? row.patternId === huntingChip.value
+          : row.modelNo === huntingChip.value
+      )) &&
       (!query ||
         row.patternName.toLowerCase().includes(query) ||
         row.shape.toLowerCase().includes(query) ||
         row.modelNo.toLowerCase().includes(query)),
     );
-  }, [catalog, catalogQuery, shapeFilter]);
+  }, [catalogQuery, huntingChip, huntingRows, shapeFilter]);
 
   const setResultItems = useMemo<SetResultItem[]>(() => {
     const removed = new Set(removedSetSlugs);
@@ -383,15 +432,33 @@ export default function ScanScreen() {
       .map(([shape]) => shape);
   }, [catalog]);
 
-  // ponytail: every current pattern and form has an item row; add direct database lists
-  // if the catalog ever allows definitions with no combination.
+  // Full definitions add patterns with facts but no item rows; rows still say which
+  // forms are already used by the selected pattern.
   const knownCombination = useMemo(
-    () => knownCombinationOptions(catalog, knownPatternId),
-    [catalog, knownPatternId],
+    () => knownCombinationOptions(
+      catalog,
+      knownPatternId,
+      knownDefinitions ?? undefined,
+    ),
+    [catalog, knownDefinitions, knownPatternId],
   );
+
+  const dropBulkQueue = useCallback(() => {
+    bulkGenerationRef.current += 1;
+    bulkQueueRef.current = [];
+    bulkIndexRef.current = null;
+    bulkPrefetchRef.current = null;
+    bulkLastFiledRef.current = null;
+    setBulkPhotoUris([]);
+    setBulkIndex(null);
+  }, []);
 
   const resetScan = useCallback(() => {
     browseDetailTokenRef.current += 1;
+    knownDefinitionsTokenRef.current += 1;
+    knownPatternTokenRef.current += 1;
+    dropBulkQueue();
+    phaseRef.current = 'camera';
     setPhase('camera');
     setScanMode('single');
     setCapturing(false);
@@ -410,22 +477,59 @@ export default function ScanScreen() {
     setError(null);
     setCatalogQuery('');
     setShapeFilter(null);
+    setHuntingGuesses(null);
+    setHuntingChip(null);
     setBrowseDetail(null);
     setUnknownPatternName('');
     setKnownPatternId(null);
     setKnownFormId(null);
     setKnownCombinationQuery('');
+    setKnownDefinitions(null);
+    setKnownPatternDetail(null);
     setOwned(null);
     setFiledHeadline('');
     setLedger(null);
+    setPhotoInvites([]);
     ledgerTokenRef.current += 1;
     loggedSlugRef.current = null;
-  }, []);
+  }, [dropBulkQueue]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        void refreshPermission();
+      } else if (bulkQueueRef.current.length > 0) {
+        resetScan();
+      }
+    });
+    return () => subscription.remove();
+  }, [refreshPermission, resetScan]);
 
   const retakeSet = useCallback(() => {
     resetScan();
     setScanMode('set');
   }, [resetScan]);
+
+  const chooseBulkPhotos = async () => {
+    try {
+      const { launchImageLibraryAsync } = await import('expo-image-picker');
+      const result = await launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        selectionLimit: 0,
+      });
+      const uris = result.assets?.map(({ uri }) => uri).filter(Boolean) ?? [];
+      if (result.canceled || uris.length === 0) return;
+
+      dropBulkQueue();
+      bulkQueueRef.current = uris;
+      setBulkPhotoUris(uris);
+      setError(null);
+      setNotice(null);
+    } catch (pickerError) {
+      setError(pickerError instanceof Error ? pickerError.message : 'Could not open your photos.');
+    }
+  };
 
   const queueBurst = async (uris: string[], hasBaseShot: boolean) => {
     setWaitCopy({ title: 'Saving the scan', caption: 'Keeping it on this phone until a connection comes back.' });
@@ -482,25 +586,43 @@ export default function ScanScreen() {
     }
   };
 
-  const presentSetResponse = async (response: IdentifySetResponse, photoUri: string) => {
+  const presentSetResponse = async (
+    response: IdentifySetResponse,
+    photoUri: string,
+    bulk: boolean,
+    isCurrent: () => boolean,
+  ): Promise<boolean> => {
     if (response.lowConfidence || response.detections.length === 0) {
-      setPhotoUris([]);
-      setPhase('camera');
+      setPhotoUris(bulk ? [photoUri] : []);
+      setSetGroups([]);
+      setRemovedSetSlugs([]);
+      setContradicted(response.contradicted);
+      phaseRef.current = bulk ? 'set-results' : 'camera';
+      setPhase(bulk ? 'set-results' : 'camera');
       setError(
-        'The set could not be read confidently. Switch to One piece and scan each dish separately.',
+        bulk
+          ? 'This photo could not be read confidently.'
+          : 'The set could not be read confidently. Switch to One piece and scan each dish separately.',
       );
-      return;
+      return false;
     }
 
     const rows = await loadCatalog();
+    if (!isCurrent()) return false;
     const groups = groupDetections(response.detections);
     if (groups.some((group) => !rows.some((row) => row.slug === group.itemSlug))) {
-      setPhotoUris([]);
-      setPhase('camera');
+      setPhotoUris(bulk ? [photoUri] : []);
+      setSetGroups([]);
+      setRemovedSetSlugs([]);
+      setContradicted(response.contradicted);
+      phaseRef.current = bulk ? 'set-results' : 'camera';
+      setPhase(bulk ? 'set-results' : 'camera');
       setError(
-        'Some pieces were not in the saved catalog. Switch to One piece and scan each dish separately.',
+        bulk
+          ? 'Some pieces in this photo were not in the saved catalog.'
+          : 'Some pieces were not in the saved catalog. Switch to One piece and scan each dish separately.',
       );
-      return;
+      return false;
     }
 
     setPhotoUris([photoUri]);
@@ -508,10 +630,24 @@ export default function ScanScreen() {
     setRemovedSetSlugs([]);
     setContradicted(response.contradicted);
     setError(null);
+    phaseRef.current = 'set-results';
     setPhase('set-results');
+    return true;
   };
 
-  const identifyWholeSet = async (photoUri: string) => {
+  const identifyWholeSet = async (
+    photoUri: string,
+    bulkPosition: number | null = null,
+    retry = false,
+  ) => {
+    const generation = bulkGenerationRef.current;
+    const bulk = bulkPosition !== null;
+    const isCurrent = () =>
+      !bulk || (
+        generation === bulkGenerationRef.current &&
+        bulkIndexRef.current === bulkPosition
+      );
+    phaseRef.current = 'identifying';
     setWaitCopy({
       title: 'Reading the whole set',
       caption: catalog.length
@@ -521,19 +657,66 @@ export default function ScanScreen() {
     setPhase('identifying');
     setError(null);
     try {
-      const result = await identifySet(photoUri);
+      const prefetched = bulkPrefetchRef.current;
+      const canUsePrefetch =
+        bulk &&
+        !retry &&
+        prefetched?.index === bulkPosition &&
+        prefetched.generation === generation;
+      if (bulk && prefetched?.index === bulkPosition) bulkPrefetchRef.current = null;
+      const result = await (canUsePrefetch ? prefetched.request : identifySet(photoUri));
+      if (!isCurrent()) return;
       if (result.ok) {
-        await presentSetResponse(result.data, photoUri);
+        const presented = await presentSetResponse(result.data, photoUri, bulk, isCurrent);
+        if (!presented || !bulk || !isCurrent()) return;
+
+        const nextIndex = bulkPosition + 1;
+        const nextUri = bulkQueueRef.current[nextIndex];
+        if (nextUri) {
+          bulkPrefetchRef.current = {
+            index: nextIndex,
+            generation,
+            request: identifySet(nextUri).catch(() => ({
+              ok: false,
+              error: 'The photo could not be read. Please try again.',
+              code: 'internal',
+            })),
+          };
+        }
       } else {
-        setPhotoUris([]);
-        setPhase('camera');
+        setPhotoUris(bulk ? [photoUri] : []);
+        setSetGroups([]);
+        setRemovedSetSlugs([]);
+        setContradicted(0);
+        phaseRef.current = bulk ? 'set-results' : 'camera';
+        setPhase(bulk ? 'set-results' : 'camera');
         setError(result.error);
       }
     } catch {
-      setPhotoUris([]);
-      setPhase('camera');
-      setError('The set photo could not be read. Please capture it again.');
+      if (!isCurrent()) return;
+      setPhotoUris(bulk ? [photoUri] : []);
+      setSetGroups([]);
+      setRemovedSetSlugs([]);
+      setContradicted(0);
+      phaseRef.current = bulk ? 'set-results' : 'camera';
+      setPhase(bulk ? 'set-results' : 'camera');
+      setError(
+        bulk
+          ? 'The photo could not be read. Please try again.'
+          : 'The set photo could not be read. Please capture it again.',
+      );
     }
+  };
+
+  const confirmBulkImport = () => {
+    const firstPhoto = bulkQueueRef.current[0];
+    if (!firstPhoto || phaseRef.current !== 'camera') return;
+    bulkIndexRef.current = 0;
+    setBulkIndex(0);
+    setScanMode('set');
+    setError(null);
+    setNotice(null);
+    void identifyWholeSet(firstPhoto, 0);
   };
 
   const captureFrame = async () => {
@@ -592,11 +775,17 @@ export default function ScanScreen() {
       pieceNote: pieceWord,
     });
     setOwned(null);
+    setPhotoInvites([]);
     setPhase('saved');
 
-    // A later scan, or a reset, invalidates this fill: the prices that come back belong
-    // to the confirmation that asked for them and to no other.
+    // A later scan, or a reset, invalidates these fills: the details and prices that
+    // come back belong to the confirmation that asked for them and to no other.
     const token = (ledgerTokenRef.current += 1);
+    void Promise.all(filed.map(({ itemSlug }) => fetchItem(itemSlug)))
+      .then((results) => {
+        if (token === ledgerTokenRef.current) setPhotoInvites(photoInvitesFor(results));
+      })
+      .catch(() => {});
     const quotes = await fetchPrices(items.map((item) => item.itemSlug));
     if (token !== ledgerTokenRef.current) return;
 
@@ -634,6 +823,52 @@ export default function ScanScreen() {
     });
   };
 
+  const advanceBulkPhoto = async (filedBatch: FiledBatch | null = null) => {
+    const index = bulkIndexRef.current;
+    const queue = bulkQueueRef.current;
+    if (index === null || queue.length === 0) return;
+
+    const previousBatch = bulkLastFiledRef.current;
+    const transition = advanceBulkQueue(
+      index,
+      queue.length,
+      previousBatch !== null,
+      filedBatch !== null,
+    );
+    if (filedBatch) bulkLastFiledRef.current = filedBatch;
+
+    if (transition.nextIndex !== null) {
+      const nextIndex = transition.nextIndex;
+      bulkIndexRef.current = nextIndex;
+      setBulkIndex(nextIndex);
+      void identifyWholeSet(queue[nextIndex], nextIndex);
+      return;
+    }
+
+    const lastFiled = filedBatch ?? previousBatch;
+    dropBulkQueue();
+    if (!transition.filedAny || !lastFiled) {
+      resetScan();
+      return;
+    }
+
+    // ponytail: the final ledger covers the last filed photo; add a queue total only if collectors ask for one.
+    const pieceCount = lastFiled.pieces.reduce((total, piece) => total + piece.count, 0);
+    try {
+      await presentFiled(lastFiled.pieces, () => lastFiled.headline);
+    } catch {
+      setFiledHeadline(lastFiled.headline);
+      setLedger({
+        itemFigure: null,
+        itemSource: 'prices unavailable',
+        shelfFigure: null,
+        shelfSource: 'collection total unavailable',
+        pieceNote: `${pieceCount} ${pieceCount === 1 ? 'piece' : 'pieces'} filed`,
+      });
+      setPhase('saved');
+    }
+  };
+
   /**
    * Files it, then shows the confirmation immediately and fills the money in when it
    * lands. The counts are local and instant; the comparables are a network round trip,
@@ -662,33 +897,52 @@ export default function ScanScreen() {
   };
 
   const fileSet = async () => {
-    if (setResultItems.length === 0) return;
+    const setPhotoUri = photoUris[0];
+    const filingPieces = setFilingPieces(setGroups, removedSetSlugs);
+    if (!setPhotoUri || filingPieces.length === 0 || phaseRef.current !== 'set-results') return;
+    const bulkRun = bulkIndexRef.current === null
+      ? null
+      : { generation: bulkGenerationRef.current, index: bulkIndexRef.current };
+    const bulkRunIsCurrent = () =>
+      !bulkRun || (
+        bulkRun.generation === bulkGenerationRef.current &&
+        bulkRun.index === bulkIndexRef.current
+      );
     browseDetailTokenRef.current += 1;
 
-    const pieceCount = setResultItems.reduce((total, item) => total + item.group.count, 0);
+    const pieceCount = filingPieces.reduce((total, piece) => total + piece.count, 0);
     setWaitCopy({
       title: 'Filing the set',
       caption: `${pieceCount} ${pieceCount === 1 ? 'piece' : 'pieces'} going into your file.`,
     });
+    phaseRef.current = 'confirming';
     setPhase('confirming');
     setError(null);
 
-    const filed: SetResultItem[] = [];
-    for (const item of setResultItems) {
+    const filed: FiledPiece[] = [];
+    for (const piece of filingPieces) {
       try {
-        const existing = await getUserItem(item.group.itemSlug);
+        const existing = await getUserItem(piece.itemSlug);
         await setOwnership(
-          item.group.itemSlug,
+          piece.itemSlug,
           'have',
-          (existing?.quantity ?? 0) + item.group.count,
+          (existing?.quantity ?? 0) + piece.count,
         );
-        filed.push(item);
+        filed.push(piece);
       } catch {
+        if (!bulkRunIsCurrent()) return;
         // CONTRACT: db.ts needs a transaction helper before filing a set can be atomic.
-        const filedCount = filed.reduce((total, filedItem) => total + filedItem.group.count, 0);
+        const filedCount = filed.reduce((total, filedPiece) => total + filedPiece.count, 0);
+        if (bulkRun && filedCount > 0) {
+          bulkLastFiledRef.current = {
+            pieces: filed,
+            headline: `${filedCount} ${filedCount === 1 ? 'piece' : 'pieces'} filed from this photo.`,
+          };
+        }
         setRemovedSetSlugs((current) => [
-          ...new Set([...current, ...filed.map(({ group }) => group.itemSlug)]),
+          ...new Set([...current, ...filed.map(({ itemSlug }) => itemSlug)]),
         ]);
+        phaseRef.current = 'set-results';
         setPhase('set-results');
         setError(
           filedCount
@@ -699,11 +953,31 @@ export default function ScanScreen() {
       }
     }
 
-    // ponytail: set scans skip logScan until the scans schema can store multiple confirmed slugs.
+    if (!bulkRunIsCurrent()) return;
+
+    void getSettings()
+      .then((settings) => {
+        if (!settings.trainingOptIn) return;
+        // ponytail: logScan owns URI encoding, so each set piece re-encodes the shared frame; batch when this is measurable.
+        return Promise.all(
+          setScanLogInputs(
+            setGroups,
+            removedSetSlugs,
+            setPhotoUri,
+            settings.trainingOptIn,
+          ).map((input) => logScan(input)),
+        );
+      })
+      .catch(() => {});
+
     const headline = `${pieceCount} ${pieceCount === 1 ? 'piece' : 'pieces'} filed from this set.`;
+    if (bulkRun) {
+      await advanceBulkPhoto({ pieces: filed, headline });
+      return;
+    }
     try {
       await presentFiled(
-        filed.map(({ group }) => ({ itemSlug: group.itemSlug, count: group.count })),
+        filed,
         () => headline,
       );
     } catch {
@@ -789,6 +1063,8 @@ export default function ScanScreen() {
     setCorrectingSlug(null);
     setCatalogQuery('');
     setShapeFilter(null);
+    setHuntingGuesses(null);
+    setHuntingChip(null);
     setBrowseDetail(null);
     setError(null);
     setPhase('set-results');
@@ -889,13 +1165,14 @@ export default function ScanScreen() {
       }
 
       const patternRow = catalog.find((row) => row.patternId === pattern.id);
+      const patternDefinition = knownDefinitions?.patterns.find(({ id }) => id === pattern.id);
       await confirmRow(
         rows.find((row) => row.slug === result.data.slug) ?? {
           ...result.data,
           patternName: pattern.name,
           shape: form.shape,
           modelNo: form.modelNo,
-          colorway: patternRow?.colorway ?? null,
+          colorway: patternDefinition?.colorway ?? patternRow?.colorway ?? null,
         },
         'have',
       );
@@ -905,15 +1182,69 @@ export default function ScanScreen() {
     }
   };
 
-  const openBrowse = (correctionSlug: string | null = null) => {
+  const openKnownCombination = async () => {
+    const request = ++knownDefinitionsTokenRef.current;
+    phaseRef.current = 'known-combination';
+    setKnownPatternId(null);
+    setKnownFormId(null);
+    setKnownCombinationQuery('');
+    setKnownDefinitions(null);
+    setKnownPatternDetail(null);
+    setError(null);
+    setPhase('known-combination');
+    if (isOffline) return;
+
+    const result = await fetchCatalog(0);
+    if (request !== knownDefinitionsTokenRef.current) return;
+    if (result.ok) {
+      setKnownDefinitions({ patterns: result.data.patterns, forms: result.data.forms });
+    } else {
+      setError('The full pattern file could not be refreshed. Showing patterns already paired with a form.');
+    }
+  };
+
+  const openKnownPatternDetail = async (patternId: string) => {
+    const request = ++knownPatternTokenRef.current;
+    setError(null);
+    try {
+      const pattern = knownDefinitions?.patterns.find(({ id }) => id === patternId) ??
+        await getPattern(patternId);
+      if (
+        request !== knownPatternTokenRef.current ||
+        phaseRef.current !== 'known-combination'
+      ) return;
+      if (!pattern) {
+        setError('The saved pattern facts could not be opened.');
+        return;
+      }
+      setKnownPatternDetail(pattern);
+    } catch {
+      if (
+        request === knownPatternTokenRef.current &&
+        phaseRef.current === 'known-combination'
+      ) setError('The saved pattern facts could not be opened.');
+    }
+  };
+
+  const openBrowse = (
+    correctionSlug: string | null = null,
+    rejectedGuesses: ScanGuess[] | null = null,
+  ) => {
     browseDetailTokenRef.current += 1;
+    knownDefinitionsTokenRef.current += 1;
+    knownPatternTokenRef.current += 1;
+    phaseRef.current = 'browse';
     setCorrectingSlug(correctionSlug);
     setCatalogQuery('');
     setShapeFilter(null);
+    setHuntingGuesses(rejectedGuesses);
+    setHuntingChip(null);
     setBrowseDetail(null);
     setKnownPatternId(null);
     setKnownFormId(null);
     setKnownCombinationQuery('');
+    setKnownDefinitions(null);
+    setKnownPatternDetail(null);
     setError(null);
     setPhase('browse');
   };
@@ -977,13 +1308,47 @@ export default function ScanScreen() {
           contradicted={contradicted}
           banner={banner}
           problem={error}
+          {...(bulkIndex !== null
+            ? {
+                bulkProgress: bulkProgress ?? undefined,
+                onSkip: () => {
+                  if (phaseRef.current !== 'set-results') return;
+                  phaseRef.current = 'identifying';
+                  void advanceBulkPhoto();
+                },
+                ...(error && setResultItems.length === 0
+                  ? {
+                      onRetry: () => {
+                        if (phaseRef.current !== 'set-results') return;
+                        const current = bulkIndexRef.current;
+                        const uri = current === null ? undefined : bulkQueueRef.current[current];
+                        if (current !== null && uri) {
+                          phaseRef.current = 'identifying';
+                          void identifyWholeSet(uri, current, true);
+                        }
+                      },
+                    }
+                  : {}),
+              }
+            : {})}
           onDetails={(row) => void openBrowseDetail(row, true)}
+          onAdjustCount={(slug, delta) => {
+            setSetGroups((current) => adjustSetGroupCount(current, slug, delta));
+            setError(null);
+          }}
           onRemove={(slug) => {
             browseDetailTokenRef.current += 1;
             setRemovedSetSlugs((current) => [...current, slug]);
             setError(null);
           }}
-          onWrong={(slug) => openBrowse(slug)}
+          onWrong={(slug) => {
+            const group = setGroups.find(({ itemSlug }) => itemSlug === slug);
+            openBrowse(slug, [{
+              itemSlug: slug,
+              confidence: group?.maxConfidence ?? 0,
+              reasoning: group?.evidence[0] ?? 'Set scan match',
+            }]);
+          }}
           onFile={() => void fileSet()}
           onRetake={retakeSet}
         />
@@ -994,25 +1359,26 @@ export default function ScanScreen() {
       return (
         <BrowseScreen
           rows={browseRows}
-          total={catalog.length}
+          total={huntingRows.length}
           query={catalogQuery}
           onQuery={setCatalogQuery}
           shapes={shapes}
           shapeFilter={shapeFilter}
           onShapeFilter={setShapeFilter}
+          hunting={huntingGuesses !== null}
+          huntingChips={huntingChips}
+          activeHuntingChip={huntingChip}
+          onHuntingChip={(chip) => {
+            setHuntingChip(chip);
+            setShapeFilter(null);
+          }}
           banner={banner}
           problem={error}
           offline={isOffline}
           unknownName={unknownPatternName}
           onUnknownName={setUnknownPatternName}
           onSubmitUnknown={() => void submitUnknown()}
-          onAddKnownCombination={() => {
-            setKnownPatternId(null);
-            setKnownFormId(null);
-            setKnownCombinationQuery('');
-            setError(null);
-            setPhase('known-combination');
-          }}
+          onAddKnownCombination={() => void openKnownCombination()}
           onBack={() => {
             if (!correctingSlug) {
               resetScan();
@@ -1022,6 +1388,8 @@ export default function ScanScreen() {
             setCorrectingSlug(null);
             setCatalogQuery('');
             setShapeFilter(null);
+            setHuntingGuesses(null);
+            setHuntingChip(null);
             setBrowseDetail(null);
             setError(null);
             setPhase('set-results');
@@ -1038,14 +1406,18 @@ export default function ScanScreen() {
           forms={knownCombination.forms}
           selectedPatternId={knownPatternId}
           selectedFormId={knownFormId}
+          patternDetail={knownPatternDetail}
           query={knownCombinationQuery}
           banner={banner}
           problem={error}
           offline={isOffline}
           onQuery={setKnownCombinationQuery}
-          onPattern={(patternId) => {
-            setKnownPatternId(patternId);
+          onPattern={(patternId) => void openKnownPatternDetail(patternId)}
+          onConfirmPattern={() => {
+            if (!knownPatternDetail) return;
+            setKnownPatternId(knownPatternDetail.id);
             setKnownFormId(null);
+            setKnownPatternDetail(null);
             setKnownCombinationQuery('');
             setError(null);
           }}
@@ -1055,6 +1427,13 @@ export default function ScanScreen() {
             setError(null);
           }}
           onBack={() => {
+            browseDetailTokenRef.current += 1;
+            knownPatternTokenRef.current += 1;
+            if (knownPatternDetail) {
+              setKnownPatternDetail(null);
+              setError(null);
+              return;
+            }
             if (knownFormId) {
               setKnownFormId(null);
               setKnownCombinationQuery('');
@@ -1065,6 +1444,8 @@ export default function ScanScreen() {
               setKnownCombinationQuery('');
               return;
             }
+            knownDefinitionsTokenRef.current += 1;
+            phaseRef.current = 'browse';
             setError(null);
             setPhase('browse');
           }}
@@ -1085,7 +1466,7 @@ export default function ScanScreen() {
             {...(browseDetail.readOnly
               ? { readOnly: true as const }
               : {
-                  actionLabel: correctingSlug ? 'Use this instead' : 'Add this',
+                  actionLabel: 'It’s this one',
                   onAdd: () => correctingSlug
                     ? applySetCorrection(browseDetail.row.slug)
                     : void confirmRow(browseDetail.row, 'have'),
@@ -1107,6 +1488,15 @@ export default function ScanScreen() {
         <FiledScreen
           headline={filedHeadline}
           ledger={ledger}
+          photoInvites={photoInvites}
+          onPhotoInvite={(slug) => {
+            const sharePhotoUri = scanMode === 'single' ? photoUris[0] : undefined;
+            resetScan();
+            router.push({
+              pathname: '/item/[slug]',
+              params: sharePhotoUri ? { slug, sharePhotoUri } : { slug },
+            });
+          }}
           onSeeFile={() => {
             resetScan();
             router.push('/collection');
@@ -1136,7 +1526,7 @@ export default function ScanScreen() {
             onSelect={setSelectedSlug}
             onConfirm={() => selected && void confirmRow(selected, 'have')}
             onWant={() => selected && void confirmRow(selected, 'want')}
-            onNone={() => openBrowse()}
+            onNone={() => openBrowse(null, guesses)}
             onRetake={resetScan}
           />
           {renderOwnedSheet('results')}
@@ -1176,14 +1566,18 @@ export default function ScanScreen() {
       <ViewfinderScreen
         mode={scanMode}
         showModeToggle={photoUris.length === 0}
+        pendingImportCount={bulkIndex === null ? bulkPhotoUris.length : 0}
         step={needsBaseShot ? 2 : 1}
         banner={banner}
         problem={error}
-        busy={capturing || !cameraReady}
+        busy={capturing || !cameraReady || bulkPhotoUris.length > 0}
         cameraRef={cameraRef}
         onCameraReady={() => setCameraReady(true)}
         onMountError={setError}
         onCapture={() => void captureFrame()}
+        onImport={() => void chooseBulkPhotos()}
+        onConfirmImport={confirmBulkImport}
+        onCancelImport={dropBulkQueue}
         onBack={() => setPhotoUris([])}
         onSkip={() => void identifyBurst(photoUris, false)}
         onModeChange={(mode) => {

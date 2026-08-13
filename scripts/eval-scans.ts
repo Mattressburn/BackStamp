@@ -9,9 +9,29 @@ import { Identifier } from '../backend/src/identify.ts';
 
 export interface ScoreRow {
   scanId: string;
+  hasBaseShot: boolean;
   confirmedItemSlug: string;
   freshGuesses: ScanGuess[];
   storedGuesses: ScanGuess[];
+}
+
+interface SkippedSummary {
+  count: number;
+  reasons: Record<string, number>;
+}
+
+export function partitionReplayScans<T extends { source: 'single' | 'set' }>(
+  scans: T[],
+): { replayable: T[]; skipped: SkippedSummary } {
+  const replayable = scans.filter((scan) => scan.source !== 'set');
+  const count = scans.length - replayable.length;
+  return {
+    replayable,
+    skipped: {
+      count,
+      reasons: count === 0 ? {} : { 'set-sourced scan': count },
+    },
+  };
 }
 
 interface RateMetric {
@@ -33,7 +53,7 @@ interface ScoredScan {
   result: 'hit' | 'miss';
 }
 
-export interface ScoreResult {
+interface MetricBlock {
   evaluated: number;
   top1Accuracy: RateMetric;
   top3Accuracy: RateMetric;
@@ -41,6 +61,11 @@ export interface ScoreResult {
   meanConfidenceOnHits: MeanMetric;
   meanConfidenceOnMisses: MeanMetric;
   agreementWithStoredTopGuess: RateMetric;
+}
+
+export interface ScoreResult extends MetricBlock {
+  withBaseShot: MetricBlock;
+  withoutBaseShot: MetricBlock;
   scans: ScoredScan[];
 }
 
@@ -55,14 +80,13 @@ const mean = (values: number[]): MeanMetric => ({
   sampleSize: values.length,
 });
 
-export function score(rows: ScoreRow[]): ScoreResult {
+function scoreMetrics(rows: ScoreRow[]): MetricBlock {
   let top1Hits = 0;
   let top3Hits = 0;
   let misses = 0;
   let agreements = 0;
   const hitConfidences: number[] = [];
   const missConfidences: number[] = [];
-  const scans: ScoredScan[] = [];
 
   for (const row of rows) {
     const freshTop = row.freshGuesses[0] ?? null;
@@ -78,14 +102,6 @@ export function score(rows: ScoreRow[]): ScoreResult {
     if (row.freshGuesses.some((guess) => guess.itemSlug === row.confirmedItemSlug)) top3Hits += 1;
     if (!freshTop) misses += 1;
     if ((freshTop?.itemSlug ?? null) === (storedTop?.itemSlug ?? null)) agreements += 1;
-
-    scans.push({
-      scanId: row.scanId,
-      confirmedItemSlug: row.confirmedItemSlug,
-      freshTopGuess: freshTop?.itemSlug ?? null,
-      confidence: freshTop?.confidence ?? null,
-      result: hit ? 'hit' : 'miss',
-    });
   }
 
   return {
@@ -96,7 +112,24 @@ export function score(rows: ScoreRow[]): ScoreResult {
     meanConfidenceOnHits: mean(hitConfidences),
     meanConfidenceOnMisses: mean(missConfidences),
     agreementWithStoredTopGuess: rate(agreements, rows.length),
-    scans,
+  };
+}
+
+export function score(rows: ScoreRow[]): ScoreResult {
+  return {
+    ...scoreMetrics(rows),
+    withBaseShot: scoreMetrics(rows.filter((row) => row.hasBaseShot)),
+    withoutBaseShot: scoreMetrics(rows.filter((row) => !row.hasBaseShot)),
+    scans: rows.map((row) => {
+      const freshTop = row.freshGuesses[0] ?? null;
+      return {
+        scanId: row.scanId,
+        confirmedItemSlug: row.confirmedItemSlug,
+        freshTopGuess: freshTop?.itemSlug ?? null,
+        confidence: freshTop?.confidence ?? null,
+        result: freshTop?.itemSlug === row.confirmedItemSlug ? 'hit' : 'miss',
+      };
+    }),
   };
 }
 
@@ -106,10 +139,7 @@ interface Options {
 }
 
 interface EvaluationReport extends ScoreResult {
-  skipped: {
-    count: number;
-    reasons: Record<string, number>;
-  };
+  skipped: SkippedSummary;
 }
 
 const databasePath = process.env.DATABASE_PATH
@@ -117,6 +147,17 @@ const databasePath = process.env.DATABASE_PATH
 const photoDir = process.env.PHOTO_DIR
   ?? fileURLToPath(new URL('../backend/data/photos/', import.meta.url));
 const delayMs = 250;
+
+function scanSources(sqlite: DatabaseSync): Map<string, 'single' | 'set'> {
+  const columns = sqlite.prepare('PRAGMA table_info(scans)').all() as unknown as { name: string }[];
+  if (!columns.some((column) => column.name === 'source')) return new Map();
+
+  const rows = sqlite.prepare('SELECT id, source FROM scans').all() as unknown as {
+    id: string;
+    source: string | null;
+  }[];
+  return new Map(rows.map((row) => [row.id, row.source === 'set' ? 'set' : 'single']));
+}
 
 function parseOptions(args: string[]): Options {
   let limit: number | null = null;
@@ -161,11 +202,16 @@ async function evaluate(
   options: Options,
 ): Promise<EvaluationReport> {
   const database = catalogDatabase(sqlite);
-  const newestFirst = database.listTrainingScans().toReversed();
-  const scans = options.limit === null ? newestFirst : newestFirst.slice(0, options.limit);
+  const sourceByScanId = scanSources(sqlite);
+  const newestFirst = database.listTrainingScans().toReversed().map((scan) => ({
+    ...scan,
+    source: sourceByScanId.get(scan.id) ?? 'single',
+  }));
+  const limited = options.limit === null ? newestFirst : newestFirst.slice(0, options.limit);
+  const { replayable: scans, skipped } = partitionReplayScans(limited);
   const catalog = database.getCatalog();
   const scoredRows: ScoreRow[] = [];
-  const skippedReasons = new Map<string, number>();
+  const skippedReasons = new Map(Object.entries(skipped.reasons));
   let apiCalls = 0;
 
   const skip = (reason: string): void => {
@@ -204,6 +250,7 @@ async function evaluate(
       );
       scoredRows.push({
         scanId: scan.id,
+        hasBaseShot: scan.hasBaseShot,
         confirmedItemSlug: scan.confirmedItemSlug,
         freshGuesses: fresh.guesses,
         storedGuesses: scan.guesses,
@@ -233,18 +280,27 @@ function formatMean(metric: MeanMetric): string {
   return `${metric.mean === null ? 'n/a' : metric.mean.toFixed(3)} (n=${metric.sampleSize})`;
 }
 
+function printMetrics(metrics: MetricBlock, prefix = ''): void {
+  const label = prefix === '' ? '' : `${prefix}, `;
+  console.log(`${label}top-1 accuracy: ${formatRate(metrics.top1Accuracy)}`);
+  console.log(`${label}top-3 accuracy: ${formatRate(metrics.top3Accuracy)}`);
+  console.log(`${label}no-guesses miss rate: ${formatRate(metrics.missRate)}`);
+  console.log(`${label}mean confidence on top-1 hits: ${formatMean(metrics.meanConfidenceOnHits)}`);
+  console.log(`${label}mean confidence on wrong top guesses: ${formatMean(metrics.meanConfidenceOnMisses)}`);
+  console.log(`${label}agreement with stored top guess: ${formatRate(metrics.agreementWithStoredTopGuess)}`);
+}
+
 function printReport(report: EvaluationReport): void {
   console.log(`evaluated: ${report.evaluated}`);
   console.log(`skipped: ${report.skipped.count}`);
   for (const [reason, count] of Object.entries(report.skipped.reasons)) {
     console.log(`skipped, ${reason}: ${count}`);
   }
-  console.log(`top-1 accuracy: ${formatRate(report.top1Accuracy)}`);
-  console.log(`top-3 accuracy: ${formatRate(report.top3Accuracy)}`);
-  console.log(`no-guesses miss rate: ${formatRate(report.missRate)}`);
-  console.log(`mean confidence on top-1 hits: ${formatMean(report.meanConfidenceOnHits)}`);
-  console.log(`mean confidence on wrong top guesses: ${formatMean(report.meanConfidenceOnMisses)}`);
-  console.log(`agreement with stored top guess: ${formatRate(report.agreementWithStoredTopGuess)}`);
+  printMetrics(report);
+  console.log(`with base shot, evaluated: ${report.withBaseShot.evaluated}`);
+  printMetrics(report.withBaseShot, 'with base shot');
+  console.log(`without base shot, evaluated: ${report.withoutBaseShot.evaluated}`);
+  printMetrics(report.withoutBaseShot, 'without base shot');
   console.table(report.scans.map((scan) => ({
     'scan id': scan.scanId,
     'confirmed slug': scan.confirmedItemSlug,

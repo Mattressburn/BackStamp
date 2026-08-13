@@ -125,7 +125,7 @@ function validateCatalog(value: unknown): CatalogResponse {
     }
     checkNullableString(pattern.colorway, `${label}.colorway`, errors);
     checkNullableString(pattern.notes, `${label}.notes`, errors);
-    if (!rarities.has(pattern.rarity as Rarity)) {
+    if (pattern.rarity !== null && !rarities.has(pattern.rarity as Rarity)) {
       errors.push(`${label}.rarity "${String(pattern.rarity)}" is outside the enum`);
     }
   }
@@ -200,7 +200,7 @@ function validateCatalog(value: unknown): CatalogResponse {
         `${label}.slug "${item.slug}" must equal "${item.patternId}-${String(form.modelNo)}"`,
       );
     }
-    if (!rarities.has(item.rarity as Rarity)) {
+    if (item.rarity !== null && !rarities.has(item.rarity as Rarity)) {
       errors.push(`${label}.rarity "${String(item.rarity)}" is outside the enum`);
     }
     if (!provenances.has(item.provenance as Provenance)) {

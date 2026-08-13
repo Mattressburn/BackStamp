@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { score } from './eval-scans.ts';
+import { partitionReplayScans, score } from './eval-scans.ts';
 
 const guess = (itemSlug: string, confidence: number) => ({
   itemSlug,
@@ -16,6 +16,7 @@ test('score counts an exact top-1 hit', () => {
   const result = score([
     {
       scanId: 'scan-1',
+      hasBaseShot: true,
       confirmedItemSlug: confirmedSlug,
       freshGuesses: [guess(confirmedSlug, 0.9), guess(otherSlug, 0.7)],
       storedGuesses: [guess(confirmedSlug, 0.8)],
@@ -33,6 +34,7 @@ test('score counts a top-3 hit that is not top-1 as a confident top-1 miss', () 
   const result = score([
     {
       scanId: 'scan-2',
+      hasBaseShot: true,
       confirmedItemSlug: confirmedSlug,
       freshGuesses: [guess(otherSlug, 0.8), guess(confirmedSlug, 0.6)],
       storedGuesses: [guess(otherSlug, 0.75)],
@@ -50,6 +52,7 @@ test('score keeps a wrong answer separate from the no-guesses miss rate', () => 
   const result = score([
     {
       scanId: 'scan-3',
+      hasBaseShot: false,
       confirmedItemSlug: confirmedSlug,
       freshGuesses: [guess(otherSlug, 0.7)],
       storedGuesses: [guess(confirmedSlug, 0.9)],
@@ -66,6 +69,7 @@ test('score counts empty guesses as a no-guesses miss without inventing confiden
   const result = score([
     {
       scanId: 'scan-4',
+      hasBaseShot: false,
       confirmedItemSlug: confirmedSlug,
       freshGuesses: [],
       storedGuesses: [guess(confirmedSlug, 0.85)],
@@ -93,4 +97,76 @@ test('score returns null rates and means for an empty input set', () => {
     rate: null,
   });
   assert.deepEqual(result.scans, []);
+});
+
+test('score reports every metric separately for scans with and without a base shot', () => {
+  const result = score([
+    {
+      scanId: 'with-hit',
+      hasBaseShot: true,
+      confirmedItemSlug: confirmedSlug,
+      freshGuesses: [guess(confirmedSlug, 0.9)],
+      storedGuesses: [guess(confirmedSlug, 0.8)],
+    },
+    {
+      scanId: 'with-wrong-top',
+      hasBaseShot: true,
+      confirmedItemSlug: confirmedSlug,
+      freshGuesses: [guess(otherSlug, 0.6), guess(confirmedSlug, 0.4)],
+      storedGuesses: [guess(confirmedSlug, 0.7)],
+    },
+    {
+      scanId: 'without-hit',
+      hasBaseShot: false,
+      confirmedItemSlug: confirmedSlug,
+      freshGuesses: [guess(confirmedSlug, 0.7)],
+      storedGuesses: [guess(otherSlug, 0.8)],
+    },
+    {
+      scanId: 'without-wrong-top',
+      hasBaseShot: false,
+      confirmedItemSlug: confirmedSlug,
+      freshGuesses: [guess(otherSlug, 0.5)],
+      storedGuesses: [guess(otherSlug, 0.6)],
+    },
+    {
+      scanId: 'without-guesses',
+      hasBaseShot: false,
+      confirmedItemSlug: confirmedSlug,
+      freshGuesses: [],
+      storedGuesses: [],
+    },
+  ]);
+
+  assert.deepEqual(result.withBaseShot, {
+    evaluated: 2,
+    top1Accuracy: { count: 1, sampleSize: 2, rate: 0.5 },
+    top3Accuracy: { count: 2, sampleSize: 2, rate: 1 },
+    missRate: { count: 0, sampleSize: 2, rate: 0 },
+    meanConfidenceOnHits: { mean: 0.9, sampleSize: 1 },
+    meanConfidenceOnMisses: { mean: 0.6, sampleSize: 1 },
+    agreementWithStoredTopGuess: { count: 1, sampleSize: 2, rate: 0.5 },
+  });
+  assert.deepEqual(result.withoutBaseShot, {
+    evaluated: 3,
+    top1Accuracy: { count: 1, sampleSize: 3, rate: 1 / 3 },
+    top3Accuracy: { count: 1, sampleSize: 3, rate: 1 / 3 },
+    missRate: { count: 1, sampleSize: 3, rate: 1 / 3 },
+    meanConfidenceOnHits: { mean: 0.7, sampleSize: 1 },
+    meanConfidenceOnMisses: { mean: 0.5, sampleSize: 1 },
+    agreementWithStoredTopGuess: { count: 2, sampleSize: 3, rate: 2 / 3 },
+  });
+});
+
+test('partitionReplayScans skips set-sourced rows before scoring', () => {
+  const single = { scanId: 'single', source: 'single' as const };
+  const set = { scanId: 'set', source: 'set' as const };
+
+  assert.deepEqual(partitionReplayScans([single, set]), {
+    replayable: [single],
+    skipped: {
+      count: 1,
+      reasons: { 'set-sourced scan': 1 },
+    },
+  });
 });

@@ -242,6 +242,22 @@ test('POST /items creates an existing pattern and form combination', async () =>
   }
 });
 
+test('known combinations inherit an unrated pattern without inventing a rank', () => {
+  const db = new BackendDatabase(':memory:');
+  db.seedCatalog({
+    version: 1,
+    patterns: [{ ...catalog.patterns[0]!, rarity: null }],
+    forms: catalog.forms,
+    items: [],
+  } as unknown as CatalogResponse);
+
+  assert.equal(
+    db.createKnownCombination(db.getPattern('butterprint')!, db.getForm('444-cinderella')!)
+      .rarity,
+    null,
+  );
+});
+
 test('POST /items names unknown pattern, unknown form, and duplicate combination errors', async () => {
   const { app, photoDir } = setup();
   const cases = [
@@ -381,6 +397,85 @@ test('photo upload strips EXIF before the stored file is observable', async () =
   }
 });
 
+test('attributed photo upload stores the trimmed uploader handle', async () => {
+  const { app, db, photoDir } = setup();
+  try {
+    const token = createSession('apple', 'subject', secret).token;
+    const response = await app.request('/photos', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        itemSlug: 'butterprint-444',
+        visibility: 'attributed',
+        photo: jpegWithExif().toString('base64'),
+        handle: '  Shelf Finder  ',
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(db.getPhotos('butterprint-444', 'apple:subject')[0]?.uploaderHandle, 'Shelf Finder');
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('attributed photo upload rejects invalid handles', async () => {
+  const { app, photoDir } = setup();
+  const token = createSession('apple', 'subject', secret).token;
+  const cases = [
+    { handle: undefined, error: 'handle required for attributed uploads' },
+    { handle: ' '.repeat(3), error: 'handle required for attributed uploads' },
+    { handle: 'a'.repeat(41), error: 'handle must be 40 characters or fewer' },
+    { handle: 'Shelf\u0000Finder', error: 'handle contains control characters' },
+  ];
+
+  try {
+    for (const input of cases) {
+      const response = await app.request('/photos', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemSlug: 'butterprint-444',
+          visibility: 'attributed',
+          photo: jpegWithExif().toString('base64'),
+          handle: input.handle,
+        }),
+      });
+
+      assert.equal(response.status, 400);
+      assert.deepEqual(await response.json(), {
+        ok: false,
+        error: input.error,
+        code: 'bad_request',
+      });
+    }
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('anonymous photo upload discards a supplied handle', async () => {
+  const { app, db, photoDir } = setup();
+  try {
+    const token = createSession('google', 'subject', secret).token;
+    const response = await app.request('/photos', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        itemSlug: 'butterprint-444',
+        visibility: 'anonymous',
+        photo: jpegWithExif().toString('base64'),
+        handle: 'Sneaky Handle',
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(db.getPhotos('butterprint-444', 'google:subject')[0]?.uploaderHandle, null);
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
 test('scan logging never stores photo bytes without training consent', async () => {
   const { app, db, photoDir } = setup();
   try {
@@ -402,6 +497,84 @@ test('scan logging never stores photo bytes without training consent', async () 
       count: number;
     };
     assert.equal(row.count, 0);
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('scan source set is stored', async () => {
+  const { app, db, photoDir } = setup();
+  try {
+    const response = await app.request('/scans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        photos: [],
+        guesses: [],
+        confirmedItemSlug: null,
+        llmWasRight: null,
+        consentedToTraining: false,
+        hasBaseShot: false,
+        source: 'set',
+      }),
+    });
+    const result = (await response.json()) as ApiResult<{ id: string }>;
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    const row = db.sqlite.prepare('SELECT source FROM scans WHERE id = ?').get(result.data.id);
+    assert.deepEqual({ ...row }, { source: 'set' });
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('scan source defaults to single', async () => {
+  const { app, db, photoDir } = setup();
+  try {
+    const response = await app.request('/scans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        photos: [],
+        guesses: [],
+        confirmedItemSlug: null,
+        llmWasRight: null,
+        consentedToTraining: false,
+        hasBaseShot: false,
+      }),
+    });
+    const result = (await response.json()) as ApiResult<{ id: string }>;
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    const row = db.sqlite.prepare('SELECT source FROM scans WHERE id = ?').get(result.data.id);
+    assert.deepEqual({ ...row }, { source: 'single' });
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('invalid scan source is rejected', async () => {
+  const { app, photoDir } = setup();
+  try {
+    const response = await app.request('/scans', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        photos: [],
+        guesses: [],
+        confirmedItemSlug: null,
+        llmWasRight: null,
+        consentedToTraining: false,
+        hasBaseShot: false,
+        source: 'batch',
+      }),
+    });
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), {
+      ok: false,
+      error: 'Invalid scan source',
+      code: 'bad_request',
+    });
   } finally {
     rmSync(photoDir, { recursive: true, force: true });
   }
@@ -476,6 +649,7 @@ test('hasBaseShot round-trips through training scans', () => {
     userId: null,
     photoRefs: ['pattern.jpg', 'base.jpg'],
     hasBaseShot: true,
+    source: 'single',
     guessesJson: JSON.stringify([
       { itemSlug: 'butterprint-444', confidence: 0.9, reasoning: 'model number' },
     ]),
@@ -505,6 +679,7 @@ test('listTrainingScans excludes unconfirmed and unconsented rows', () => {
     userId: null,
     photoRefs: ['eligible.jpg'],
     hasBaseShot: false,
+    source: 'single',
     guessesJson: '[]',
     confirmedItemSlug: 'butterprint-444',
     llmWasRight: false,
@@ -516,6 +691,7 @@ test('listTrainingScans excludes unconfirmed and unconsented rows', () => {
     userId: null,
     photoRefs: ['unconfirmed.jpg'],
     hasBaseShot: false,
+    source: 'single',
     guessesJson: '[]',
     confirmedItemSlug: null,
     llmWasRight: null,
@@ -527,6 +703,7 @@ test('listTrainingScans excludes unconfirmed and unconsented rows', () => {
     userId: null,
     photoRefs: ['unconsented.jpg'],
     hasBaseShot: false,
+    source: 'single',
     guessesJson: '[]',
     confirmedItemSlug: 'butterprint-444',
     llmWasRight: false,
@@ -537,7 +714,7 @@ test('listTrainingScans excludes unconfirmed and unconsented rows', () => {
   assert.deepEqual(db.listTrainingScans().map((scan) => scan.id), ['eligible']);
 });
 
-test('existing scans gain has_base_shot without losing rows', () => {
+test('existing scans gain has_base_shot and source without losing rows', () => {
   const directory = mkdtempSync(join(tmpdir(), 'backend-migration-test-'));
   const path = join(directory, 'legacy.sqlite');
   const legacy = new DatabaseSync(path);
@@ -564,9 +741,10 @@ test('existing scans gain has_base_shot without losing rows', () => {
       name: string;
     }[];
     assert.equal(columns.some((column) => column.name === 'has_base_shot'), true);
+    assert.equal(columns.some((column) => column.name === 'source'), true);
     assert.deepEqual(
-      { ...db.sqlite.prepare('SELECT id, photo_ref, has_base_shot FROM scans').get() },
-      { id: 'legacy', photo_ref: 'legacy.jpg', has_base_shot: 0 },
+      { ...db.sqlite.prepare('SELECT id, photo_ref, has_base_shot, source FROM scans').get() },
+      { id: 'legacy', photo_ref: 'legacy.jpg', has_base_shot: 0, source: 'single' },
     );
   } finally {
     db.sqlite.close();
@@ -621,8 +799,15 @@ test('existing items gain provenance without losing rows', () => {
   try {
     const columns = db.sqlite.prepare('PRAGMA table_info(items)').all() as unknown as {
       name: string;
+      notnull: number;
     }[];
     assert.equal(columns.some((column) => column.name === 'provenance'), true);
+    assert.equal(columns.find((column) => column.name === 'rarity')?.notnull, 0);
+    const patternColumns = db.sqlite.prepare('PRAGMA table_info(patterns)').all() as unknown as {
+      name: string;
+      notnull: number;
+    }[];
+    assert.equal(patternColumns.find((column) => column.name === 'rarity')?.notnull, 0);
     assert.equal(db.getItem('butterprint-444')?.provenance, 'published-reference');
     assert.equal(
       (db.sqlite.prepare('SELECT COUNT(*) AS count FROM items').get() as unknown as { count: number })

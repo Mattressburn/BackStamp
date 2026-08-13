@@ -204,7 +204,7 @@ export function PermissionScreen({
   const blurb =
     mode === 'denied'
       ? 'Camera access is off. Turn it back on in this app’s system settings, or look the piece up by hand.'
-      : 'Two photos per piece: the pattern, then the number underneath. Nothing leaves your phone until you file it.';
+      : 'Two photos per piece: the pattern, then the number underneath. Nothing leaves your phone until you shelve it.';
 
   return (
     <View style={styles.ground}>
@@ -248,6 +248,7 @@ export function PermissionScreen({
 export function ViewfinderScreen({
   mode,
   showModeToggle,
+  pendingImportCount,
   step,
   banner,
   problem,
@@ -256,12 +257,16 @@ export function ViewfinderScreen({
   onCameraReady,
   onMountError,
   onCapture,
+  onImport,
+  onConfirmImport,
+  onCancelImport,
   onBack,
   onSkip,
   onModeChange,
 }: {
   mode: 'single' | 'set';
   showModeToggle: boolean;
+  pendingImportCount: number;
   step: 1 | 2;
   banner: string | null;
   problem: string | null;
@@ -270,6 +275,9 @@ export function ViewfinderScreen({
   onCameraReady: () => void;
   onMountError: (message: string) => void;
   onCapture: () => void;
+  onImport: () => void;
+  onConfirmImport: () => void;
+  onCancelImport: () => void;
   onBack: () => void;
   onSkip: () => void;
   onModeChange: (mode: 'single' | 'set') => void;
@@ -293,28 +301,43 @@ export function ViewfinderScreen({
           )}
         </View>
         {showModeToggle && (
-          <View accessibilityRole="radiogroup" style={styles.modeToggle}>
-            {(['single', 'set'] as const).map((option) => {
-              const selected = option === mode;
-              const label = option === 'single' ? 'One piece' : 'Whole set';
-              return (
-                <Pressable
-                  accessibilityLabel={`${label} scan mode`}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: selected }}
-                  key={option}
-                  onPress={() => onModeChange(option)}
-                  style={({ pressed }) => [
-                    styles.modeOption,
-                    selected && styles.modeOptionSelected,
-                    pressed && { transform: [{ translateY: Motion.pressTranslate }] },
-                  ]}>
-                  <Text style={[styles.modeLabel, selected && styles.modeLabelSelected]}>
-                    {label}
-                  </Text>
-                </Pressable>
-              );
-            })}
+          <View style={styles.modeControls}>
+            <View accessibilityRole="radiogroup" style={styles.modeToggle}>
+              {(['single', 'set'] as const).map((option) => {
+                const selected = option === mode;
+                const label = option === 'single' ? 'One piece' : 'Whole set';
+                return (
+                  <Pressable
+                    accessibilityLabel={`${label} scan mode`}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: selected, disabled: pendingImportCount > 0 }}
+                    disabled={pendingImportCount > 0}
+                    key={option}
+                    onPress={() => onModeChange(option)}
+                    style={({ pressed }) => [
+                      styles.modeOption,
+                      selected && styles.modeOptionSelected,
+                      pressed && { transform: [{ translateY: Motion.pressTranslate }] },
+                    ]}>
+                    <Text style={[styles.modeLabel, selected && styles.modeLabelSelected]}>
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Pressable
+              accessibilityLabel="Import photos from my library"
+              accessibilityRole="button"
+              accessibilityState={{ disabled: pendingImportCount > 0 }}
+              disabled={pendingImportCount > 0}
+              onPress={onImport}
+              style={({ pressed }) => [
+                styles.importAction,
+                pressed && { transform: [{ translateY: Motion.pressTranslate }] },
+              ]}>
+              <Text style={styles.importActionText}>Import</Text>
+            </Pressable>
           </View>
         )}
         <ScanBanner message={banner} />
@@ -342,16 +365,52 @@ export function ViewfinderScreen({
       </View>
 
       <View style={styles.viewfinderCopy}>
-        <Text accessibilityRole="header" style={styles.viewfinderTitle}>
-          {setMode ? 'Show the whole set' : second ? 'Centre the number' : 'Show us the pattern'}
-        </Text>
-        <Text style={styles.viewfinderBlurb}>
-          {setMode
-            ? 'Fill the frame with one nested set. Keep every piece visible and avoid glare.'
-            : second
-            ? 'The mark on the underside settles the form. Hold steady, and centre it in the ring.'
-            : 'Whole dish in frame, no glare. The backstamp comes next.'}
-        </Text>
+        {pendingImportCount > 0 ? (
+          <View style={styles.importConfirm}>
+            <Text
+              accessibilityLiveRegion="polite"
+              accessibilityRole="header"
+              style={styles.importConfirmTitle}>
+              Identify {pendingImportCount} {pendingImportCount === 1 ? 'photo' : 'photos'}?
+            </Text>
+            <Text style={styles.importConfirmCopy}>Each one costs a model call.</Text>
+            <View style={styles.importConfirmActions}>
+              <Pressable
+                accessibilityLabel={`Identify ${pendingImportCount} ${pendingImportCount === 1 ? 'photo' : 'photos'}`}
+                accessibilityRole="button"
+                onPress={onConfirmImport}
+                style={({ pressed }) => [
+                  styles.importConfirmPrimary,
+                  pressed && { transform: [{ translateY: Motion.pressTranslate }] },
+                ]}>
+                <Text style={styles.importConfirmPrimaryText}>Proceed</Text>
+              </Pressable>
+              <Pressable
+                accessibilityLabel="Cancel photo import"
+                accessibilityRole="button"
+                onPress={onCancelImport}
+                style={({ pressed }) => [
+                  styles.importConfirmSecondary,
+                  pressed && { transform: [{ translateY: Motion.pressTranslate }] },
+                ]}>
+                <Text style={styles.importConfirmSecondaryText}>Cancel</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <>
+            <Text accessibilityRole="header" style={styles.viewfinderTitle}>
+              {setMode ? 'Show the whole set' : second ? 'Centre the number' : 'Show us the pattern'}
+            </Text>
+            <Text style={styles.viewfinderBlurb}>
+              {setMode
+                ? 'Fill the frame with one nested set. Keep every piece visible and avoid glare.'
+                : second
+                ? 'The mark on the underside settles the form. Hold steady, and centre it in the ring.'
+                : 'Whole dish in frame, no glare. The backstamp comes next.'}
+            </Text>
+          </>
+        )}
       </View>
 
       <View style={[styles.shutterRow, { paddingBottom: insets.bottom + TAB_BAR_CLEARANCE + Spacing.four + Spacing.three }]}>
@@ -530,11 +589,13 @@ const styles = StyleSheet.create({
   headRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   headLabel: { ...Type.label, color: CameraChrome.guide, letterSpacing: 1.6 },
   headCount: { ...Type.caption, color: CameraChrome.textFaint, fontSize: 11 },
+  modeControls: { flexDirection: 'row', gap: Spacing.two },
   modeToggle: {
     backgroundColor: CameraChrome.fill,
     borderColor: CameraChrome.frameEdge,
     borderRadius: Radius.md,
     borderWidth: Rule,
+    flex: 1,
     flexDirection: 'row',
     padding: Spacing.one,
   },
@@ -549,6 +610,17 @@ const styles = StyleSheet.create({
   modeOptionSelected: { backgroundColor: CameraChrome.guide },
   modeLabel: { ...Type.bodyStrong, color: CameraChrome.textDim },
   modeLabelSelected: { color: CameraChrome.ground },
+  importAction: {
+    alignItems: 'center',
+    backgroundColor: CameraChrome.fill,
+    borderColor: CameraChrome.frameEdge,
+    borderRadius: Radius.md,
+    borderWidth: Rule,
+    justifyContent: 'center',
+    minHeight: HitTarget,
+    paddingHorizontal: Spacing.three,
+  },
+  importActionText: { ...Type.bodyStrong, color: CameraChrome.text },
 
   frame: {
     aspectRatio: VIEWFINDER_ASPECT,
@@ -595,6 +667,39 @@ const styles = StyleSheet.create({
     color: CameraChrome.textDim,
     marginTop: Spacing.two,
   },
+  importConfirm: {
+    backgroundColor: CameraChrome.fill,
+    borderColor: CameraChrome.frameEdge,
+    borderRadius: Radius.md,
+    borderWidth: Rule,
+    gap: Spacing.one,
+    padding: Spacing.three,
+  },
+  importConfirmTitle: { ...Type.headline, color: CameraChrome.text },
+  importConfirmCopy: { ...Type.callout, color: CameraChrome.textDim },
+  importConfirmActions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two },
+  importConfirmPrimary: {
+    alignItems: 'center',
+    backgroundColor: CameraChrome.guide,
+    borderRadius: Radius.xs,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: HitTarget,
+    paddingHorizontal: Spacing.two,
+  },
+  importConfirmPrimaryText: { ...Type.bodyStrong, color: CameraChrome.ground },
+  importConfirmSecondary: {
+    alignItems: 'center',
+    backgroundColor: CameraChrome.fill,
+    borderColor: CameraChrome.frameEdge,
+    borderRadius: Radius.xs,
+    borderWidth: Rule,
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: HitTarget,
+    paddingHorizontal: Spacing.two,
+  },
+  importConfirmSecondaryText: { ...Type.bodyStrong, color: CameraChrome.text },
 
   shutterRow: {
     alignItems: 'center',

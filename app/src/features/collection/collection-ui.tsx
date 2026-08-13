@@ -48,7 +48,7 @@ import {
   type ElevationSet,
 } from '@/constants/theme';
 import { BRAND } from '@shared/branding';
-import type { Photo, PriceQuote, PriceSourceKind, Provenance, Rarity } from '@shared/types';
+import type { Pattern, Photo, PriceQuote, PriceSourceKind, Provenance, Rarity } from '@shared/types';
 
 const money = new Intl.NumberFormat(undefined, {
   style: 'currency',
@@ -461,8 +461,15 @@ export function rarityText(rarity: Rarity): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-export function RarityBadge({ rarity, compact = false }: { rarity: Rarity; compact?: boolean }) {
+export function RarityBadge({
+  rarity,
+  compact = false,
+}: {
+  rarity: Pattern['rarity'];
+  compact?: boolean;
+}) {
   const scheme = useScheme();
+  if (rarity === null) return null;
   const colors = Colors[scheme];
   const color = RarityColors[scheme][rarity];
   const rank = RARITY_ORDER.indexOf(rarity) + 1;
@@ -485,8 +492,9 @@ export function RarityBadge({ rarity, compact = false }: { rarity: Rarity; compa
 }
 
 /** The rank as a pill, for the one place it lands on a photograph: the hero. */
-export function RarityPill({ rarity }: { rarity: Rarity }) {
+export function RarityPill({ rarity }: { rarity: Pattern['rarity'] }) {
   const scheme = useScheme();
+  if (rarity === null) return null;
   const rank = RARITY_ORDER.indexOf(rarity) + 1;
 
   return (

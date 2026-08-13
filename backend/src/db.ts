@@ -146,7 +146,7 @@ export class BackendDatabase {
         years_start INTEGER,
         years_end INTEGER,
         colorway TEXT,
-        rarity TEXT NOT NULL,
+        rarity TEXT,
         notes TEXT
       ) STRICT;
 
@@ -163,7 +163,7 @@ export class BackendDatabase {
         slug TEXT PRIMARY KEY,
         pattern_id TEXT NOT NULL REFERENCES patterns(id),
         form_id TEXT NOT NULL REFERENCES forms(id),
-        rarity TEXT NOT NULL,
+        rarity TEXT,
         ebay_query TEXT NOT NULL,
         provenance TEXT NOT NULL,
         user_submitted INTEGER NOT NULL CHECK (user_submitted IN (0, 1))
@@ -191,6 +191,7 @@ export class BackendDatabase {
         llm_was_right INTEGER,
         consented_to_training INTEGER NOT NULL CHECK (consented_to_training IN (0, 1)),
         has_base_shot INTEGER NOT NULL DEFAULT 0,
+        source TEXT NOT NULL DEFAULT 'single',
         created_at TEXT NOT NULL
       ) STRICT;
 
@@ -233,14 +234,71 @@ export class BackendDatabase {
         'ALTER TABLE scans ADD COLUMN has_base_shot INTEGER NOT NULL DEFAULT 0',
       );
     }
+    if (!scanColumns.some((column) => column.name === 'source')) {
+      this.sqlite.exec(
+        "ALTER TABLE scans ADD COLUMN source TEXT NOT NULL DEFAULT 'single'",
+      );
+    }
 
     const itemColumns = this.sqlite.prepare('PRAGMA table_info(items)').all() as unknown as {
       name: string;
+      notnull: number;
     }[];
     if (!itemColumns.some((column) => column.name === 'provenance')) {
       this.sqlite.exec(
         "ALTER TABLE items ADD COLUMN provenance TEXT NOT NULL DEFAULT 'published-reference'",
       );
+    }
+
+    const patternColumns = this.sqlite.prepare('PRAGMA table_info(patterns)').all() as unknown as {
+      name: string;
+      notnull: number;
+    }[];
+    const rarityIsRequired =
+      patternColumns.find((column) => column.name === 'rarity')?.notnull === 1 ||
+      itemColumns.find((column) => column.name === 'rarity')?.notnull === 1;
+    if (rarityIsRequired) {
+      this.sqlite.exec('PRAGMA foreign_keys = OFF');
+      try {
+        this.transaction(() => {
+          this.sqlite.exec(`
+            CREATE TABLE patterns_nullable (
+              id TEXT PRIMARY KEY,
+              name TEXT NOT NULL,
+              years_start INTEGER,
+              years_end INTEGER,
+              colorway TEXT,
+              rarity TEXT,
+              notes TEXT
+            ) STRICT;
+            INSERT INTO patterns_nullable SELECT * FROM patterns;
+
+            CREATE TABLE items_nullable (
+              slug TEXT PRIMARY KEY,
+              pattern_id TEXT NOT NULL REFERENCES patterns_nullable(id),
+              form_id TEXT NOT NULL REFERENCES forms(id),
+              rarity TEXT,
+              ebay_query TEXT NOT NULL,
+              provenance TEXT NOT NULL,
+              user_submitted INTEGER NOT NULL CHECK (user_submitted IN (0, 1))
+            ) STRICT;
+            INSERT INTO items_nullable(
+              slug, pattern_id, form_id, rarity, ebay_query, provenance, user_submitted
+            )
+            SELECT slug, pattern_id, form_id, rarity, ebay_query, provenance, user_submitted
+            FROM items;
+
+            DROP TABLE items;
+            DROP TABLE patterns;
+            ALTER TABLE patterns_nullable RENAME TO patterns;
+            ALTER TABLE items_nullable RENAME TO items;
+          `);
+          const violations = this.sqlite.prepare('PRAGMA foreign_key_check').all();
+          if (violations.length > 0) throw new Error('Rarity migration violated foreign keys');
+        });
+      } finally {
+        this.sqlite.exec('PRAGMA foreign_keys = ON');
+      }
     }
   }
 
@@ -423,6 +481,7 @@ export class BackendDatabase {
     approved: boolean;
     isAiPlaceholder: boolean;
     uploaderId: string | null;
+    uploaderHandle: string | null;
     createdAt: string;
   }): void {
     this.sqlite
@@ -430,7 +489,7 @@ export class BackendDatabase {
         INSERT INTO photos(
           id, item_slug, file_ref, uploader_id, visibility, approved, is_ai_placeholder,
           uploader_handle, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
         input.id,
@@ -440,6 +499,7 @@ export class BackendDatabase {
         input.visibility,
         Number(input.approved),
         Number(input.isAiPlaceholder),
+        input.uploaderHandle,
         input.createdAt,
       );
   }
@@ -547,6 +607,7 @@ export class BackendDatabase {
     userId: string | null;
     photoRefs: string[];
     hasBaseShot: boolean;
+    source: 'single' | 'set';
     guessesJson: string;
     confirmedItemSlug: string | null;
     llmWasRight: boolean | null;
@@ -556,8 +617,8 @@ export class BackendDatabase {
     const insertScan = this.sqlite.prepare(`
         INSERT INTO scans(
           id, user_id, photo_ref, guesses_json, confirmed_item_slug,
-          llm_was_right, consented_to_training, has_base_shot, created_at
-        ) VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?)
+          llm_was_right, consented_to_training, has_base_shot, source, created_at
+        ) VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?)
       `);
     const insertPhoto = this.sqlite.prepare(
       'INSERT INTO scan_photos(scan_id, ordinal, file_ref) VALUES (?, ?, ?)',
@@ -571,6 +632,7 @@ export class BackendDatabase {
         input.llmWasRight === null ? null : Number(input.llmWasRight),
         Number(input.consentedToTraining),
         Number(input.hasBaseShot),
+        input.source,
         input.createdAt,
       );
       for (const [ordinal, photoRef] of input.photoRefs.entries()) {

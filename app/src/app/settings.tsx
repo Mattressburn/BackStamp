@@ -27,6 +27,7 @@ import {
   Share,
   StyleSheet,
   Text,
+  TextInput,
   View,
   type AccessibilityRole,
   type AccessibilityState,
@@ -49,6 +50,7 @@ import {
   Motion,
   OnAccent,
   Radius,
+  Rule,
   Spacing,
   Type,
 } from '@/constants/theme';
@@ -403,6 +405,36 @@ export default function SettingsScreen() {
                 />
               );
             })}
+            <View style={styles.handleField}>
+              <Text style={[styles.rowTitle, { color: colors.text }]}>
+                Name shown with shared photos
+              </Text>
+              <Text style={[styles.rowCaption, { color: colors.textSecondary }]}>
+                Shown only when you share a photo with attribution.
+              </Text>
+              <TextInput
+                defaultValue={settings.photoHandle}
+                onEndEditing={(event) =>
+                  void updateSettings({ photoHandle: event.nativeEvent.text.trim() })
+                }
+                maxLength={40}
+                autoCapitalize="words"
+                autoCorrect={false}
+                returnKeyType="done"
+                placeholder="Your collector name"
+                placeholderTextColor={colors.textTertiary}
+                accessibilityLabel="Name shown with shared photos"
+                accessibilityRole="text"
+                style={[
+                  styles.handleInput,
+                  {
+                    color: colors.text,
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                  },
+                ]}
+              />
+            </View>
           </Group>
         </View>
 
@@ -734,6 +766,14 @@ const styles = StyleSheet.create({
   rowTitleStrong: { ...Type.bodyStrong },
   rowCaption: { ...Type.caption },
   rowValue: { ...Type.bodyStrong },
+  handleField: { gap: Spacing.one, padding: Spacing.three - Spacing.half },
+  handleInput: {
+    ...Type.body,
+    minHeight: HitTarget,
+    borderWidth: Rule,
+    borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.three - Spacing.half,
+  },
 
   avatar: { width: 42, height: 42, borderRadius: Radius.pill },
 

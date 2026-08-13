@@ -360,6 +360,10 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
     ) {
       throw new ApiRouteError('bad_request', 400, 'Invalid scan');
     }
+    const scanSource = input.source === undefined ? 'single' : input.source;
+    if (scanSource !== 'single' && scanSource !== 'set') {
+      throw new ApiRouteError('bad_request', 400, 'Invalid scan source');
+    }
     const guesses = input.guesses.map(guess);
     for (const candidate of guesses) {
       if (!options.db.getItem(candidate.itemSlug)) {
@@ -411,6 +415,7 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
         userId: sessionFrom(c)?.userId ?? null,
         photoRefs,
         hasBaseShot: input.hasBaseShot,
+        source: scanSource,
         guessesJson: JSON.stringify(guesses),
         confirmedItemSlug,
         llmWasRight: input.llmWasRight as boolean | null,
@@ -450,6 +455,19 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
     if (!options.db.getItem(itemSlug)) throw new ApiRouteError('not_found', 404, 'Item not found');
     const photo = jpegFromBase64(requiredString(input.photo, 'photo', MAX_JPEG_BASE64_CHARS));
     const photoVisibility = visibility(input.visibility);
+    let uploaderHandle: string | null = null;
+    if (photoVisibility === 'attributed') {
+      if (typeof input.handle !== 'string' || !input.handle.trim()) {
+        throw new ApiRouteError('bad_request', 400, 'handle required for attributed uploads');
+      }
+      uploaderHandle = input.handle.trim();
+      if (Array.from(uploaderHandle).length > 40) {
+        throw new ApiRouteError('bad_request', 400, 'handle must be 40 characters or fewer');
+      }
+      if (/[\u0000-\u001f\u007f-\u009f]/u.test(uploaderHandle)) {
+        throw new ApiRouteError('bad_request', 400, 'handle contains control characters');
+      }
+    }
     const id = randomUUID();
     const fileRef = `${id}.jpg`;
     await mkdir(options.photoDir, { recursive: true });
@@ -463,14 +481,14 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
         approved: false,
         isAiPlaceholder: false,
         uploaderId: c.get('session').userId,
+        uploaderHandle,
         createdAt: new Date().toISOString(),
       });
     } catch (error) {
       await rm(join(options.photoDir, fileRef), { force: true });
       throw error;
     }
-    // CONTRACT: attributed uploads cannot expose a handle until the client supplies one;
-    // auth intentionally stores no name or profile.
+    // Handles belong to attributed photo rows, never user records.
     return c.json(success({ id }));
   });
 
@@ -532,6 +550,7 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
             approved: true,
             isAiPlaceholder: true,
             uploaderId: null,
+            uploaderHandle: null,
             createdAt: new Date().toISOString(),
           });
         } catch (error) {

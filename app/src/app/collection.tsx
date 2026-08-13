@@ -413,7 +413,7 @@ function Masthead({
   priceError: string | null;
 }) {
   const heading = {
-    have: { label: 'Card file', title: `${counts.have} ${counts.have === 1 ? 'piece' : 'pieces'} filed` },
+    have: { label: 'Card file', title: `${counts.have} ${counts.have === 1 ? 'piece' : 'pieces'} shelved` },
     want: { label: 'On the hunt', title: `${counts.want} ${counts.want === 1 ? 'piece' : 'pieces'} wanted` },
     all: { label: 'The catalog', title: `${counts.all} ${counts.all === 1 ? 'piece' : 'pieces'} catalogued` },
   }[tab];
@@ -425,7 +425,7 @@ function Masthead({
 
       {tab === 'all' ? (
         <Text style={[styles.caption, { color: colors.textSecondary }]}>
-          Everything in the catalog on this phone. {counts.have} filed, {counts.want} on the hunt.
+          Everything in the catalog on this phone. {counts.have} shelved, {counts.want} on the hunt.
         </Text>
       ) : (
         <>
@@ -589,7 +589,7 @@ function FileRow({
               patternName,
               caption.replaceAll('×', 'quantity '),
               entry?.status === 'want' ? 'on your want list' : null,
-              isNew ? 'newly filed' : null,
+              isNew ? 'newly shelved' : null,
             ].filter(Boolean).join(', ')}
             onPressIn={() => setPressed(true)}
             onPressOut={() => setPressed(false)}
@@ -739,7 +739,7 @@ function FirstLaunch({
         ))}
       </View>
 
-      <Text style={[styles.emptyTitle, { color: colors.text }]}>Nothing filed yet</Text>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>Nothing on the shelf yet</Text>
       <Text style={[styles.emptyBody, { color: colors.textSecondary }]}>
         Scan the first piece and we&apos;ll tell you what it is, what it&apos;s worth, and what
         else came in the set.
@@ -773,7 +773,7 @@ function EmptyTab({ tab, colors }: { tab: FileTab; colors: Palette }) {
     <Card attached style={styles.emptyTab}>
       <Text style={[styles.emptyTabText, { color: colors.textSecondary }]}>
         {tab === 'have'
-          ? 'Nothing filed yet. Pieces land here when you mark them as owned.'
+          ? 'Nothing on the shelf yet. Pieces land here when you mark them as owned.'
           : tab === 'want'
             ? 'Nothing on the hunt. Star a piece to keep it separate from what you own.'
             : 'The catalog has not downloaded yet. Pull to refresh once you have signal.'}

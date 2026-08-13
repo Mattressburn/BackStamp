@@ -41,6 +41,7 @@ import {
   Motion,
   OnAccent,
   Radius,
+  Rule,
   Spacing,
   Type,
 } from '@/constants/theme';
@@ -52,6 +53,7 @@ import {
   getUserItem,
   listQueuedScans,
   removeFromCollection,
+  saveSettings,
   searchCatalog,
   setOwnership,
 } from '@/db';
@@ -131,8 +133,14 @@ function Enter({
 // screens 6 and 12 draw none, and the pinned footer below is padded for a bare screen
 // edge. If the bar stays, this screen's footer needs `BottomTabInset` added to it.
 export default function ItemDetailScreen() {
-  const params = useLocalSearchParams<{ slug: string | string[] }>();
+  const params = useLocalSearchParams<{
+    slug: string | string[];
+    sharePhotoUri?: string | string[];
+  }>();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
+  const sharePhotoUri = Array.isArray(params.sharePhotoUri)
+    ? params.sharePhotoUri[0]
+    : params.sharePhotoUri;
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -150,6 +158,7 @@ export default function ItemDetailScreen() {
   const [queuedCount, setQueuedCount] = useState(0);
   const [notes, setNotes] = useState('');
   const [visibility, setVisibility] = useState<PhotoVisibility>('private');
+  const [photoHandle, setPhotoHandle] = useState('');
   const [loading, setLoading] = useState(true);
   const [networkError, setNetworkError] = useState<string | null>(null);
   const [photoToken, setPhotoToken] = useState<string | null>(null);
@@ -192,6 +201,7 @@ export default function ItemDetailScreen() {
         setQueuedCount(queued.length);
         setNotes(userItem?.notes ?? '');
         setVisibility(settings.defaultPhotoVisibility);
+        setPhotoHandle(settings.photoHandle);
         setPhotoToken(token);
 
         let foundLocal = false;
@@ -419,10 +429,22 @@ export default function ItemDetailScreen() {
               height={heroHeight}
             />
             <View style={styles.record}>
+              {!detail.photos.some((photo) => !photo.isAiPlaceholder) && (
+                <Text style={[styles.photoInvitation, { color: colors.textSecondary }]}>
+                  No collector photograph of this piece yet. Yours could be the first.
+                </Text>
+              )}
               <Text style={[styles.title, { color: colors.text }]}>{name}</Text>
               <Text style={[styles.caption, { color: colors.textSecondary }]}>
                 {describe(detail)}
               </Text>
+              {detail.pattern.notes && (
+                <Text
+                  accessibilityLabel={`Pattern facts: ${detail.pattern.notes}`}
+                  style={[styles.caption, { color: colors.textSecondary }]}>
+                  {detail.pattern.notes}
+                </Text>
+              )}
               <View style={styles.priceSlot}>
                 <PriceFigure
                   quote={detail.price}
@@ -523,8 +545,8 @@ export default function ItemDetailScreen() {
             ) : (
               <Text style={[styles.body, { color: colors.textSecondary }]}>
                 {wanted
-                  ? 'On your want list. File it and you can record how many you have and what shape they are in.'
-                  : 'Not filed yet. File it and you can record how many you have and what shape they are in.'}
+                  ? 'On your want list. Shelve it and you can record how many you have and what shape they are in.'
+                  : 'Not on your shelf yet. Shelve it and you can record how many you have and what shape they are in.'}
               </Text>
             )}
 
@@ -558,11 +580,11 @@ export default function ItemDetailScreen() {
                   onPress={() => confirmRemoval(pieceName)}
                   disabled={saving}
                   accessibilityRole="button"
-                  accessibilityLabel={`Remove ${pieceName} from your file`}
+                  accessibilityLabel={`Remove ${pieceName} from your shelf`}
                   accessibilityState={{ disabled: saving }}
                   style={styles.removeButton}>
                   <Text style={[styles.removeText, { color: colors.danger }]}>
-                    Remove from my file
+                    Remove from my shelf
                   </Text>
                 </Pressable>
               </>
@@ -578,6 +600,10 @@ export default function ItemDetailScreen() {
             patternName={name}
             visibility={visibility}
             onVisibilityChange={setVisibility}
+            photoHandle={photoHandle}
+            onPhotoHandleChange={setPhotoHandle}
+            initialPhotoUri={sharePhotoUri}
+            signedIn={Boolean(photoToken)}
             onUploaded={refreshRemote}
           />
         </Enter>
@@ -598,10 +624,10 @@ export default function ItemDetailScreen() {
           style={styles.fileButton}
           accessibilityLabel={
             owned > 0
-              ? `${name} is in your file, ${owned} owned. Add another.`
-              : `Put ${name} in my file`
+              ? `${name} is on your shelf, ${owned} owned. Add another.`
+              : `Shelve ${name}`
           }>
-          {owned > 0 ? 'Add another' : 'In my file'}
+          {owned > 0 ? 'Add another' : 'Shelve it'}
         </PressButton>
         <PressButton
           tone="quiet"
@@ -684,9 +710,11 @@ function Hero({
   return (
     <View style={{ width, height }}>
       {body}
-      <View style={styles.rarityCorner} pointerEvents="none">
-        <RarityPill rarity={detail.rarity} />
-      </View>
+      {detail.rarity && (
+        <View style={styles.rarityCorner} pointerEvents="none">
+          <RarityPill rarity={detail.rarity} />
+        </View>
+      )}
       {photos.length > 1 && <PageIndicator count={photos.length} index={page} />}
     </View>
   );
@@ -754,12 +782,20 @@ function PhotoUpload({
   patternName,
   visibility,
   onVisibilityChange,
+  photoHandle,
+  onPhotoHandleChange,
+  initialPhotoUri,
+  signedIn,
   onUploaded,
 }: {
   itemSlug: string;
   patternName: string;
   visibility: PhotoVisibility;
   onVisibilityChange: (visibility: PhotoVisibility) => void;
+  photoHandle: string;
+  onPhotoHandleChange: (handle: string) => void;
+  initialPhotoUri?: string;
+  signedIn: boolean;
   onUploaded: () => Promise<void>;
 }) {
   const colors = useColors();
@@ -767,7 +803,8 @@ function PhotoUpload({
   const camera = useRef<CameraView>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [photoUri, setPhotoUri] = useState<string | null>(initialPhotoUri ?? null);
+  const [handleDraft, setHandleDraft] = useState(photoHandle);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -798,12 +835,55 @@ function PhotoUpload({
     }
   }
 
+  async function choosePhoto() {
+    try {
+      const { launchImageLibraryAsync } = await import('expo-image-picker');
+      const result = await launchImageLibraryAsync({ mediaTypes: ['images'] });
+      const uri = result.assets?.[0]?.uri;
+      if (!result.canceled && uri) {
+        setError(null);
+        setPhotoUri(uri);
+      }
+    } catch (pickerError) {
+      setError(pickerError instanceof Error ? pickerError.message : 'Could not open your photos.');
+    }
+  }
+
+  async function persistHandle() {
+    const handle = handleDraft.trim();
+    try {
+      const settings = await saveSettings({ photoHandle: handle });
+      setHandleDraft(settings.photoHandle);
+      onPhotoHandleChange(settings.photoHandle);
+    } catch (settingsError) {
+      setError(
+        settingsError instanceof Error
+          ? settingsError.message
+          : 'Could not save your photo name.',
+      );
+    }
+  }
+
   async function submitPhoto() {
     if (!photoUri) return;
+    if (!signedIn) {
+      setError('Sign in is needed to upload a photograph. You can sign in from Settings.');
+      return;
+    }
+    const handle = handleDraft.trim();
+    if (visibility === 'attributed' && !handle) {
+      setError('Enter the name to show with this photo.');
+      return;
+    }
     setUploading(true);
     setError(null);
     try {
-      const result = await uploadPhoto({ itemSlug, photoUri, visibility });
+      const result = await uploadPhoto({
+        itemSlug,
+        photoUri,
+        visibility,
+        ...(visibility === 'attributed' ? { handle } : {}),
+      });
       if (result.ok) {
         setPhotoUri(null);
         await onUploaded();
@@ -823,8 +903,6 @@ function PhotoUpload({
       <Text style={[styles.body, { color: colors.textSecondary }]}>
         Location metadata is removed by the server before the photo is stored.
       </Text>
-
-      {/* CONTRACT: uploadPhoto needs a per-upload handle when visibility is attributed. */}
 
       {VISIBILITIES.map((choice) => {
         const selected = visibility === choice;
@@ -852,6 +930,33 @@ function PhotoUpload({
           </Pressable>
         );
       })}
+
+      {visibility === 'attributed' && !photoHandle.trim() && (
+        <View style={styles.field}>
+          <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Name shown with this photo</Text>
+          <TextInput
+            value={handleDraft}
+            onChangeText={setHandleDraft}
+            onEndEditing={() => void persistHandle()}
+            maxLength={40}
+            autoCapitalize="words"
+            autoCorrect={false}
+            returnKeyType="done"
+            placeholder="Your collector name"
+            placeholderTextColor={colors.textTertiary}
+            accessibilityLabel="Name shown with this photo"
+            accessibilityRole="text"
+            style={[
+              styles.handleInput,
+              {
+                color: colors.text,
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+              },
+            ]}
+          />
+        </View>
+      )}
 
       {cameraOpen && (
         <View style={[styles.cameraFrame, { backgroundColor: colors.backgroundElement }]}>
@@ -899,7 +1004,11 @@ function PhotoUpload({
               tone="primary"
               style={styles.grow}
               onPress={() => void submitPhoto()}
-              disabled={uploading}>
+              disabled={
+                uploading
+                || !signedIn
+                || (visibility === 'attributed' && !handleDraft.trim())
+              }>
               {uploading ? 'Uploading…' : `Upload as ${visibility}`}
             </PressButton>
           </View>
@@ -907,12 +1016,27 @@ function PhotoUpload({
       )}
 
       {!cameraOpen && !photoUri && (
-        <PressButton
-          tone="primary"
-          onPress={() => void openCamera()}
-          accessibilityLabel={`Take a photo of ${patternName}`}>
-          Take a photo
-        </PressButton>
+        <View style={styles.cameraControls}>
+          <PressButton
+            tone="primary"
+            style={styles.grow}
+            onPress={() => void openCamera()}
+            accessibilityLabel={`Take a photo of ${patternName}`}>
+            Take a photo
+          </PressButton>
+          <PressButton
+            tone="quiet"
+            style={styles.grow}
+            onPress={() => void choosePhoto()}
+            accessibilityLabel={`Choose a photo of ${patternName} from my photos`}>
+            Choose from my photos
+          </PressButton>
+        </View>
+      )}
+      {!signedIn && (
+        <Text style={[styles.error, { color: colors.danger }]}>
+          Sign in is needed to upload a photograph. You can sign in from Settings.
+        </Text>
       )}
       {error && <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>}
     </Card>
@@ -982,6 +1106,7 @@ const styles = StyleSheet.create({
   // --- the record ---
   recordCard: { borderRadius: Radius.xl },
   record: { padding: CARD_PAD },
+  photoInvitation: { ...Type.callout, marginBottom: Spacing.two },
   // The prototype draws this at 31px, but the handoff's type table gives `title` as
   // 27/31 and declares itself authoritative over the HTML. Token, not the mock.
   title: { ...Type.title },
@@ -1060,6 +1185,13 @@ const styles = StyleSheet.create({
   visibilityCopy: { flex: 1, gap: Spacing.half },
   visibilityTitle: { ...Type.micro },
   radioMark: { ...Type.headline },
+  handleInput: {
+    ...Type.body,
+    minHeight: HitTarget,
+    borderWidth: Rule,
+    borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.three - Spacing.half,
+  },
   cameraFrame: { borderRadius: Radius.sm, overflow: 'hidden' },
   camera: { height: Spacing.six * 5 },
   cameraControls: { flexDirection: 'row', gap: Spacing.two, paddingTop: Spacing.two },

@@ -236,6 +236,7 @@ export async function logScan(input: {
   llmWasRight: boolean | null;
   consentedToTraining: boolean;
   hasBaseShot: boolean;
+  source?: 'single' | 'set';
 }): Promise<ApiResult<{ id: string }>> {
   const { photoUris, ...rest } = input;
   // The backend cannot read a phone-local file URI. Encode here, and only when the
@@ -274,14 +275,17 @@ export async function uploadPhoto(input: {
   itemSlug: string;
   photoUri: string;
   visibility: PhotoVisibility;
+  handle?: string;
 }): Promise<ApiResult<{ id: string }>> {
   const base64 = await encodeForUpload(input.photoUri, CATALOG_PHOTO_MAX_WIDTH);
+  const handle = input.handle?.trim();
   return request<{ id: string }>('/photos', {
     method: 'POST',
     body: JSON.stringify({
       itemSlug: input.itemSlug,
       visibility: input.visibility,
       photo: base64,
+      ...(input.visibility === 'attributed' && handle ? { handle } : {}),
     }),
   });
 }

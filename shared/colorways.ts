@@ -1,8 +1,10 @@
 /**
  * Every pattern in the catalog documents its colorway as prose, "turquoise and
- * white", "white on pink", "brown on speckled beige". All 33 of them, no nulls. This
- * turns that sentence into the two colors it names, so a piece with no photograph
- * still arrives on screen wearing its actual colors instead of a grey box.
+ * white", "white on pink", "brown on speckled beige". This turns that sentence into
+ * the two colors it names, so a piece with no photograph still arrives on screen
+ * wearing its actual colors instead of a grey box. The swatch guard test in
+ * app/src/constants/colorways.test.ts walks the whole catalog; a new colorway word
+ * fails there and gets added to INK, never invented ad hoc.
  *
  * It is a swatch, not a photograph, and the UI must say so wherever it appears. The
  * same rule that forbids a bare price applies here: a generated stand-in that reads
@@ -38,6 +40,11 @@ const INK: Record<string, { light: string; dark: string }> = {
   beige: { light: '#DCCDB4', dark: '#C6B79E' },
   brown: { light: '#7A5230', dark: '#8A6240' },
   black: { light: '#26221D', dark: '#3A352E' },
+  charcoal: { light: '#3E3A33', dark: '#4E4A42' },
+  mustard: { light: '#B8862B', dark: '#C4953C' },
+  lime: { light: '#9CBB3D', dark: '#A9C74E' },
+  // Clear glass is not a color; a quiet pale ground reads as glass without claiming one.
+  clear: { light: '#EFEDE6', dark: '#DCD8CE' },
 };
 
 /** Modifiers that shift a named color rather than naming one. */

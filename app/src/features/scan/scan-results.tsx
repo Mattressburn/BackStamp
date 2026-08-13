@@ -37,8 +37,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { CatalogRow } from '@/db';
 import { SWATCH_SOURCE_LABEL } from '@/constants/colorways';
+import type { CatalogRow } from '@/db';
 import {
   CameraChrome,
   HitTarget,
@@ -52,6 +52,7 @@ import {
 } from '@/constants/theme';
 import {
   Card,
+  CircleButton,
   Divider,
   HeaderBar,
   Label,
@@ -62,9 +63,10 @@ import {
   useColors,
   useElevation,
 } from '@/features/collection/collection-ui';
+import { BRAND } from '@shared/branding';
 import type { Form, Pattern, ScanGuess } from '@shared/types';
 import { ScanBanner, TAB_BAR_CLEARANCE } from './scan-camera';
-import { browseDetailFacts, type GroupedDetection } from './logic';
+import { browseDetailFacts, type GroupedDetection, type HuntingChip } from './logic';
 
 export const money = new Intl.NumberFormat(undefined, {
   style: 'currency',
@@ -342,7 +344,7 @@ export function ResultScreen({
         {/* The want list is not in the prototype's scan flow, and dropping it silently
             would have removed the only way to note a piece you did not buy. */}
         <Pressable
-          accessibilityHint="Files the selected piece on your want list instead of your shelf"
+          accessibilityHint="Puts the selected piece on your want list instead of your shelf"
           accessibilityLabel="Add to my want list instead"
           accessibilityRole="button"
           disabled={!selectedSlug || busy}
@@ -404,11 +406,13 @@ export interface SetResultItem {
 function SetResultRow({
   item,
   onDetails,
+  onAdjustCount,
   onRemove,
   onWrong,
 }: {
   item: SetResultItem;
   onDetails: () => void;
+  onAdjustCount: (delta: number) => void;
   onRemove: () => void;
   onWrong: () => void;
 }) {
@@ -424,7 +428,7 @@ function SetResultRow({
       ]}>
       <View style={styles.setRowHead}>
         <Pressable
-          accessibilityLabel={`Show ${row.patternName}, model ${row.modelNo} details`}
+          accessibilityLabel={`${row.patternName}, model ${row.modelNo}, count ${group.count}. Show details`}
           accessibilityRole="button"
           onPress={onDetails}
           onPressIn={() => setPressed(true)}
@@ -445,29 +449,48 @@ function SetResultRow({
               {formCaption(row)}
             </Text>
           </View>
-          {group.count > 1 && (
-            <View style={[styles.countMarker, { backgroundColor: colors.backgroundElement }]}>
-              <Text style={[styles.countMarkerText, { color: colors.spice }]}>×{group.count}</Text>
-            </View>
-          )}
         </Pressable>
-        <View style={styles.setRowActions}>
-          <PressButton
-            tone="quiet"
-            onPress={onWrong}
-            accessibilityLabel={`Mark ${row.patternName}, model ${row.modelNo} as wrong and find the correct match`}
-            style={styles.setRowAction}
-            textStyle={styles.setRowActionText}>
-            Wrong
-          </PressButton>
-          <PressButton
-            tone="quiet"
-            onPress={onRemove}
-            accessibilityLabel={`Remove ${row.patternName}, model ${row.modelNo}`}
-            style={styles.setRowAction}
-            textStyle={styles.setRowActionText}>
-            Remove
-          </PressButton>
+        <View style={styles.setRowTail}>
+          <View style={styles.countStepper}>
+            <CircleButton
+              size={Spacing.five}
+              onPress={() => onAdjustCount(-1)}
+              accessibilityLabel={`One fewer ${row.modelNo}`}>
+              {'−'}
+            </CircleButton>
+            <View style={[styles.countMarker, { backgroundColor: colors.backgroundElement }]}>
+              <Text
+                accessibilityLabel={`Count ${group.count}`}
+                accessibilityLiveRegion="polite"
+                style={[styles.countMarkerText, { color: colors.spice }]}>
+                × {group.count}
+              </Text>
+            </View>
+            <CircleButton
+              size={Spacing.five}
+              onPress={() => onAdjustCount(1)}
+              accessibilityLabel={`One more ${row.modelNo}`}>
+              +
+            </CircleButton>
+          </View>
+          <View style={styles.setRowActions}>
+            <PressButton
+              tone="quiet"
+              onPress={onWrong}
+              accessibilityLabel={`Mark ${row.patternName}, model ${row.modelNo} as wrong and find the correct match`}
+              style={styles.setRowAction}
+              textStyle={styles.setRowActionText}>
+              Wrong
+            </PressButton>
+            <PressButton
+              tone="quiet"
+              onPress={onRemove}
+              accessibilityLabel={`Remove ${row.patternName}, model ${row.modelNo}`}
+              style={styles.setRowAction}
+              textStyle={styles.setRowActionText}>
+              Remove
+            </PressButton>
+          </View>
         </View>
       </View>
       <Divider />
@@ -491,22 +514,30 @@ export function SetResultsScreen({
   contradicted,
   banner,
   problem,
+  bulkProgress,
   onDetails,
+  onAdjustCount,
   onRemove,
   onWrong,
   onFile,
   onRetake,
+  onSkip,
+  onRetry,
 }: {
   photoUri: string | undefined;
   items: SetResultItem[];
   contradicted: number;
   banner: string | null;
   problem: string | null;
+  bulkProgress?: string;
   onDetails: (row: CatalogRow) => void;
+  onAdjustCount: (slug: string, delta: number) => void;
   onRemove: (slug: string) => void;
   onWrong: (slug: string) => void;
   onFile: () => void;
   onRetake: () => void;
+  onSkip?: () => void;
+  onRetry?: () => void;
 }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -517,7 +548,18 @@ export function SetResultsScreen({
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <View style={{ paddingTop: insets.top, backgroundColor: colors.headerBar }}>
-        <HeaderBar label={`${pieceLabel} to file`} />
+        <HeaderBar
+          label={bulkProgress ?? `${pieceLabel} to shelve`}
+          right={onSkip ? (
+            <Pressable
+              accessibilityLabel="Skip this photo"
+              accessibilityRole="button"
+              hitSlop={Spacing.three}
+              onPress={onSkip}>
+              <Text style={[styles.retake, { color: colors.want }]}>Skip</Text>
+            </Pressable>
+          ) : undefined}
+        />
       </View>
 
       <ScrollView
@@ -531,10 +573,12 @@ export function SetResultsScreen({
 
         <View style={styles.resultCopy}>
           <Text accessibilityRole="header" style={[styles.resultTitle, { color: colors.text }]}>
-            Review the set
+            {onRetry ? 'Try this photo again' : 'Review the set'}
           </Text>
           <Text style={[styles.resultBlurb, { color: colors.textSecondary }]}>
-            Correct or remove any wrong matches. Everything left will be filed together.
+            {onRetry
+              ? 'No pieces are ready to review. Retry this photo, or skip it.'
+              : 'Correct or remove any wrong matches. Everything left will be filed together.'}
           </Text>
         </View>
 
@@ -556,12 +600,13 @@ export function SetResultsScreen({
                 item={item}
                 key={item.group.itemSlug}
                 onDetails={() => onDetails(item.row)}
+                onAdjustCount={(delta) => onAdjustCount(item.group.itemSlug, delta)}
                 onRemove={() => onRemove(item.group.itemSlug)}
                 onWrong={() => onWrong(item.group.itemSlug)}
               />
             ))}
           </View>
-        ) : (
+        ) : !onRetry ? (
           <Card style={styles.setEmpty}>
             <Label tone="spice">Nothing left to file</Label>
             <Text style={[styles.rowCaption, { color: colors.textSecondary }]}>
@@ -569,7 +614,7 @@ export function SetResultsScreen({
               removed.
             </Text>
           </Card>
-        )}
+        ) : null}
       </ScrollView>
 
       <View
@@ -590,16 +635,27 @@ export function SetResultsScreen({
             paddingBottom: insets.bottom + TAB_BAR_CLEARANCE + Spacing.four + Spacing.half,
           },
         ]}>
-        <PressButton
-          tone="primary"
-          disabled={items.length === 0}
-          onPress={onFile}
-          accessibilityLabel={`File ${pieceLabel}`}>
-          File {pieceLabel}
-        </PressButton>
-        <PressButton tone="quiet" onPress={onRetake} accessibilityLabel="Retake the set photo">
-          Retake photo
-        </PressButton>
+        {onRetry ? (
+          <PressButton
+            tone="primary"
+            onPress={onRetry}
+            accessibilityLabel="Retry this photo">
+            Retry photo
+          </PressButton>
+        ) : (
+          <PressButton
+            tone="primary"
+            disabled={items.length === 0}
+            onPress={onFile}
+            accessibilityLabel={`Shelve ${pieceLabel}`}>
+            Shelve {pieceLabel}
+          </PressButton>
+        )}
+        {!bulkProgress && (
+          <PressButton tone="quiet" onPress={onRetake} accessibilityLabel="Retake the set photo">
+            Retake photo
+          </PressButton>
+        )}
       </View>
     </View>
   );
@@ -692,11 +748,15 @@ export interface FiledLedger {
 export function FiledScreen({
   headline,
   ledger,
+  photoInvites = [],
+  onPhotoInvite,
   onSeeFile,
   onScanAnother,
 }: {
   headline: string;
   ledger: FiledLedger;
+  photoInvites?: { slug: string; label: string }[];
+  onPhotoInvite: (slug: string) => void;
   onSeeFile: () => void;
   onScanAnother: () => void;
 }) {
@@ -705,36 +765,66 @@ export function FiledScreen({
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.accent }]}>
-      <View style={[styles.filedBody, { paddingTop: insets.top + Spacing.six }]}>
-        <CheckDisc />
-        <Rise delay={RISE_DELAYS[0]}>
-          <Text accessibilityRole="header" style={styles.filedTitle}>
-            Filed away
-          </Text>
-        </Rise>
-        <Rise delay={RISE_DELAYS[1]}>
-          <Text style={styles.filedBlurb}>{headline}</Text>
-        </Rise>
-      </View>
-
-      <Rise delay={RISE_DELAYS[2]} style={styles.ledgerWrap}>
-        <View style={styles.ledger}>
-          <LedgerFigure
-            label="Worth about"
-            figure={ledger.itemFigure ?? 'Unavailable'}
-            source={ledger.itemSource}
-          />
-          {/* `Divider` reads on `colors.divider`, which all but vanishes on avocado. */}
-          <View style={styles.ledgerRule} />
-          <LedgerFigure
-            gold
-            label="Shelf total"
-            figure={ledger.shelfFigure ?? 'Unavailable'}
-            source={ledger.shelfSource}
-          />
+      <ScrollView
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + TAB_BAR_CLEARANCE + Spacing.six * 2 + Spacing.four,
+        }}
+        showsVerticalScrollIndicator={false}
+        style={styles.screen}>
+        <View style={[styles.filedBody, { paddingTop: insets.top + Spacing.six }]}>
+          <CheckDisc />
+          <Rise delay={RISE_DELAYS[0]}>
+            <Text accessibilityRole="header" style={styles.filedTitle}>
+              Shelved
+            </Text>
+          </Rise>
+          <Rise delay={RISE_DELAYS[1]}>
+            <Text style={styles.filedBlurb}>{headline}</Text>
+          </Rise>
         </View>
-        <Text style={styles.ledgerNote}>{ledger.pieceNote}</Text>
-      </Rise>
+
+        <Rise delay={RISE_DELAYS[2]} style={styles.ledgerWrap}>
+          <View style={styles.ledger}>
+            <LedgerFigure
+              label="Worth about"
+              figure={ledger.itemFigure ?? 'Unavailable'}
+              source={ledger.itemSource}
+            />
+            {/* `Divider` reads on `colors.divider`, which all but vanishes on avocado. */}
+            <View style={styles.ledgerRule} />
+            <LedgerFigure
+              gold
+              label="Shelf total"
+              figure={ledger.shelfFigure ?? 'Unavailable'}
+              source={ledger.shelfSource}
+            />
+          </View>
+          <Text style={styles.ledgerNote}>{ledger.pieceNote}</Text>
+        </Rise>
+
+        <View style={styles.photoInvites}>
+          {photoInvites.map((invite) => {
+            const copy = `${BRAND.name} has no photograph of ${invite.label} yet. Add yours`;
+            return (
+              <Rise key={invite.slug}>
+                <Pressable
+                  accessibilityLabel={copy}
+                  accessibilityRole="button"
+                  onPress={() => onPhotoInvite(invite.slug)}
+                  style={({ pressed }) => [
+                    styles.photoInvite,
+                    pressed && { transform: [{ translateY: Motion.pressTranslate }] },
+                  ]}>
+                  <Text style={styles.photoInviteText}>
+                    {BRAND.name} has no photograph of {invite.label} yet.{' '}
+                    <Text style={styles.photoInviteAction}>Add yours</Text>
+                  </Text>
+                </Pressable>
+              </Rise>
+            );
+          })}
+        </View>
+      </ScrollView>
 
       <View style={[styles.filedFooter, { paddingBottom: insets.bottom + TAB_BAR_CLEARANCE + Spacing.five }]}>
         <PressButton tone="gold" onPress={onSeeFile} accessibilityLabel="See my file">
@@ -796,6 +886,10 @@ export function BrowseScreen({
   shapes,
   shapeFilter,
   onShapeFilter,
+  hunting,
+  huntingChips,
+  activeHuntingChip,
+  onHuntingChip,
   banner,
   problem,
   offline,
@@ -813,6 +907,10 @@ export function BrowseScreen({
   shapes: string[];
   shapeFilter: string | null;
   onShapeFilter: (shape: string | null) => void;
+  hunting: boolean;
+  huntingChips: HuntingChip[];
+  activeHuntingChip: HuntingChip | null;
+  onHuntingChip: (chip: HuntingChip | null) => void;
   banner: string | null;
   problem: string | null;
   offline: boolean;
@@ -864,7 +962,40 @@ export function BrowseScreen({
                 value={query}
               />
             </View>
-            {shapes.length > 0 && (
+            {hunting && huntingChips.length > 0 && (
+              <ScrollView
+                horizontal
+                contentContainerStyle={styles.huntingChips}
+                showsHorizontalScrollIndicator={false}>
+                {huntingChips.map((chip) => {
+                  const active = activeHuntingChip !== null &&
+                    chip.kind === activeHuntingChip.kind &&
+                    chip.value === activeHuntingChip.value;
+                  return (
+                    <Pressable
+                      accessibilityLabel={`${active ? 'Clear' : 'Apply'} ${chip.label} filter`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      hitSlop={Spacing.two}
+                      key={`${chip.kind}:${chip.value}`}
+                      onPress={() => onHuntingChip(active ? null : chip)}
+                      style={[
+                        styles.chip,
+                        { backgroundColor: active ? colors.accent : colors.backgroundElement },
+                      ]}>
+                      <Text
+                        style={[
+                          styles.chipText,
+                          { color: active ? colors.accentText : colors.textSecondary },
+                        ]}>
+                        {chip.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
+            {!hunting && shapes.length > 0 && (
               <View style={styles.chips}>
                 {shapes.map((shape) => {
                   const active = shape === shapeFilter;
@@ -959,12 +1090,14 @@ export function KnownCombinationScreen({
   forms,
   selectedPatternId,
   selectedFormId,
+  patternDetail,
   query,
   banner,
   problem,
   offline,
   onQuery,
   onPattern,
+  onConfirmPattern,
   onForm,
   onBack,
   onConfirm,
@@ -973,12 +1106,14 @@ export function KnownCombinationScreen({
   forms: Pick<Form, 'id' | 'shape' | 'modelNo'>[];
   selectedPatternId: string | null;
   selectedFormId: string | null;
+  patternDetail: Pattern | null;
   query: string;
   banner: string | null;
   problem: string | null;
   offline: boolean;
   onQuery: (value: string) => void;
   onPattern: (patternId: string) => void;
+  onConfirmPattern: () => void;
   onForm: (formId: string) => void;
   onBack: () => void;
   onConfirm: () => void;
@@ -989,6 +1124,9 @@ export function KnownCombinationScreen({
   const [footerHeight, setFooterHeight] = useState(0);
   const selectedPattern = patterns.find((pattern) => pattern.id === selectedPatternId) ?? null;
   const selectedForm = forms.find((form) => form.id === selectedFormId) ?? null;
+  const patternYears = patternDetail
+    ? browseDetailFacts(patternDetail, null).productionYears
+    : null;
   const normalizedQuery = query.trim().toLowerCase();
   const choices = selectedPattern
     ? forms.filter((form) =>
@@ -1023,18 +1161,76 @@ export function KnownCombinationScreen({
         <Card style={styles.combinationIntro}>
           <Label tone="tertiary">Step {step} of 3</Label>
           <Text accessibilityRole="header" style={[styles.rowTitle, { color: colors.text }]}>
-            {selectedForm ? 'Confirm the combination' : selectedPattern ? 'Choose the form' : 'Choose the pattern'}
+            {selectedForm
+              ? 'Confirm the combination'
+              : patternDetail
+                ? 'Review the pattern'
+                : selectedPattern
+                  ? 'Choose the form'
+                  : 'Choose the pattern'}
           </Text>
           <Text style={[styles.rowCaption, { color: colors.textSecondary }]}>
             {selectedForm
               ? 'Confirming adds this pattern and form pairing to the shared catalog for everyone, then files the piece on your shelf.'
-              : selectedPattern
-                ? `Choose the existing form used by this ${selectedPattern.name} piece.`
-                : 'Search the patterns already saved on this phone.'}
+              : patternDetail
+                ? 'Read the catalog facts, then confirm this is the pattern in your hands.'
+                : selectedPattern
+                  ? `Choose the existing form used by this ${selectedPattern.name} piece.`
+                  : 'Search the patterns already saved on this phone.'}
           </Text>
         </Card>
 
-        {selectedForm && selectedPattern ? (
+        {patternDetail ? (
+          <>
+            <Card raised style={styles.combinationSummary}>
+              <View style={styles.browseDetailSection}>
+                <Label tone="spice">Pattern</Label>
+                <Text
+                  accessibilityRole="header"
+                  style={[styles.browseDetailTitle, { color: colors.text }]}>
+                  {patternDetail.name}
+                </Text>
+              </View>
+              <Divider />
+              <View style={styles.browseDetailSection}>
+                <Label tone="tertiary">Colorway</Label>
+                <Text style={[styles.browseDetailFact, { color: colors.text }]}>
+                  {patternDetail.colorway ?? 'Not documented'}
+                </Text>
+              </View>
+              <Divider />
+              <View style={styles.browseDetailSection}>
+                <Label tone="tertiary">Production years</Label>
+                <Text style={[styles.browseDetailFact, { color: colors.text }]}>
+                  {patternYears ?? 'Not documented'}
+                </Text>
+              </View>
+              <Divider />
+              <View style={styles.browseDetailSection}>
+                <Label tone="spice">Identification notes</Label>
+                <Text style={[styles.browseDetailBody, { color: colors.textSecondary }]}>
+                  {patternDetail.notes ?? 'No identification notes documented.'}
+                </Text>
+              </View>
+            </Card>
+            <View style={styles.combinationActions}>
+              <PressButton
+                tone="primary"
+                onPress={onConfirmPattern}
+                accessibilityLabel={`Choose ${patternDetail.name} and continue to forms`}
+                style={styles.grow}>
+                Choose this pattern
+              </PressButton>
+              <PressButton
+                tone="quiet"
+                onPress={onBack}
+                accessibilityLabel="Keep looking through patterns"
+                style={styles.grow}>
+                Keep looking
+              </PressButton>
+            </View>
+          </>
+        ) : selectedForm && selectedPattern ? (
           <Card raised style={styles.combinationSummary}>
             <View style={styles.browseDetailSection}>
               <Label tone="tertiary">Pattern</Label>
@@ -1074,7 +1270,7 @@ export function KnownCombinationScreen({
                 const label = isForm ? formCaption(choice) : choice.name;
                 return (
                   <Pressable
-                    accessibilityLabel={`Choose ${label}`}
+                    accessibilityLabel={isForm ? `Choose ${label}` : `Read facts for ${label}`}
                     accessibilityRole="button"
                     key={choice.id}
                     onPress={() => isForm ? onForm(choice.id) : onPattern(choice.id)}
@@ -1201,10 +1397,12 @@ export function BrowseDetailScreen({
                 </Text>
               </View>
             )}
-            <View style={styles.browseDetailSection}>
-              <Label tone="tertiary">Rarity</Label>
-              <RarityBadge rarity={row.rarity} />
-            </View>
+            {row.rarity && (
+              <View style={styles.browseDetailSection}>
+                <Label tone="tertiary">Rarity</Label>
+                <RarityBadge rarity={row.rarity} />
+              </View>
+            )}
             <Label tone="tertiary">{provenanceLabel(row.provenance)}</Label>
           </View>
 
@@ -1271,9 +1469,9 @@ export function BrowseDetailScreen({
         <PressButton
           tone="quiet"
           onPress={onBack}
-          accessibilityLabel={readOnly ? 'Go back to set results' : 'Go back to catalog browse'}
+          accessibilityLabel={readOnly ? 'Go back to set results' : 'Keep hunting'}
           style={readOnly ? styles.grow : undefined}>
-          Go back
+          {readOnly ? 'Go back' : 'Keep hunting'}
         </PressButton>
       </View>
     </View>
@@ -1420,6 +1618,8 @@ const styles = StyleSheet.create({
   setRow: { gap: Spacing.three - Spacing.one, padding: Spacing.three - Spacing.one },
   setRowHead: { alignItems: 'center', flexDirection: 'row', gap: Spacing.two },
   setRowMain: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: Spacing.two },
+  setRowTail: { alignItems: 'center', gap: Spacing.two },
+  countStepper: { alignItems: 'center', flexDirection: 'row', gap: Spacing.one },
   countMarker: {
     alignItems: 'center',
     borderRadius: Radius.pill,
@@ -1502,6 +1702,10 @@ const styles = StyleSheet.create({
   ledgerFigure: { ...Type.numeralLarge, fontSize: 24, lineHeight: 29 },
   ledgerSource: { ...Type.caption, color: OnAccent.caption, fontSize: 10, lineHeight: 14 },
   ledgerNote: { ...Type.caption, color: OnAccent.caption, fontSize: 10, lineHeight: 14 },
+  photoInvites: { marginHorizontal: Spacing.four + Spacing.half, marginTop: Spacing.three },
+  photoInvite: { justifyContent: 'center', minHeight: HitTarget, paddingVertical: Spacing.two },
+  photoInviteText: { ...Type.caption, color: OnAccent.caption, fontSize: 10, lineHeight: 14 },
+  photoInviteAction: { color: OnAccent.text, textDecorationLine: 'underline' },
 
   filedFooter: {
     bottom: 0,
@@ -1524,6 +1728,7 @@ const styles = StyleSheet.create({
   search: { borderRadius: Radius.md, paddingHorizontal: 15, paddingVertical: 13 - Spacing.half },
   searchInput: { ...Type.body, lineHeight: 18, minHeight: HitTarget - Spacing.four },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two - Spacing.half },
+  huntingChips: { gap: Spacing.two - Spacing.half },
   chip: {
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.three - Spacing.one + Spacing.half,
@@ -1560,6 +1765,7 @@ const styles = StyleSheet.create({
   },
   combinationIntro: { gap: Spacing.two, padding: Spacing.three },
   combinationSummary: { gap: Spacing.three, padding: Spacing.three },
+  combinationActions: { flexDirection: 'row', gap: Spacing.two + Spacing.half },
   combinationChoices: { gap: Spacing.two },
   combinationChoice: {
     justifyContent: 'center',

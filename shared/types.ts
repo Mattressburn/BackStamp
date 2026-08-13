@@ -16,7 +16,7 @@ export interface Pattern {
   yearsStart: number | null;
   yearsEnd: number | null;
   colorway: string | null; // "turquoise on white"
-  rarity: Rarity;
+  rarity: Rarity | null;
   notes: string | null;    // our own words, never a book's prose
 }
 
@@ -57,7 +57,7 @@ export interface Item {
   slug: string;            // `${patternId}-${form.modelNo}` e.g. "butterprint-444"
   patternId: string;
   formId: string;
-  rarity: Rarity;          // may differ from the pattern's baseline rarity
+  rarity: Rarity | null;   // may differ from the pattern's baseline rarity
   ebayQuery: string;       // "Vintage Pyrex Butterprint 444 Cinderella"
   provenance: Provenance;
   /** True when a user created this at scan time rather than it coming from the catalog seed. */

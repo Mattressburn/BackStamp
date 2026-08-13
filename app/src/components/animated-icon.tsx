@@ -17,6 +17,8 @@ import { Motion, SplashGround } from '@/constants/theme';
  * carries no lettering, so a rename stays a change to `shared/branding.ts` alone.
  */
 const DURATION = 520;
+// The user reported the splash disappeared too fast to register.
+const HOLD = 900;
 
 export function AnimatedSplashOverlay() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
@@ -60,7 +62,7 @@ export function AnimatedSplashOverlay() {
     <View
       onLayout={() => {
         SplashScreen.hideAsync().finally(() => {
-          setAnimate(true);
+          setTimeout(() => setAnimate(true), HOLD);
         });
       }}
       style={[styles.splashOverlay, { backgroundColor: ground }]}>

@@ -48,7 +48,7 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
       years_start  INTEGER,
       years_end    INTEGER,
       colorway     TEXT,
-      rarity       TEXT NOT NULL,
+      rarity       TEXT,
       notes        TEXT
     );
 
@@ -65,7 +65,7 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
       slug            TEXT PRIMARY KEY,
       pattern_id      TEXT NOT NULL REFERENCES patterns(id) ON DELETE CASCADE,
       form_id         TEXT NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
-      rarity          TEXT NOT NULL,
+      rarity          TEXT,
       ebay_query      TEXT NOT NULL,
       provenance      TEXT NOT NULL DEFAULT 'published-reference',
       user_submitted  INTEGER NOT NULL DEFAULT 0
@@ -96,11 +96,64 @@ async function migrate(db: SQLite.SQLiteDatabase): Promise<void> {
     );
   `);
 
-  const itemColumns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(items)');
+  const itemColumns = await db.getAllAsync<{ name: string; notnull: number }>(
+    'PRAGMA table_info(items)',
+  );
   if (!itemColumns.some(({ name }) => name === 'provenance')) {
     await db.execAsync(
       "ALTER TABLE items ADD COLUMN provenance TEXT NOT NULL DEFAULT 'published-reference'",
     );
+  }
+
+  const patternColumns = await db.getAllAsync<{ name: string; notnull: number }>(
+    'PRAGMA table_info(patterns)',
+  );
+  const rarityIsRequired =
+    patternColumns.find(({ name }) => name === 'rarity')?.notnull === 1 ||
+    itemColumns.find(({ name }) => name === 'rarity')?.notnull === 1;
+  if (rarityIsRequired) {
+    await db.execAsync('PRAGMA foreign_keys = OFF');
+    try {
+      await db.withTransactionAsync(async () => {
+        await db.execAsync(`
+          CREATE TABLE patterns_nullable (
+            id           TEXT PRIMARY KEY,
+            name         TEXT NOT NULL,
+            years_start  INTEGER,
+            years_end    INTEGER,
+            colorway     TEXT,
+            rarity       TEXT,
+            notes        TEXT
+          );
+          INSERT INTO patterns_nullable SELECT * FROM patterns;
+
+          CREATE TABLE items_nullable (
+            slug            TEXT PRIMARY KEY,
+            pattern_id      TEXT NOT NULL REFERENCES patterns_nullable(id) ON DELETE CASCADE,
+            form_id         TEXT NOT NULL REFERENCES forms(id) ON DELETE CASCADE,
+            rarity          TEXT,
+            ebay_query      TEXT NOT NULL,
+            provenance      TEXT NOT NULL DEFAULT 'published-reference',
+            user_submitted  INTEGER NOT NULL DEFAULT 0
+          );
+          INSERT INTO items_nullable(
+            slug, pattern_id, form_id, rarity, ebay_query, provenance, user_submitted
+          )
+          SELECT slug, pattern_id, form_id, rarity, ebay_query, provenance, user_submitted
+          FROM items;
+
+          DROP TABLE items;
+          DROP TABLE patterns;
+          ALTER TABLE patterns_nullable RENAME TO patterns;
+          ALTER TABLE items_nullable RENAME TO items;
+          CREATE INDEX idx_items_pattern ON items(pattern_id);
+        `);
+        const violations = await db.getAllAsync('PRAGMA foreign_key_check');
+        if (violations.length > 0) throw new Error('Rarity migration violated foreign keys');
+      });
+    } finally {
+      await db.execAsync('PRAGMA foreign_keys = ON');
+    }
   }
 }
 
@@ -321,6 +374,8 @@ export interface Settings {
   /** Opt-in, default off. Governs whether scans are kept for future training. */
   trainingOptIn: boolean;
   defaultPhotoVisibility: PhotoVisibility;
+  /** Shown beside attributed photos; stored on this device and sent only with attributed uploads. */
+  photoHandle: string;
   /**
    * Keep money off the shelf, for a collector who does not want it on screen.
    *
@@ -337,6 +392,7 @@ export interface Settings {
 const SETTINGS_DEFAULTS: Settings = {
   trainingOptIn: false,
   defaultPhotoVisibility: 'private',
+  photoHandle: '',
   hideValuesOnShelf: false,
 };
 

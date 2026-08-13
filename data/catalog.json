@@ -296,6 +296,1365 @@
       "colorway": "blue and white",
       "rarity": "uncommon",
       "notes": "Blue-and-white daisies alternate between blue and white bodies, while open-stock 402 and 404 bowls can also have blue bodies. No refrigerator, oval casserole, or ovenware forms were produced. This final new opalware pattern was made to coordinate with Corelle Colonial Mist."
+    },
+    {
+      "id": "amoeba",
+      "name": "Amoeba",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": "brown and white on white",
+      "rarity": null,
+      "notes": "Collectors use this unofficial label for a petaled motif whose production period remains undocumented."
+    },
+    {
+      "id": "primary-colors-yellow",
+      "name": "Primary Colors (Yellow)",
+      "yearsStart": 1945,
+      "yearsEnd": 1949,
+      "colorway": "solid yellow",
+      "rarity": null,
+      "notes": "The four-quart member of the original nesting group carried this yellow finish."
+    },
+    {
+      "id": "primary-colors-green",
+      "name": "Primary Colors (Green)",
+      "yearsStart": 1945,
+      "yearsEnd": 1949,
+      "colorway": "solid green",
+      "rarity": null,
+      "notes": "The 403 bowl supplied green within the original four-size assortment."
+    },
+    {
+      "id": "primary-colors-red",
+      "name": "Primary Colors (Red)",
+      "yearsStart": 1945,
+      "yearsEnd": 1949,
+      "colorway": "solid red",
+      "rarity": null,
+      "notes": "The 402 bowl supplied red within the original four-size assortment."
+    },
+    {
+      "id": "primary-colors-blue",
+      "name": "Primary Colors (Blue)",
+      "yearsStart": 1945,
+      "yearsEnd": 1949,
+      "colorway": "solid blue",
+      "rarity": null,
+      "notes": "The smallest bowl in the original nesting group carried this blue finish."
+    },
+    {
+      "id": "eyes",
+      "name": "Eyes",
+      "yearsStart": 1950,
+      "yearsEnd": 1959,
+      "colorway": "turquoise on white",
+      "rarity": null,
+      "notes": "Models 401 and 403 formed an early chip-and-dip gift set, and some examples lack a backstamp."
+    },
+    {
+      "id": "desert-dawn-yellow",
+      "name": "Desert Dawn (Yellow)",
+      "yearsStart": 1955,
+      "yearsEnd": 1956,
+      "colorway": "yellow with brown speckles",
+      "rarity": null,
+      "notes": "This short-lived solid-color bakeware range included pie plates, casseroles, and baking pans."
+    },
+    {
+      "id": "desert-dawn-pink",
+      "name": "Desert Dawn (Pink)",
+      "yearsStart": 1955,
+      "yearsEnd": 1956,
+      "colorway": "pink with brown speckles",
+      "rarity": null,
+      "notes": "This short-lived solid-color bakeware range included pie plates, casseroles, and baking pans."
+    },
+    {
+      "id": "snowflake-black",
+      "name": "Snowflake (Black)",
+      "yearsStart": 1956,
+      "yearsEnd": 1960,
+      "colorway": "white on charcoal",
+      "rarity": null,
+      "notes": "The charcoal treatment was the shortest-running of the three early Snowflake colorways."
+    },
+    {
+      "id": "black-tulip",
+      "name": "Black Tulip",
+      "yearsStart": 1956,
+      "yearsEnd": 1957,
+      "colorway": "black on white",
+      "rarity": null,
+      "notes": "A cradled 043 oval casserole carried this early printed promotion."
+    },
+    {
+      "id": "snowflake-turquoise-white",
+      "name": "Snowflake (Turquoise on White)",
+      "yearsStart": 1956,
+      "yearsEnd": 1963,
+      "colorway": "turquoise on white",
+      "rarity": null,
+      "notes": "This reversed treatment ended in 1963, four years before its white-patterned counterpart."
+    },
+    {
+      "id": "cradled-decorator-casserole-or-pressed-flowers",
+      "name": "Cradled Decorator Casserole or Pressed Flowers",
+      "yearsStart": 1957,
+      "yearsEnd": 1957,
+      "colorway": "charcoal on yellow",
+      "rarity": null,
+      "notes": "Oval casserole models 043 and 045 carried this early promotional floral print."
+    },
+    {
+      "id": "white-lace-or-lace-medallion",
+      "name": "White Lace or Lace Medallion",
+      "yearsStart": 1957,
+      "yearsEnd": 1957,
+      "colorway": "white on turquoise",
+      "rarity": null,
+      "notes": "A serving frame accompanied the lace-decorated 045 oval casserole."
+    },
+    {
+      "id": "butterprint-white-turquoise",
+      "name": "Butterprint (White on Turquoise)",
+      "yearsStart": 1957,
+      "yearsEnd": 1968,
+      "colorway": "white on turquoise",
+      "rarity": null,
+      "notes": "This treatment appeared across the Cinderella-bowl family and later joined the Turquoise line."
+    },
+    {
+      "id": "butterprint-orange",
+      "name": "Butterprint (Orange)",
+      "yearsStart": 1957,
+      "yearsEnd": 1968,
+      "colorway": "orange on white",
+      "rarity": null,
+      "notes": "Orange decoration marks limited gift sets issued around the turn of the 1960s."
+    },
+    {
+      "id": "butterprint-pink",
+      "name": "Butterprint (Pink)",
+      "yearsStart": 1957,
+      "yearsEnd": 1968,
+      "colorway": "pink on white and white on pink",
+      "rarity": null,
+      "notes": "Pink Butterprint gift sets used both directions of this promotional color pairing."
+    },
+    {
+      "id": "black-needlepoint-or-embroidery-yellow",
+      "name": "Black Needlepoint or Embroidery (Yellow)",
+      "yearsStart": 1957,
+      "yearsEnd": 1957,
+      "colorway": "black on yellow",
+      "rarity": null,
+      "notes": "This 575 Space Saver promotion included a transparent cover and serving frame."
+    },
+    {
+      "id": "gooseberry-black-yellow",
+      "name": "Gooseberry (Black on Yellow)",
+      "yearsStart": 1957,
+      "yearsEnd": 1966,
+      "colorway": "black on yellow",
+      "rarity": null,
+      "notes": "Black Gooseberry remained exclusive to a four-bowl Cinderella assortment."
+    },
+    {
+      "id": "gooseberry-black-white",
+      "name": "Gooseberry (Black on White)",
+      "yearsStart": 1957,
+      "yearsEnd": 1966,
+      "colorway": "black on white",
+      "rarity": null,
+      "notes": "Black Gooseberry remained exclusive to a four-bowl Cinderella assortment."
+    },
+    {
+      "id": "butterprint-turquoise-white",
+      "name": "Butterprint (Turquoise on White)",
+      "yearsStart": 1957,
+      "yearsEnd": 1968,
+      "colorway": "turquoise on white",
+      "rarity": null,
+      "notes": "This standard treatment helped launch Butterprint on Cinderella nesting bowls."
+    },
+    {
+      "id": "gooseberry-pink-white",
+      "name": "Gooseberry (Pink on White)",
+      "yearsStart": 1957,
+      "yearsEnd": 1966,
+      "colorway": "pink on white",
+      "rarity": null,
+      "notes": "This standard Gooseberry treatment debuted with the Cinderella nesting-bowl family."
+    },
+    {
+      "id": "cinderella-buffet-set-or-musical-staff",
+      "name": "Cinderella Buffet Set or Musical Staff",
+      "yearsStart": 1958,
+      "yearsEnd": 1958,
+      "colorway": "gold on black",
+      "rarity": null,
+      "notes": "The gift combined a matching carafe and casserole with an electrically heated tray."
+    },
+    {
+      "id": "deluxe-chip-and-dip-set-gold-ivory-or-golden-scroll",
+      "name": "Deluxe Chip and Dip Set Gold on Ivory or Golden Scroll",
+      "yearsStart": 1958,
+      "yearsEnd": 1958,
+      "colorway": "gold on ivory",
+      "rarity": null,
+      "notes": "Cinderella bowls 441 and 444 formed this bracketed chip-and-dip promotion."
+    },
+    {
+      "id": "mod-kitchen",
+      "name": "Mod Kitchen",
+      "yearsStart": 1958,
+      "yearsEnd": 1958,
+      "colorway": "charcoal on yellow",
+      "rarity": null,
+      "notes": "Kitchen tools and foods decorate the 043 casserole from this 1958 promotion."
+    },
+    {
+      "id": "barbed-wire",
+      "name": "Barbed Wire",
+      "yearsStart": 1958,
+      "yearsEnd": 1958,
+      "colorway": "black on white",
+      "rarity": null,
+      "notes": "The first promotional 063 divided dish used intertwined lines and small starbursts."
+    },
+    {
+      "id": "needlepoint-or-embroidery-turquoise",
+      "name": "Needlepoint or Embroidery (Turquoise)",
+      "yearsStart": 1958,
+      "yearsEnd": 1959,
+      "colorway": "white on turquoise",
+      "rarity": null,
+      "notes": "A lidded 443 Cinderella bowl carried the stitched-looking floral and bird motifs."
+    },
+    {
+      "id": "scroll-pink",
+      "name": "Scroll Pink",
+      "yearsStart": 1958,
+      "yearsEnd": 1959,
+      "colorway": "pink and white",
+      "rarity": null,
+      "notes": "This scroll treatment is confined to the 575 Space Saver casserole."
+    },
+    {
+      "id": "rooster-black",
+      "name": "Rooster Black",
+      "yearsStart": 1958,
+      "yearsEnd": 1958,
+      "colorway": "black on white",
+      "rarity": null,
+      "notes": "Black roosters distinguish this cradled 575 Space Saver promotion."
+    },
+    {
+      "id": "cinderella-buffet-twins",
+      "name": "Cinderella Buffet Twins",
+      "yearsStart": 1959,
+      "yearsEnd": 1959,
+      "colorway": "brown on yellow",
+      "rarity": null,
+      "notes": "Two 473 casseroles with matching leaf decoration shared a double serving frame."
+    },
+    {
+      "id": "cinderella-twin-server-set",
+      "name": "Cinderella Twin Server Set",
+      "yearsStart": 1959,
+      "yearsEnd": 1959,
+      "colorway": "blue and green on white",
+      "rarity": null,
+      "notes": "This set paired two 472 casseroles in a shared serving frame."
+    },
+    {
+      "id": "bluebird-casserole",
+      "name": "Bluebird Casserole",
+      "yearsStart": 1959,
+      "yearsEnd": 1961,
+      "colorway": "turquoise and blue on white",
+      "rarity": null,
+      "notes": "A single 043 casserole carried the central tulip, birds, and flowers."
+    },
+    {
+      "id": "golden-branch",
+      "name": "Golden Branch",
+      "yearsStart": 1959,
+      "yearsEnd": 1959,
+      "colorway": "gold on white",
+      "rarity": null,
+      "notes": "The 024 hospitality casserole was packaged with a warming cradle."
+    },
+    {
+      "id": "golden-casserole",
+      "name": "Golden Casserole",
+      "yearsStart": 1959,
+      "yearsEnd": 1959,
+      "colorway": "gold on cream",
+      "rarity": null,
+      "notes": "This official pattern was limited to the 045 casserole and a two-candle cradle."
+    },
+    {
+      "id": "cinderella-divided-casserole-or-constellation",
+      "name": "Cinderella Divided Casserole or Constellation",
+      "yearsStart": 1959,
+      "yearsEnd": 1959,
+      "colorway": "yellow on white",
+      "rarity": null,
+      "notes": "The 063 divided casserole was sold with its matching divided cover and warmer."
+    },
+    {
+      "id": "snack-server-or-compass",
+      "name": "Snack Server or Compass",
+      "yearsStart": 1959,
+      "yearsEnd": 1959,
+      "colorway": "black on white",
+      "rarity": null,
+      "notes": "Large and small compass-like starbursts decorate a 063 divided server."
+    },
+    {
+      "id": "dandelion-duet",
+      "name": "Dandelion Duet",
+      "yearsStart": 1959,
+      "yearsEnd": 1959,
+      "colorway": "gold on yellow",
+      "rarity": null,
+      "notes": "A 063 divided dish carried the gold floral print and a two-candle warmer."
+    },
+    {
+      "id": "deluxe-cinderella-casserole-or-golden-hearts",
+      "name": "Deluxe Cinderella Casserole or Golden Hearts",
+      "yearsStart": 1959,
+      "yearsEnd": 1959,
+      "colorway": "gold on tan",
+      "rarity": null,
+      "notes": "Alternating heart motifs decorate the 045 casserole in this cradled promotion."
+    },
+    {
+      "id": "turquoise-scroll",
+      "name": "Turquoise Scroll",
+      "yearsStart": 1959,
+      "yearsEnd": 1959,
+      "colorway": "white on turquoise",
+      "rarity": null,
+      "notes": "Only the 443 Cinderella bowl received this scroll design, lid, and warmer."
+    },
+    {
+      "id": "lucky-love",
+      "name": "Lucky in Love, green and pink",
+      "yearsStart": 1959,
+      "yearsEnd": 1959,
+      "colorway": "green and pink on white",
+      "rarity": null,
+      "notes": "This cache record covers the 473 casserole with clovered grass and scattered hearts."
+    },
+    {
+      "id": "golden-acorn",
+      "name": "Golden Acorn",
+      "yearsStart": 1960,
+      "yearsEnd": 1963,
+      "colorway": "gold on ivory",
+      "rarity": null,
+      "notes": "The regular bakeware range used acorns, leaves, and curling vines; a few round casseroles also exist."
+    },
+    {
+      "id": "floral-casserole",
+      "name": "Floral Casserole",
+      "yearsStart": 1960,
+      "yearsEnd": 1961,
+      "colorway": "green on white and white on green",
+      "rarity": null,
+      "notes": "Both reversed treatments appeared on cradled 043 oval casseroles."
+    },
+    {
+      "id": "green-wheat",
+      "name": "Green Wheat",
+      "yearsStart": 1960,
+      "yearsEnd": 1960,
+      "colorway": "gold on blue-green",
+      "rarity": null,
+      "notes": "A 575 Space Saver carried a central wheat motif plus a transparent cover and cradle."
+    },
+    {
+      "id": "golden-leaf",
+      "name": "Golden Leaf",
+      "yearsStart": 1960,
+      "yearsEnd": 1960,
+      "colorway": "gold on red",
+      "rarity": null,
+      "notes": "The 404 serving casserole combines foliage, pinecones, and needles in a holiday promotion."
+    },
+    {
+      "id": "hex-signs",
+      "name": "Hex Signs",
+      "yearsStart": 1960,
+      "yearsEnd": 1960,
+      "colorway": "gold on white, tan, and turquoise",
+      "rarity": null,
+      "notes": "The circular leaf and square-flower motif occurs on several bowl and casserole treatments."
+    },
+    {
+      "id": "salad-bowl",
+      "name": "Salad Bowl",
+      "yearsStart": 1960,
+      "yearsEnd": 1960,
+      "colorway": "white on green",
+      "rarity": null,
+      "notes": "The 444 salad bowl was originally packaged with matching serving utensils."
+    },
+    {
+      "id": "golden-grapes",
+      "name": "Golden Grapes",
+      "yearsStart": 1960,
+      "yearsEnd": 1961,
+      "colorway": "gold on white with a blue interior",
+      "rarity": null,
+      "notes": "A bracket suspended the smaller Cinderella bowl above its grape-decorated companion."
+    },
+    {
+      "id": "royal-wheat",
+      "name": "Royal Wheat",
+      "yearsStart": 1960,
+      "yearsEnd": 1960,
+      "colorway": "yellow on white",
+      "rarity": null,
+      "notes": "A cradled 063 divided dish carried the horizontal wheat decoration."
+    },
+    {
+      "id": "meadow",
+      "name": "Meadow",
+      "yearsStart": 1960,
+      "yearsEnd": 1960,
+      "colorway": "turquoise on white",
+      "rarity": null,
+      "notes": "Flowers, foliage, and curling stems decorate the 043 promotional casserole."
+    },
+    {
+      "id": "holiday",
+      "name": "Holiday",
+      "yearsStart": 1960,
+      "yearsEnd": 1960,
+      "colorway": "white on red",
+      "rarity": null,
+      "notes": "A 024 casserole displays pinecones and radiating needles and was sold with a cradle."
+    },
+    {
+      "id": "cinderella-serving-casserole-or-starburst",
+      "name": "Cinderella Serving Casserole or Starburst",
+      "yearsStart": 1960,
+      "yearsEnd": 1960,
+      "colorway": "gold on turquoise or black",
+      "rarity": null,
+      "notes": "The 575 Space Saver promotion used a starburst design and a two-candle cradle."
+    },
+    {
+      "id": "berries",
+      "name": "Berries",
+      "yearsStart": 1960,
+      "yearsEnd": 1960,
+      "colorway": "white on beige",
+      "rarity": null,
+      "notes": "A warming cradle accompanied the 024 casserole with its strawberry-and-vine motif."
+    },
+    {
+      "id": "blue-wheat-or-hostess-casserole",
+      "name": "Blue Wheat or Hostess Casserole",
+      "yearsStart": 1961,
+      "yearsEnd": 1961,
+      "colorway": "light blue on white",
+      "rarity": null,
+      "notes": "One wheat sprig decorates the cradled 023 hostess casserole."
+    },
+    {
+      "id": "deluxe-buffet-or-golden-poinsettias",
+      "name": "Deluxe Buffet or Golden Poinsettias",
+      "yearsStart": 1961,
+      "yearsEnd": 1961,
+      "colorway": "gold on red",
+      "rarity": null,
+      "notes": "The 045 casserole and its transparent decorated cover share the poinsettia motif."
+    },
+    {
+      "id": "royal",
+      "name": "Royal",
+      "yearsStart": 1961,
+      "yearsEnd": 1961,
+      "colorway": "gold on clear over deep blue",
+      "rarity": null,
+      "notes": "The decoration sits on the transparent cover above a blue 063 divided server."
+    },
+    {
+      "id": "zodiac",
+      "name": "Zodiac",
+      "yearsStart": 1961,
+      "yearsEnd": 1961,
+      "colorway": "gold on forest green",
+      "rarity": null,
+      "notes": "A 475 casserole shows all twelve signs and pairs them with a starburst cover."
+    },
+    {
+      "id": "empire-scroll-casserole-or-vines",
+      "name": "Empire Scroll casserole or Vines",
+      "yearsStart": 1961,
+      "yearsEnd": 1961,
+      "colorway": "gold on white",
+      "rarity": null,
+      "notes": "A 043 casserole carried the curling floral-vine design in this 1961 promotion."
+    },
+    {
+      "id": "brides-casserole",
+      "name": "Bride's Casserole",
+      "yearsStart": 1961,
+      "yearsEnd": 1961,
+      "colorway": "light green on white",
+      "rarity": null,
+      "notes": "Small stemmed flowers and dots decorate the 474 round casserole."
+    },
+    {
+      "id": "gourmet-black",
+      "name": "Gourmet (Black)",
+      "yearsStart": 1961,
+      "yearsEnd": 1961,
+      "colorway": "black on white",
+      "rarity": null,
+      "notes": "This dark treatment is one of three known versions of the cradled 475 casserole."
+    },
+    {
+      "id": "gourmet-gold",
+      "name": "Gourmet (Gold)",
+      "yearsStart": 1961,
+      "yearsEnd": 1961,
+      "colorway": "gold on white or yellow",
+      "rarity": null,
+      "notes": "Gold 475 casseroles are known with white and yellow grounds."
+    },
+    {
+      "id": "golden-pine",
+      "name": "Golden Pine",
+      "yearsStart": 1961,
+      "yearsEnd": 1961,
+      "colorway": "gold on ivory",
+      "rarity": null,
+      "notes": "The 575 Space Saver promotion included a decorated cover and serving cradle."
+    },
+    {
+      "id": "sandalwood-brown-white",
+      "name": "Sandalwood (Brown on White)",
+      "yearsStart": 1961,
+      "yearsEnd": 1962,
+      "colorway": "brown on white",
+      "rarity": null,
+      "notes": "Bowls, casseroles, cold-storage dishes, and one butter keeper received this reversed treatment."
+    },
+    {
+      "id": "golden-classic-casserole",
+      "name": "Golden Classic Casserole",
+      "yearsStart": 1962,
+      "yearsEnd": 1963,
+      "colorway": "gold on pale yellow",
+      "rarity": null,
+      "notes": "A decorated transparent cover and dual-candle cradle completed the 045 promotion."
+    },
+    {
+      "id": "medallion-casserole",
+      "name": "Medallion Casserole",
+      "yearsStart": 1962,
+      "yearsEnd": 1963,
+      "colorway": "gold on light green",
+      "rarity": null,
+      "notes": "Leafy vines and angular bursts wrap the 443 Cinderella bowl."
+    },
+    {
+      "id": "golden-tulip-casserole",
+      "name": "Golden Tulip Casserole",
+      "yearsStart": 1962,
+      "yearsEnd": 1963,
+      "colorway": "gold on white",
+      "rarity": null,
+      "notes": "The primary promotion used a 024 casserole, while oval examples also survive."
+    },
+    {
+      "id": "sage-scroll",
+      "name": "Sage Scroll",
+      "yearsStart": 1962,
+      "yearsEnd": 1962,
+      "colorway": "gold on sage and sage on white",
+      "rarity": null,
+      "notes": "Models 043 and 045 carried the scroll treatments sold under the Golden Scroll name."
+    },
+    {
+      "id": "frost-garland-or-deluxe-hostess-casserole",
+      "name": "Frost Garland or Deluxe Hostess Casserole",
+      "yearsStart": 1962,
+      "yearsEnd": 1962,
+      "colorway": "light blue on white",
+      "rarity": null,
+      "notes": "A 023 casserole carried the frosted snowflake print with a transparent cover and warmer."
+    },
+    {
+      "id": "early-american-gold-brown",
+      "name": "Early American (Gold on Brown)",
+      "yearsStart": 1962,
+      "yearsEnd": 1971,
+      "colorway": "gold on brown",
+      "rarity": null,
+      "notes": "This metallic treatment formed one part of the long-running Early American line."
+    },
+    {
+      "id": "golden-honeysuckle",
+      "name": "Golden Honeysuckle",
+      "yearsStart": 1963,
+      "yearsEnd": 1965,
+      "colorway": "gold on white",
+      "rarity": null,
+      "notes": "Four square casserole sizes launched this line, with possible oval test pieces also known."
+    },
+    {
+      "id": "town-and-country-brown-white-variation",
+      "name": "Town And Country (Brown on White variation)",
+      "yearsStart": 1963,
+      "yearsEnd": 1967,
+      "colorway": "brown on white",
+      "rarity": null,
+      "notes": "This sparse star treatment is cataloged apart from the denser brown-on-white print."
+    },
+    {
+      "id": "town-and-country-brown-yellow-variation",
+      "name": "Town And Country (Brown on Yellow Variation)",
+      "yearsStart": 1963,
+      "yearsEnd": 1967,
+      "colorway": "brown on yellow",
+      "rarity": null,
+      "notes": "This yellow-ground star treatment remains separate from other Town and Country colors."
+    },
+    {
+      "id": "town-and-country-brown-orange-variation",
+      "name": "Town And Country (Brown on Orange Variation)",
+      "yearsStart": 1963,
+      "yearsEnd": 1967,
+      "colorway": "brown on orange",
+      "rarity": null,
+      "notes": "This orange-ground linear treatment remains separate from other Town and Country colors."
+    },
+    {
+      "id": "town-and-country-brown-white",
+      "name": "Town And Country (Brown on White)",
+      "yearsStart": 1963,
+      "yearsEnd": 1967,
+      "colorway": "brown on white",
+      "rarity": null,
+      "notes": "Folk-art flowers and geometric marks distinguish this denser treatment."
+    },
+    {
+      "id": "town-and-country-orange-white",
+      "name": "Town And Country (Orange on White)",
+      "yearsStart": 1963,
+      "yearsEnd": 1967,
+      "colorway": "orange on white",
+      "rarity": null,
+      "notes": "Orange folk motifs identify this member of the coordinated line."
+    },
+    {
+      "id": "olive-medallion",
+      "name": "Olive Medallion",
+      "yearsStart": 1964,
+      "yearsEnd": 1964,
+      "colorway": "olive on ivory",
+      "rarity": null,
+      "notes": "Oval casseroles 043 and 045 carried the concentric medallions and serving cradles."
+    },
+    {
+      "id": "blue-tulip",
+      "name": "Blue Tulip",
+      "yearsStart": 1964,
+      "yearsEnd": 1965,
+      "colorway": "white on blue and gold on brown",
+      "rarity": null,
+      "notes": "The blue 043 promotion has a second brown-and-gold treatment on oval casseroles."
+    },
+    {
+      "id": "ivy",
+      "name": "Ivy",
+      "yearsStart": 1964,
+      "yearsEnd": 1964,
+      "colorway": "green on white",
+      "rarity": null,
+      "notes": "A metal bracket paired the small leafy bowl with its four-quart companion."
+    },
+    {
+      "id": "foulard-navy-blue",
+      "name": "Foulard (Navy Blue)",
+      "yearsStart": 1965,
+      "yearsEnd": 1965,
+      "colorway": "navy blue on white",
+      "rarity": null,
+      "notes": "This star-patterned treatment appeared mainly on beverage sets and occasionally on cereal bowls."
+    },
+    {
+      "id": "foulard-light-blue",
+      "name": "Foulard (Light Blue)",
+      "yearsStart": 1965,
+      "yearsEnd": 1965,
+      "colorway": "light blue on white",
+      "rarity": null,
+      "notes": "This lighter star-patterned treatment appeared mainly on beverage sets and occasionally on cereal bowls."
+    },
+    {
+      "id": "foulard-mug",
+      "name": "Foulard (Mug)",
+      "yearsStart": 1965,
+      "yearsEnd": 1965,
+      "colorway": "gold and brown on white",
+      "rarity": null,
+      "notes": "This record isolates the mug treatment from the two blue Foulard beverage versions."
+    },
+    {
+      "id": "rainbow-stripes-pink",
+      "name": "Rainbow Stripes (Pink)",
+      "yearsStart": 1965,
+      "yearsEnd": 1967,
+      "colorway": "pink stripes on white",
+      "rarity": null,
+      "notes": "Pink stripes identify the 401 bowl in the regular three-piece assortment."
+    },
+    {
+      "id": "rainbow-stripes-sandalwood",
+      "name": "Rainbow Stripes (Sandalwood)",
+      "yearsStart": 1965,
+      "yearsEnd": 1967,
+      "colorway": "sandalwood stripes on white",
+      "rarity": null,
+      "notes": "Sandalwood stripes identify the 402 bowl in the regular three-piece assortment."
+    },
+    {
+      "id": "rainbow-stripes-yellow",
+      "name": "Rainbow Stripes (Yellow)",
+      "yearsStart": 1965,
+      "yearsEnd": 1967,
+      "colorway": "yellow stripes on white",
+      "rarity": null,
+      "notes": "Yellow stripes were offered only as open stock, outside the regular boxed trio."
+    },
+    {
+      "id": "rainbow-stripes-blue",
+      "name": "Rainbow Stripes (Blue)",
+      "yearsStart": 1965,
+      "yearsEnd": 1967,
+      "colorway": "blue stripes on white",
+      "rarity": null,
+      "notes": "Blue stripes identify the 403 bowl in the regular three-piece assortment."
+    },
+    {
+      "id": "floral-0",
+      "name": "Floral",
+      "yearsStart": 1965,
+      "yearsEnd": 1965,
+      "colorway": "orange on white",
+      "rarity": null,
+      "notes": "A 063 divided dish carried this daisy-and-vine print without a cover."
+    },
+    {
+      "id": "regency",
+      "name": "Regency",
+      "yearsStart": 1965,
+      "yearsEnd": 1965,
+      "colorway": "yellow on brown",
+      "rarity": null,
+      "notes": "A cradled 043 casserole carried the medallion-like yellow decoration."
+    },
+    {
+      "id": "empire-scroll-or-filigree",
+      "name": "Empire Scroll or Filigree",
+      "yearsStart": 1965,
+      "yearsEnd": 1965,
+      "colorway": "black on cream",
+      "rarity": null,
+      "notes": "This 1965 scroll design is unrelated to the similarly named 1961 promotion."
+    },
+    {
+      "id": "golden-bouquet",
+      "name": "Golden Bouquet",
+      "yearsStart": 1965,
+      "yearsEnd": 1965,
+      "colorway": "gold on dark blue",
+      "rarity": null,
+      "notes": "A cradled 043 casserole carried this floral treatment, distinct from the 1967 namesake."
+    },
+    {
+      "id": "green-oak-leaf",
+      "name": "Green Oak Leaf",
+      "yearsStart": 1965,
+      "yearsEnd": 1965,
+      "colorway": "green on white",
+      "rarity": null,
+      "notes": "The print appears on the opal cover of a square serving dish numbered 505B."
+    },
+    {
+      "id": "blue-stripe-barcode",
+      "name": "Blue Stripe (Barcode)",
+      "yearsStart": 1966,
+      "yearsEnd": 1966,
+      "colorway": "pale blue bars on blue",
+      "rarity": null,
+      "notes": "Both 470 and 480 casserole assortments used this unusually broad promotion."
+    },
+    {
+      "id": "americana-brown",
+      "name": "Americana (Brown)",
+      "yearsStart": 1966,
+      "yearsEnd": 1969,
+      "colorway": "golden yellow, olive, orange, and brown with white rims",
+      "rarity": null,
+      "notes": "Four solid mixing bowls formed the earth-toned Multicolor assortment."
+    },
+    {
+      "id": "bramble",
+      "name": "Bramble",
+      "yearsStart": 1966,
+      "yearsEnd": 1966,
+      "colorway": "gold on green and beige",
+      "rarity": null,
+      "notes": "The 043 green and 045 beige casseroles share a curling gold design."
+    },
+    {
+      "id": "autumn-floral-verde",
+      "name": "Autumn Floral (Verde)",
+      "yearsStart": 1966,
+      "yearsEnd": 1966,
+      "colorway": "green on white",
+      "rarity": null,
+      "notes": "This cache record separates the green Verde treatment from mustard Autumn Floral."
+    },
+    {
+      "id": "autumn-floral",
+      "name": "Autumn Floral",
+      "yearsStart": 1966,
+      "yearsEnd": 1966,
+      "colorway": "golden yellow on mustard",
+      "rarity": null,
+      "notes": "Square flower units repeat across five round casserole sizes in this promotion."
+    },
+    {
+      "id": "americana-blue-or-multitone-blue",
+      "name": "Americana (Blue) or Multitone Blue",
+      "yearsStart": 1967,
+      "yearsEnd": 1969,
+      "colorway": "graduated blues with white rims",
+      "rarity": null,
+      "notes": "Three blue mixing bowls joined the existing Turquoise collection."
+    },
+    {
+      "id": "brittany-blue",
+      "name": "Brittany Blue",
+      "yearsStart": 1967,
+      "yearsEnd": 1968,
+      "colorway": "dark and light blue on white",
+      "rarity": null,
+      "notes": "This Hearth Group pattern launched on new casserole, bowl, and mug shapes."
+    },
+    {
+      "id": "golden-wreath",
+      "name": "Golden Wreath",
+      "yearsStart": 1967,
+      "yearsEnd": 1968,
+      "colorway": "gold on yellow",
+      "rarity": null,
+      "notes": "The 043 gift casserole used floral sprays joined by a repeating infinity form."
+    },
+    {
+      "id": "federal-eagle",
+      "name": "Federal Eagle",
+      "yearsStart": 1967,
+      "yearsEnd": 1968,
+      "colorway": "brown and gold on white",
+      "rarity": null,
+      "notes": "This Hearth Group design appeared on a small selection of bowls and related pieces."
+    },
+    {
+      "id": "blue-ivy",
+      "name": "Blue Ivy",
+      "yearsStart": 1967,
+      "yearsEnd": 1968,
+      "colorway": "blue on white with a solid blue body",
+      "rarity": null,
+      "notes": "The ivy decoration sits on the opal cover of a 063 divided dish."
+    },
+    {
+      "id": "golden-rose",
+      "name": "Golden Rose",
+      "yearsStart": 1967,
+      "yearsEnd": 1968,
+      "colorway": "gold on beige",
+      "rarity": null,
+      "notes": "A rosette-and-scroll treatment decorates the cradled 045 casserole."
+    },
+    {
+      "id": "saxony",
+      "name": "Saxony",
+      "yearsStart": 1967,
+      "yearsEnd": 1968,
+      "colorway": "dark blue on light blue",
+      "rarity": null,
+      "notes": "Dark blue tree blocks repeat across the light blue 475 Cinderella casserole."
+    },
+    {
+      "id": "nouveau-floral",
+      "name": "Nouveau Floral",
+      "yearsStart": 1968,
+      "yearsEnd": 1969,
+      "colorway": "brown, black, and white on yellow",
+      "rarity": null,
+      "notes": "The allover floral print sits on the opal cover of a yellow 475 casserole."
+    },
+    {
+      "id": "blue-doily",
+      "name": "Blue Doily",
+      "yearsStart": 1968,
+      "yearsEnd": 1969,
+      "colorway": "blue on white",
+      "rarity": null,
+      "notes": "Paisley and floral decoration appears on opal covers for 043 and 045 casseroles."
+    },
+    {
+      "id": "dots-green",
+      "name": "Dots (Green)",
+      "yearsStart": 1969,
+      "yearsEnd": 1973,
+      "colorway": "green on white",
+      "rarity": null,
+      "notes": "The 404 bowl supplied the later green member of the four-color Dot group."
+    },
+    {
+      "id": "dots-blue",
+      "name": "Dots (Blue)",
+      "yearsStart": 1969,
+      "yearsEnd": 1973,
+      "colorway": "blue on white",
+      "rarity": null,
+      "notes": "The 402 bowl carried blue dots and was sold individually."
+    },
+    {
+      "id": "daisy-promotional-pattern",
+      "name": "Daisy (Promotional Pattern)",
+      "yearsStart": 1969,
+      "yearsEnd": 1970,
+      "colorway": "yellow on white with orange or yellow bodies",
+      "rarity": null,
+      "notes": "A wicker basket distinguishes these 043 and 045 gift casseroles from standard Daisy pieces."
+    },
+    {
+      "id": "golden-rosette",
+      "name": "Golden Rosette",
+      "yearsStart": 1969,
+      "yearsEnd": 1970,
+      "colorway": "gold on pale yellow",
+      "rarity": null,
+      "notes": "A central rose and curling floral stems decorate the 043 gift casserole."
+    },
+    {
+      "id": "golden-garland",
+      "name": "Golden Garland",
+      "yearsStart": 1969,
+      "yearsEnd": 1970,
+      "colorway": "gold and brown",
+      "rarity": null,
+      "notes": "The 043 casserole was among the last promotions packaged with a brass warming cradle."
+    },
+    {
+      "id": "spirograph",
+      "name": "Spirograph",
+      "yearsStart": 1969,
+      "yearsEnd": 1970,
+      "colorway": "blue and green on yellow",
+      "rarity": null,
+      "notes": "This 475 gift casserole helped introduce the underplate-style serving trivet."
+    },
+    {
+      "id": "sol-flower",
+      "name": "Sol Flower",
+      "yearsStart": 1969,
+      "yearsEnd": 1969,
+      "colorway": "brown and black on clear over yellow",
+      "rarity": null,
+      "notes": "The sun-like decoration appears on the transparent cover of a yellow 473 casserole."
+    },
+    {
+      "id": "celtic-floral-or-hearts-scroll",
+      "name": "Celtic Floral or Hearts Scroll",
+      "yearsStart": 1969,
+      "yearsEnd": 1970,
+      "colorway": "red on pink",
+      "rarity": null,
+      "notes": "A 473 gift casserole carried the scrolling heart motif and a small brass trivet."
+    },
+    {
+      "id": "dots-yellow",
+      "name": "Dots (Yellow)",
+      "yearsStart": 1969,
+      "yearsEnd": 1973,
+      "colorway": "yellow on white",
+      "rarity": null,
+      "notes": "The 403 bowl carried yellow dots and was sold individually."
+    },
+    {
+      "id": "dots-red",
+      "name": "Dots (Red)",
+      "yearsStart": 1969,
+      "yearsEnd": 1973,
+      "colorway": "red on white",
+      "rarity": null,
+      "notes": "The smallest bowl carried red dots and was sold individually."
+    },
+    {
+      "id": "horizon-blue-lid-design",
+      "name": "Horizon Blue (Lid Design)",
+      "yearsStart": 1969,
+      "yearsEnd": 1972,
+      "colorway": "blue on white with solid blue accents",
+      "rarity": null,
+      "notes": "This record isolates the decorated opal covers used on three oval casseroles."
+    },
+    {
+      "id": "floral-bubbles",
+      "name": "Floral Bubbles",
+      "yearsStart": 1970,
+      "yearsEnd": 1970,
+      "colorway": "black and brown on clear",
+      "rarity": null,
+      "notes": "Printing on both faces of the transparent cover creates the layered floral effect."
+    },
+    {
+      "id": "midnight-bloom-or-floral",
+      "name": "Midnight Bloom or Floral",
+      "yearsStart": 1970,
+      "yearsEnd": 1971,
+      "colorway": "blue on black with a solid blue body",
+      "rarity": null,
+      "notes": "A dark floral cover tops the 043 casserole in this late-1970 promotion."
+    },
+    {
+      "id": "willow-or-blue-floral",
+      "name": "Willow or Blue Floral",
+      "yearsStart": 1970,
+      "yearsEnd": 1970,
+      "colorway": "dark and light blue on white",
+      "rarity": null,
+      "notes": "The 473 casserole uses a blue-onion-inspired floral treatment."
+    },
+    {
+      "id": "arches-or-designs-mixer-set",
+      "name": "Arches or Designs Mixer Set",
+      "yearsStart": 1971,
+      "yearsEnd": 1971,
+      "colorway": "orange and gold on tan",
+      "rarity": null,
+      "notes": "Two straight-sided bowl sizes carried the nested arch motif."
+    },
+    {
+      "id": "wicker-or-basket-weave",
+      "name": "Wicker or Basket Weave",
+      "yearsStart": 1970,
+      "yearsEnd": 1971,
+      "colorway": "green on white with a chartreuse body",
+      "rarity": null,
+      "notes": "A basket-weave opal cover tops the cradled 043 casserole."
+    },
+    {
+      "id": "friendship-orange-clear-patterned-lid",
+      "name": "Friendship (Orange with Clear Patterned Lid)",
+      "yearsStart": 1971,
+      "yearsEnd": 1974,
+      "colorway": "red and orange on clear with an orange body",
+      "rarity": null,
+      "notes": "This record keeps the transparent decorated cover and orange casserole treatment distinct."
+    },
+    {
+      "id": "friendship-red-clear-patterned-lid",
+      "name": "Friendship (Red with Clear Patterned Lid)",
+      "yearsStart": 1971,
+      "yearsEnd": 1974,
+      "colorway": "red and orange on clear with a red body",
+      "rarity": null,
+      "notes": "This record keeps the transparent decorated cover and red casserole treatment distinct."
+    },
+    {
+      "id": "green-salad-or-green-dot-squares",
+      "name": "Green Salad or Green Dot-Squares",
+      "yearsStart": 1971,
+      "yearsEnd": 1972,
+      "colorway": "dark green on lime",
+      "rarity": null,
+      "notes": "The 444 bowl was sold with bright green serving utensils."
+    },
+    {
+      "id": "navajo",
+      "name": "Navajo",
+      "yearsStart": 1971,
+      "yearsEnd": 1972,
+      "colorway": "light blue and brown on white with a brown body",
+      "rarity": null,
+      "notes": "A southwestern opal cover tops the 045 casserole sold with a serving basket."
+    },
+    {
+      "id": "seville",
+      "name": "Seville",
+      "yearsStart": 1971,
+      "yearsEnd": 1972,
+      "colorway": "red and orange on white with a tangerine body",
+      "rarity": null,
+      "notes": "The decorated opal cover and dual warmer accompanied the 045 casserole."
+    },
+    {
+      "id": "orange-fiesta",
+      "name": "Orange Fiesta",
+      "yearsStart": 1971,
+      "yearsEnd": 1971,
+      "colorway": "orange and mustard on white with a dark orange body",
+      "rarity": null,
+      "notes": "Fruit and flowers decorate the opal cover of a basketed 043 casserole."
+    },
+    {
+      "id": "kim-chee",
+      "name": "Kim Chee",
+      "yearsStart": 1971,
+      "yearsEnd": 1972,
+      "colorway": "brown and gold on beige",
+      "rarity": null,
+      "notes": "The 043 casserole and matching opal cover share a stylized floral treatment."
+    },
+    {
+      "id": "crazy-quilt",
+      "name": "Crazy Quilt",
+      "yearsStart": 1971,
+      "yearsEnd": 1972,
+      "colorway": "blue and green on white with a bright green body",
+      "rarity": null,
+      "notes": "The geometric opal cover tops a 473 casserole sold with a brass trivet."
+    },
+    {
+      "id": "moon-deco",
+      "name": "Moon Deco",
+      "yearsStart": 1971,
+      "yearsEnd": 1972,
+      "colorway": "red, black, and white",
+      "rarity": null,
+      "notes": "The most familiar version repeats a red circular motif on the 475 casserole and cover."
+    },
+    {
+      "id": "friendship-lid-variation",
+      "name": "Friendship (Lid Variation)",
+      "yearsStart": 1971,
+      "yearsEnd": 1974,
+      "colorway": "red and orange on white",
+      "rarity": null,
+      "notes": "This cache record isolates an opal-cover variation of the Friendship folk-art print."
+    },
+    {
+      "id": "friendship-variation",
+      "name": "Friendship (Variation)",
+      "yearsStart": 1971,
+      "yearsEnd": 1974,
+      "colorway": "red birds and orange flowers on white",
+      "rarity": null,
+      "notes": "This cache record keeps the alternate Friendship arrangement distinct from the standard print."
+    },
+    {
+      "id": "spring-blossom-green-i-green-white",
+      "name": "Spring Blossom Green I (Green on White)",
+      "yearsStart": 1972,
+      "yearsEnd": 1979,
+      "colorway": "green on white",
+      "rarity": null,
+      "notes": "This first-version treatment uses the larger floral clusters introduced in 1972."
+    },
+    {
+      "id": "snowflake-blue-blue-white",
+      "name": "Snowflake Blue (Blue on White)",
+      "yearsStart": 1972,
+      "yearsEnd": 1975,
+      "colorway": "blue on white",
+      "rarity": null,
+      "notes": "Snowflakes, dotted swags, and drops form the blue-on-white compatible treatment."
+    },
+    {
+      "id": "new-holland",
+      "name": "New Holland",
+      "yearsStart": 1973,
+      "yearsEnd": 1974,
+      "colorway": "blue and red on white with blue bodies",
+      "rarity": null,
+      "notes": "A flip-over cork base served both sizes in this two-casserole promotion."
+    },
+    {
+      "id": "raffia-or-brown-onion",
+      "name": "Raffia or Brown Onion",
+      "yearsStart": 1973,
+      "yearsEnd": 1973,
+      "colorway": "dark brown on beige and white",
+      "rarity": null,
+      "notes": "The 475 casserole combines onion-like flowers with a concentric-circle opal cover."
+    },
+    {
+      "id": "español-or-ocean-filigree",
+      "name": "Español or Ocean Filigree",
+      "yearsStart": 1973,
+      "yearsEnd": 1973,
+      "colorway": "light green and periwinkle on white with a periwinkle body",
+      "rarity": null,
+      "notes": "A tracery-decorated cover tops the 475 casserole sold with a pale green hugger cradle."
+    },
+    {
+      "id": "vintage-or-vintage-grapes",
+      "name": "Vintage or Vintage Grapes",
+      "yearsStart": 1973,
+      "yearsEnd": 1973,
+      "colorway": "purple and green on white with a dark green body",
+      "rarity": null,
+      "notes": "Grapes and foliage decorate the opal cover of the 470 casserole."
+    },
+    {
+      "id": "cosmopolitan-hot-casserole-set",
+      "name": "Cosmopolitan Hot Casserole Set",
+      "yearsStart": 1973,
+      "yearsEnd": 1973,
+      "colorway": "brown and gray on white with a brown lid",
+      "rarity": null,
+      "notes": "A matching electric hotplate accompanied the concentric-circle 475 casserole."
+    },
+    {
+      "id": "flameglo",
+      "name": "Flameglo",
+      "yearsStart": 1974,
+      "yearsEnd": 1976,
+      "colorway": "orange to brown gradient",
+      "rarity": null,
+      "notes": "All four 400-series bowl sizes received this graduated finish and were sold separately."
+    },
+    {
+      "id": "pueblo",
+      "name": "Pueblo",
+      "yearsStart": 1974,
+      "yearsEnd": 1974,
+      "colorway": "orange and black on white with a gray body",
+      "rarity": null,
+      "notes": "A southwestern basket motif decorates the opal cover of the 475 casserole."
+    },
+    {
+      "id": "homestead",
+      "name": "Homestead, blue on beige",
+      "yearsStart": 1976,
+      "yearsEnd": 1980,
+      "colorway": "blue on speckled beige",
+      "rarity": null,
+      "notes": "This cache row covers the original blue treatment, produced before the later brown revision."
+    },
+    {
+      "id": "wheat-designer-collection",
+      "name": "Wheat (from the Designer Collection)",
+      "yearsStart": 1978,
+      "yearsEnd": 1978,
+      "colorway": "light brown on brown",
+      "rarity": null,
+      "notes": "A 045 oval casserole and wooden trivet carried this Designer Collection promotion."
+    },
+    {
+      "id": "spices-designer-collection",
+      "name": "Spices (from the Designer Collection)",
+      "yearsStart": 1978,
+      "yearsEnd": 1978,
+      "colorway": "white on beige",
+      "rarity": null,
+      "notes": "A 043 oval casserole and wooden trivet carried this Designer Collection promotion."
+    },
+    {
+      "id": "daisy-silhouette-designer-collection",
+      "name": "Daisy Silhouette (from the Designer Collection)",
+      "yearsStart": 1978,
+      "yearsEnd": 1978,
+      "colorway": "orange on pale yellow",
+      "rarity": null,
+      "notes": "A 045 oval casserole carried the outlined flowers in the five-pattern Designer Collection."
+    },
+    {
+      "id": "terra-cotta-rose-designer-collection",
+      "name": "Terra Cotta Rose (from the Designer Collection)",
+      "yearsStart": 1978,
+      "yearsEnd": 1978,
+      "colorway": "terracotta, orange, yellow, and brown",
+      "rarity": null,
+      "notes": "A basketed 474 round casserole carried this Designer Collection treatment."
+    },
+    {
+      "id": "dynasty-designer-collection",
+      "name": "Dynasty (from the Designer Collection)",
+      "yearsStart": 1978,
+      "yearsEnd": 1978,
+      "colorway": "white on orange",
+      "rarity": null,
+      "notes": "A 475 round casserole and rattan cradle carried this Designer Collection floral print."
+    },
+    {
+      "id": "butterfly-gold-2",
+      "name": "Butterfly Gold 2",
+      "yearsStart": 1979,
+      "yearsEnd": 1981,
+      "colorway": "orange and brown on white and orange",
+      "rarity": null,
+      "notes": "The 1979 revision uses small stemmed bouquets and appears on nesting bowls and casserole sets."
+    },
+    {
+      "id": "spring-blossom-green-2",
+      "name": "Spring Blossom Green 2",
+      "yearsStart": 1979,
+      "yearsEnd": 1981,
+      "colorway": "white on avocado and lime",
+      "rarity": null,
+      "notes": "The 1979 revision reduced the floral scale and used two green grounds."
+    },
+    {
+      "id": "stack-n-snack-or-speckled-lines",
+      "name": "Stack N' Snack or Speckled Lines",
+      "yearsStart": 1980,
+      "yearsEnd": 1983,
+      "colorway": "brown lines on speckled tan",
+      "rarity": null,
+      "notes": "A 404 bowl, small 708 bowl, and attached wooden coaster formed this hospitality set."
+    },
+    {
+      "id": "trailing-flowers-or-sprig-hospitality-collection",
+      "name": "Trailing Flowers or Sprig (from the Hospitality Collection)",
+      "yearsStart": 1980,
+      "yearsEnd": 1980,
+      "colorway": "cream on red",
+      "rarity": null,
+      "notes": "This Hospitality Collection record covers the 474 Bake N' Carry casserole treatment."
+    },
+    {
+      "id": "sprig-or-trailing-flowers-hospitality-collection",
+      "name": "Sprig or Trailing Flowers (from the Hospitality Collection)",
+      "yearsStart": 1980,
+      "yearsEnd": 1980,
+      "colorway": "red on beige",
+      "rarity": null,
+      "notes": "This Hospitality Collection record covers the 475 Bake N' Carry casserole treatment."
+    },
+    {
+      "id": "garden-medley",
+      "name": "Garden Medley",
+      "yearsStart": 1980,
+      "yearsEnd": 1981,
+      "colorway": "white on mustard yellow",
+      "rarity": null,
+      "notes": "Tulips and stems decorate the 475 Bake N' Carry casserole."
+    },
+    {
+      "id": "colonial-mist-blue-white",
+      "name": "Colonial Mist (Blue on White)",
+      "yearsStart": 1983,
+      "yearsEnd": 1986,
+      "colorway": "blue on white",
+      "rarity": null,
+      "notes": "This treatment alternated with white-on-blue pieces in sets coordinated to matching dinnerware."
     }
   ],
   "forms": [
@@ -3953,5 +5312,5 @@
       "provenance": "published-reference"
     }
   ],
-  "version": 4
+  "version": 5
 }
