@@ -110,6 +110,13 @@ invisible to bare `node --test`. Run the Expo export after touching `shared/` or
 `data/`, `tsc` reads tsconfig `paths` and Metro does not, so a green typecheck is not
 evidence the app bundles.
 
+Two path traps measured on 2026-08-12. The dev backend (tsx watch) reloads on source
+changes but NOT on `data/catalog.json`; after a catalog rebuild, restart the backend or
+phones keep receiving the old version. And the live database is `backend/data/pydex.db`
+via `DATABASE_PATH` in `backend/.env`; `scripts/eval-scans.ts` defaults to
+`catalog.sqlite` (wrong, near-empty), so harness runs must export `DATABASE_PATH` or
+they will replay nothing and report it as an empty pile.
+
 There is no iOS Simulator on Linux. Physical phone via an EAS development build (NOT
 Expo Go; see the SDK pin note above), or the web preview. The phone path, all cached
 and working since 2026-08-12: Expo account `mattressburns-team` (log in with
