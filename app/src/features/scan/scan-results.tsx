@@ -101,6 +101,10 @@ export function formCaption(row: Pick<CatalogRow, 'shape' | 'modelNo'>): string 
   return `${row.shape} · ${row.modelNo}`;
 }
 
+function savedScanLabel(remaining: number): string {
+  return `Saved scan, ${remaining} left`;
+}
+
 /**
  * Fade and rise, 14px. The only motion on the confirmation screen, and it skips
  * straight to the resting state under reduced motion rather than running faster.
@@ -236,6 +240,7 @@ export function ResultScreen({
   candidates,
   selectedSlug,
   selectedPattern,
+  savedScanRemaining,
   banner,
   problem,
   busy,
@@ -249,6 +254,7 @@ export function ResultScreen({
   candidates: { guess: ScanGuess; row: CatalogRow }[];
   selectedSlug: string | null;
   selectedPattern: Pattern | null;
+  savedScanRemaining?: number;
   banner: string | null;
   problem: string | null;
   busy: boolean;
@@ -267,14 +273,20 @@ export function ResultScreen({
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <View style={{ paddingTop: insets.top, backgroundColor: colors.headerBar }}>
         <HeaderBar
-          label={photoUris.length > 1 ? 'Two shots read' : 'One shot read'}
+          label={savedScanRemaining === undefined
+            ? photoUris.length > 1 ? 'Two shots read' : 'One shot read'
+            : savedScanLabel(savedScanRemaining)}
           right={
             <Pressable
-              accessibilityLabel="Retake the photos"
+              accessibilityLabel={savedScanRemaining === undefined
+                ? 'Retake the photos'
+                : 'Dismiss the saved scan'}
               accessibilityRole="button"
               hitSlop={Spacing.three}
               onPress={onRetake}>
-              <Text style={[styles.retake, { color: colors.want }]}>Retake</Text>
+              <Text style={[styles.retake, { color: colors.want }]}>
+                {savedScanRemaining === undefined ? 'Retake' : 'Dismiss'}
+              </Text>
             </Pressable>
           }
         />
@@ -890,6 +902,7 @@ export function BrowseScreen({
   huntingChips,
   activeHuntingChip,
   onHuntingChip,
+  savedScanRemaining,
   banner,
   problem,
   offline,
@@ -911,6 +924,7 @@ export function BrowseScreen({
   huntingChips: HuntingChip[];
   activeHuntingChip: HuntingChip | null;
   onHuntingChip: (chip: HuntingChip | null) => void;
+  savedScanRemaining?: number;
   banner: string | null;
   problem: string | null;
   offline: boolean;
@@ -930,7 +944,9 @@ export function BrowseScreen({
       <View style={{ paddingTop: insets.top, backgroundColor: colors.headerBar }}>
         <HeaderBar
           onBack={onBack}
-          label={`All ${total} ${total === 1 ? 'piece' : 'pieces'}`}
+          label={savedScanRemaining === undefined
+            ? `All ${total} ${total === 1 ? 'piece' : 'pieces'}`
+            : savedScanLabel(savedScanRemaining)}
         />
       </View>
 

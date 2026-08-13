@@ -141,9 +141,10 @@ backend down the collection screens sit in their empty state, so rows, tiles, fi
 and swatch marks cannot be QA'd. Start `npm --prefix backend run dev` first, or accept
 that only the empty and settings screens are verifiable.
 
-The web preview only routes tab screens, so `/item/[slug]` silently falls back to Scan,
-confirmed, not folklore. To see that screen in a browser, add a temporary fourth
-`TabTrigger` for it in `app-tabs.web.tsx`, shoot it, then revert. Check dark mode every
+`/item/[slug]` routes everywhere since 2026-08-13: the route tree is a root Stack over
+a `(tabs)` group (the piece page used to be an unregistered tab route that rendered
+nothing when pushed on device, and needed a temporary fourth `TabTrigger` on web; both
+workarounds are dead, and `app-tabs.test.ts` guards the tree). Check dark mode every
 time: the offset shadows now carry the whole design, and their dark colors are a
 derivation this project made rather than a value the handoff supplied, so they are the
 first thing that would fail there.

@@ -11,9 +11,8 @@
  * The two things worth knowing before changing anything here:
  *
  * Offline is the expected case, not the exception. Antique malls have terrible signal,
- * so a burst captured with no connection is written to SQLite as file URIs and drained
- * later; the queue is never base64, and a queued burst that comes back while the user is
- * still holding the camera does not yank them off it.
+ * so a burst captured with no connection is written to SQLite as file URIs and stays
+ * quiet until the collector chooses Review. The queue is never base64.
  *
  * A price is never rendered without the claim behind it. The ledger on the confirmation
  * screen uses `LedgerFigure`, whose `source` prop is required, and a failed price batch
@@ -56,11 +55,13 @@ import {
 import { calculateCollectionValues } from '@/features/collection/collection-total';
 import { priceSourceLabel } from '@/features/collection/collection-ui';
 import type {
+  ApiErrorCode,
   IdentifyResponse,
   IdentifySetResponse,
   Form,
   OwnershipStatus,
   Pattern,
+  QueuedScan,
   ScanGuess,
 } from '@shared/types';
 import {
@@ -68,6 +69,7 @@ import {
   PermissionScreen,
   ShutterFlash,
   ViewfinderScreen,
+  type ScanBannerAction,
 } from './scan-camera';
 import {
   AlreadyOwnedSheet,
@@ -90,10 +92,12 @@ import {
   deriveLlmWasRight,
   groupDetections,
   knownCombinationOptions,
+  oldestSavedScan,
   ordinal,
   ordinalWord,
   rankHuntingRows,
   replaceOrMergeDetectionGroup,
+  savedScanBannerMessage,
   setFilingPieces,
   setScanLogInputs,
   shouldPresentBrowseDetail,
@@ -168,10 +172,6 @@ function deleteQueuedPhotos(photoUris: string[]): void {
   }
 }
 
-function queueLabel(count: number): string {
-  return `${count} scan${count === 1 ? '' : 's'} waiting to upload.`;
-}
-
 /**
  * The month the row was last written. Deliberately not "since March": `UserItem` has
  * only `updatedAt`, so adding a second one last week would date the whole holding to
@@ -188,9 +188,7 @@ export default function ScanScreen() {
   const netInfo = useNetInfo();
   const [permission, requestPermission, refreshPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
-  const drainingRef = useRef(false);
-  const presentedQueuedIdRef = useRef<string | null>(null);
-  const cameraIdleRef = useRef(true);
+  const reviewingSavedScanRef = useRef(false);
   const ledgerTokenRef = useRef(0);
   const loggedSlugRef = useRef<string | null>(null);
   const browseDetailTokenRef = useRef(0);
@@ -223,6 +221,8 @@ export default function ScanScreen() {
   const [correctingSlug, setCorrectingSlug] = useState<string | null>(null);
   const [contradicted, setContradicted] = useState(0);
   const [queuedCount, setQueuedCount] = useState(0);
+  const [reviewedScan, setReviewedScan] = useState<QueuedScan | null>(null);
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [waitCopy, setWaitCopy] = useState({ title: 'Reading the mark', caption: '' });
@@ -254,23 +254,24 @@ export default function ScanScreen() {
   const [bulkIndex, setBulkIndex] = useState<number | null>(null);
 
   const isOffline = netInfo.isConnected === false || netInfo.isInternetReachable === false;
-  const canDrainQueue = netInfo.isConnected === true && netInfo.isInternetReachable !== false;
+  const canReviewSavedScans = netInfo.isConnected === true && netInfo.isInternetReachable !== false;
   const needsBaseShot = scanMode === 'single' && photoUris.length === 1;
   const cameraIdle = phase === 'camera' && photoUris.length === 0 && bulkPhotoUris.length === 0 && !capturing;
   const bulkProgress = bulkIndex === null
     ? null
     : bulkPhotoProgress(bulkIndex, bulkPhotoUris.length);
-  cameraIdleRef.current = cameraIdle;
   phaseRef.current = phase;
 
-  // Both facts, not one or the other: a notice must not swallow the queue count.
-  const banner =
-    [notice, queuedCount > 0 ? queueLabel(queuedCount) : null].filter(Boolean).join(' ') || null;
+  const savedScanBanner = savedScanBannerMessage(queuedCount, confirmingDiscard);
+  // Both facts, not one or the other: a notice must not swallow the saved-scan count.
+  const banner = confirmingDiscard
+    ? savedScanBanner
+    : [notice, savedScanBanner].filter(Boolean).join(' ') || null;
 
   const refreshQueuedCount = useCallback(async () => {
-    const count = (await listQueuedScans()).length;
-    setQueuedCount(Math.max(0, count - (presentedQueuedIdRef.current ? 1 : 0)));
-  }, []);
+    const scans = await listQueuedScans();
+    setQueuedCount(scans.filter(({ localId }) => localId !== reviewedScan?.localId).length);
+  }, [reviewedScan?.localId]);
 
   /**
    * Always re-read rather than trusting a cached copy: the bundled catalog is seeded on
@@ -318,55 +319,135 @@ export default function ScanScreen() {
     setPhase('results');
   }, [loadCatalog]);
 
-  const drainQueue = useCallback(async () => {
-    if (drainingRef.current) return;
-    drainingRef.current = true;
-    try {
-      const queued = await listQueuedScans();
-      for (const scan of queued) {
-        try {
-          const result = await identify(scan.photos, scan.hasBaseShot);
-          if (result.ok) {
-            if (!cameraIdleRef.current) break;
-            await presentIdentifyResponse(result.data, scan.photos, scan.hasBaseShot);
-            presentedQueuedIdRef.current = scan.localId;
-            break;
-          }
-          if (shouldRetryQueueDrain(result.code, scan.attempts)) {
-            await bumpScanAttempts(scan.localId);
-            break;
-          }
-          await dequeueScan(scan.localId);
-          deleteQueuedPhotos(scan.photos);
-          setNotice('A saved scan could not be identified. Please photograph it again.');
-        } catch {
-          if (shouldRetryQueueDrain('internal', scan.attempts)) {
-            await bumpScanAttempts(scan.localId);
-            break;
-          }
-          await dequeueScan(scan.localId);
-          deleteQueuedPhotos(scan.photos);
-          setNotice('A saved scan could not be identified. Please photograph it again.');
-        }
-      }
-    } finally {
-      drainingRef.current = false;
-      try {
-        await refreshQueuedCount();
-      } catch {
-        // A later connectivity or screen-state change retries the count refresh.
-      }
+  const handleSavedScanFailure = useCallback(async (
+    scan: QueuedScan,
+    code: ApiErrorCode,
+  ) => {
+    setReviewedScan(null);
+    setPhotoUris([]);
+    setPhase('camera');
+    setError(null);
+    if (shouldRetryQueueDrain(code, scan.attempts)) {
+      await bumpScanAttempts(scan.localId);
+      setNotice('Saved scan kept. Select Review to try again.');
+    } else {
+      await dequeueScan(scan.localId);
+      deleteQueuedPhotos(scan.photos);
+      setNotice('A saved scan could not be identified. Please photograph it again.');
     }
-  }, [presentIdentifyResponse, refreshQueuedCount]);
+    await refreshQueuedCount();
+  }, [refreshQueuedCount]);
+
+  const reviewNextSavedScan = async () => {
+    if (reviewingSavedScanRef.current) return;
+    if (!canReviewSavedScans) {
+      setNotice('Connect to review saved scans.');
+      return;
+    }
+
+    reviewingSavedScanRef.current = true;
+    setConfirmingDiscard(false);
+    setWaitCopy({ title: 'Reading a saved scan', caption: 'Identifying the oldest saved scan.' });
+    setPhase('identifying');
+    setError(null);
+    setNotice(null);
+    try {
+      const scans = await listQueuedScans();
+      const scan = oldestSavedScan(scans);
+      if (!scan) {
+        setQueuedCount(0);
+        setPhase('camera');
+        return;
+      }
+
+      let result;
+      try {
+        result = await identify(scan.photos, scan.hasBaseShot);
+      } catch {
+        await handleSavedScanFailure(scan, 'internal');
+        return;
+      }
+      if (!result.ok) {
+        await handleSavedScanFailure(scan, result.code);
+        return;
+      }
+
+      setReviewedScan(scan);
+      setQueuedCount(Math.max(0, scans.length - 1));
+      try {
+        await presentIdentifyResponse(result.data, scan.photos, scan.hasBaseShot);
+      } catch {
+        setReviewedScan(null);
+        await handleSavedScanFailure(scan, 'internal');
+        return;
+      }
+      try {
+        await dequeueScan(scan.localId);
+      } catch {
+        setNotice('Identified. The saved scan will finish cleaning up later.');
+      }
+    } catch {
+      setPhase('camera');
+      setError('Saved scans could not be opened.');
+    } finally {
+      reviewingSavedScanRef.current = false;
+    }
+  };
+
+  const discardAllSavedScans = async () => {
+    setError(null);
+    try {
+      const scans = await listQueuedScans();
+      for (const scan of scans) {
+        await dequeueScan(scan.localId);
+        deleteQueuedPhotos(scan.photos);
+      }
+      setQueuedCount(0);
+      setConfirmingDiscard(false);
+      setNotice(`Discarded ${scans.length} saved scan${scans.length === 1 ? '' : 's'}.`);
+    } catch {
+      setConfirmingDiscard(false);
+      setError('Some saved scans could not be discarded.');
+      await refreshQueuedCount().catch(() => {});
+    }
+  };
+
+  const bannerActions: readonly ScanBannerAction[] | undefined =
+    queuedCount > 0 && cameraIdle
+      ? confirmingDiscard
+        ? [
+            {
+              label: 'Discard all',
+              accessibilityLabel: `Discard all ${queuedCount} saved scans`,
+              onPress: () => void discardAllSavedScans(),
+            },
+            {
+              label: 'Keep',
+              accessibilityLabel: 'Keep saved scans',
+              onPress: () => setConfirmingDiscard(false),
+            },
+          ]
+        : [
+            {
+              label: 'Review',
+              accessibilityLabel: 'Review the oldest saved scan',
+              onPress: () => void reviewNextSavedScan(),
+            },
+            {
+              label: 'Discard all',
+              accessibilityLabel: `Discard all ${queuedCount} saved scans`,
+              onPress: () => setConfirmingDiscard(true),
+            },
+          ]
+      : undefined;
+
+  useEffect(() => {
+    void loadCatalog();
+  }, [loadCatalog]);
 
   useEffect(() => {
     void refreshQueuedCount();
-    void loadCatalog();
-  }, [loadCatalog, refreshQueuedCount]);
-
-  useEffect(() => {
-    if (canDrainQueue && cameraIdle) void drainQueue();
-  }, [cameraIdle, canDrainQueue, drainQueue]);
+  }, [canReviewSavedScans, refreshQueuedCount]);
 
   useEffect(() => {
     if (phase === 'browse') void loadCatalog().catch(() => setError('The saved catalog could not be opened.'));
@@ -473,6 +554,7 @@ export default function ScanScreen() {
     setRemovedSetSlugs([]);
     setCorrectingSlug(null);
     setContradicted(0);
+    setConfirmingDiscard(false);
     setNotice(null);
     setError(null);
     setCatalogQuery('');
@@ -493,6 +575,22 @@ export default function ScanScreen() {
     ledgerTokenRef.current += 1;
     loggedSlugRef.current = null;
   }, [dropBulkQueue]);
+
+  const leaveScan = useCallback(async (keepPrimaryPhoto = false): Promise<boolean> => {
+    if (reviewedScan) {
+      try {
+        await dequeueScan(reviewedScan.localId);
+      } catch {
+        setError('The saved scan could not be discarded.');
+        return false;
+      }
+      const retainedPhoto = keepPrimaryPhoto ? photoUris[0] : null;
+      deleteQueuedPhotos(reviewedScan.photos.filter((uri) => uri !== retainedPhoto));
+      setReviewedScan(null);
+    }
+    resetScan();
+    return true;
+  }, [photoUris, resetScan, reviewedScan]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
@@ -550,7 +648,7 @@ export default function ScanScreen() {
       setQueuedCount((current) => current + 1);
     }
     resetScan();
-    setNotice('Saved offline. It will identify when your connection returns.');
+    setNotice('Saved offline. Review it from the banner when you are back online.');
   };
 
   const identifyBurst = async (uris: string[], hasBaseShot: boolean) => {
@@ -728,7 +826,6 @@ export default function ScanScreen() {
       return;
     }
     if (scanMode === 'set') setNotice(null);
-    cameraIdleRef.current = false;
     setCapturing(true);
     setError(null);
     setFlashing(true);
@@ -1025,12 +1122,9 @@ export default function ScanScreen() {
       }
     }
 
-    const queuedId = presentedQueuedIdRef.current;
-    if (queuedId) {
+    if (reviewedScan) {
       try {
-        await dequeueScan(queuedId);
-        deleteQueuedPhotos(photoUris);
-        presentedQueuedIdRef.current = null;
+        await dequeueScan(reviewedScan.localId);
         await refreshQueuedCount();
       } catch {
         setNotice('Confirmed locally. The saved scan will finish cleaning up later.');
@@ -1290,8 +1384,9 @@ export default function ScanScreen() {
           onAdd={() => void fileItem(owned.row, 'have', owned.quantity + 1)}
           onOpen={() => {
             const slug = owned.row.slug;
-            resetScan();
-            router.push({ pathname: '/item/[slug]', params: { slug } });
+            void leaveScan().then((left) => {
+              if (left) router.push({ pathname: '/item/[slug]', params: { slug } });
+            });
           }}
           onDismiss={() => {
             setOwned(null);
@@ -1372,6 +1467,7 @@ export default function ScanScreen() {
             setHuntingChip(chip);
             setShapeFilter(null);
           }}
+          {...(reviewedScan ? { savedScanRemaining: queuedCount } : {})}
           banner={banner}
           problem={error}
           offline={isOffline}
@@ -1381,7 +1477,7 @@ export default function ScanScreen() {
           onAddKnownCombination={() => void openKnownCombination()}
           onBack={() => {
             if (!correctingSlug) {
-              resetScan();
+              void leaveScan();
               return;
             }
             browseDetailTokenRef.current += 1;
@@ -1491,17 +1587,20 @@ export default function ScanScreen() {
           photoInvites={photoInvites}
           onPhotoInvite={(slug) => {
             const sharePhotoUri = scanMode === 'single' ? photoUris[0] : undefined;
-            resetScan();
-            router.push({
-              pathname: '/item/[slug]',
-              params: sharePhotoUri ? { slug, sharePhotoUri } : { slug },
+            void leaveScan(Boolean(sharePhotoUri)).then((left) => {
+              if (!left) return;
+              router.push({
+                pathname: '/item/[slug]',
+                params: sharePhotoUri ? { slug, sharePhotoUri } : { slug },
+              });
             });
           }}
           onSeeFile={() => {
-            resetScan();
-            router.push('/collection');
+            void leaveScan().then((left) => {
+              if (left) router.push('/collection');
+            });
           }}
-          onScanAnother={resetScan}
+          onScanAnother={() => void leaveScan()}
         />
       );
     }
@@ -1520,6 +1619,7 @@ export default function ScanScreen() {
             candidates={candidates}
             selectedSlug={selectedSlug}
             selectedPattern={selectedPattern?.id === selected?.patternId ? selectedPattern : null}
+            {...(reviewedScan ? { savedScanRemaining: queuedCount } : {})}
             banner={banner}
             problem={error}
             busy={phase === 'owned'}
@@ -1527,7 +1627,7 @@ export default function ScanScreen() {
             onConfirm={() => selected && void confirmRow(selected, 'have')}
             onWant={() => selected && void confirmRow(selected, 'want')}
             onNone={() => openBrowse(null, guesses)}
-            onRetake={resetScan}
+            onRetake={() => void leaveScan()}
           />
           {renderOwnedSheet('results')}
         </>
@@ -1569,8 +1669,9 @@ export default function ScanScreen() {
         pendingImportCount={bulkIndex === null ? bulkPhotoUris.length : 0}
         step={needsBaseShot ? 2 : 1}
         banner={banner}
+        bannerActions={bannerActions}
         problem={error}
-        busy={capturing || !cameraReady || bulkPhotoUris.length > 0}
+        busy={capturing || confirmingDiscard || !cameraReady || bulkPhotoUris.length > 0}
         cameraRef={cameraRef}
         onCameraReady={() => setCameraReady(true)}
         onMountError={setError}

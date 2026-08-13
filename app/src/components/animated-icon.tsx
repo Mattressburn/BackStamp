@@ -1,8 +1,15 @@
 import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
-import { useState } from 'react';
-import { StyleSheet, useColorScheme, View } from 'react-native';
-import Animated, { Easing, Keyframe } from 'react-native-reanimated';
+import { useRef, useState } from 'react';
+import { StyleSheet, useColorScheme } from 'react-native';
+import Animated, {
+  Easing,
+  ReduceMotion,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { Motion, SplashGround } from '@/constants/theme';
@@ -23,51 +30,47 @@ const HOLD = 900;
 export function AnimatedSplashOverlay() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const ground = SplashGround[scheme];
-  const [animate, setAnimate] = useState(false);
   const [visible, setVisible] = useState(true);
+  const laidOut = useRef(false);
+  const reducedMotion = useReducedMotion();
+  const progress = useSharedValue(0);
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: 1 - progress.value,
+    transform: [{ scale: reducedMotion ? 1 : 1 + progress.value * 0.06 }],
+  }));
 
   if (!visible) return null;
 
-  const splashKeyframe = new Keyframe({
-    0: { opacity: 1, transform: [{ scale: 1 }] },
-    45: { opacity: 1, transform: [{ scale: 1 }] },
-    100: {
-      opacity: 0,
-      transform: [{ scale: 1.06 }],
-      easing: Easing.bezier(...Motion.easing),
-    },
-  });
-
-  const mark = (
-    <Image
-      style={styles.mark}
-      contentFit="contain"
-      source={require('@/assets/images/splash-icon.png')}
-      accessibilityLabel="Backstamp"
-    />
-  );
-
-  return animate ? (
+  return (
     <Animated.View
-      entering={splashKeyframe.duration(DURATION).withCallback((finished) => {
-        'worklet';
-        if (finished) {
-          scheduleOnRN(setVisible, false);
-        }
-      })}
-      style={[styles.splashOverlay, { backgroundColor: ground }]}>
-      {mark}
-    </Animated.View>
-  ) : (
-    <View
       onLayout={() => {
+        if (laidOut.current) return;
+        laidOut.current = true;
         SplashScreen.hideAsync().finally(() => {
-          setTimeout(() => setAnimate(true), HOLD);
+          setTimeout(() => {
+            progress.value = withTiming(
+              1,
+              reducedMotion
+                ? { duration: Motion.press, reduceMotion: ReduceMotion.Never }
+                : { duration: DURATION, easing: Easing.bezier(...Motion.easing) },
+              (finished) => {
+                'worklet';
+                if (finished) {
+                  scheduleOnRN(setVisible, false);
+                }
+              },
+            );
+          }, HOLD);
         });
       }}
-      style={[styles.splashOverlay, { backgroundColor: ground }]}>
-      {mark}
-    </View>
+      style={[styles.splashOverlay, { backgroundColor: ground }, animatedStyle]}>
+      <Image
+        style={styles.mark}
+        contentFit="contain"
+        source={require('@/assets/images/splash-icon.png')}
+        accessibilityLabel="Backstamp"
+      />
+    </Animated.View>
   );
 }
 

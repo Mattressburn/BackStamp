@@ -6,6 +6,7 @@ import type {
   Pattern,
   PriceQuote,
   PriceSourceKind,
+  QueuedScan,
   ScanGuess,
   SetDetection,
 } from '@shared/types';
@@ -106,6 +107,23 @@ export function shouldRetryQueueDrain(
     previousAttempts < MAX_QUEUE_ATTEMPTS - 1 &&
     (code === 'upstream_failed' || code === 'rate_limited' || code === 'internal')
   );
+}
+
+export function savedScanBannerMessage(
+  count: number,
+  confirmingDiscard: boolean,
+): string | null {
+  if (count < 1) return null;
+  const scans = `${count} saved scan${count === 1 ? '' : 's'}`;
+  return confirmingDiscard ? `Discard ${scans}?` : `${scans} ready to review.`;
+}
+
+export function oldestSavedScan(scans: readonly QueuedScan[]): QueuedScan | null {
+  let oldest = scans[0] ?? null;
+  for (const scan of scans) {
+    if (oldest && scan.createdAt < oldest.createdAt) oldest = scan;
+  }
+  return oldest;
 }
 
 /** "25th". The 11/12/13 exception is the only reason this is not a lookup. */

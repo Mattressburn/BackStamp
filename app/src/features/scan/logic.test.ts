@@ -6,7 +6,7 @@ import test from 'node:test';
 import type { ApiErrorCode, ApiResult, ItemDetail, PriceQuote, SetDetection } from '@shared/types';
 
 // @ts-expect-error Node's TypeScript test runner requires the explicit extension.
-import { adjustSetGroupCount, advanceBulkQueue, bulkPhotoProgress, photoInvitesFor, browseDetailFacts, deriveHuntingChips, deriveLlmWasRight, groupDetections, knownCombinationOptions, ordinal, ordinalWord, rankHuntingRows, replaceOrMergeDetectionGroup, setFilingPieces, setScanLogInputs, shouldPresentBrowseDetail, shouldRetryQueueDrain, summarizeFiledPrices, type GroupedDetection } from './logic.ts';
+import { adjustSetGroupCount, advanceBulkQueue, bulkPhotoProgress, photoInvitesFor, browseDetailFacts, deriveHuntingChips, deriveLlmWasRight, groupDetections, knownCombinationOptions, oldestSavedScan, ordinal, ordinalWord, rankHuntingRows, replaceOrMergeDetectionGroup, savedScanBannerMessage, setFilingPieces, setScanLogInputs, shouldPresentBrowseDetail, shouldRetryQueueDrain, summarizeFiledPrices, type GroupedDetection } from './logic.ts';
 
 const guesses = [
   { itemSlug: 'butterprint-444', confidence: 0.86, reasoning: 'Pattern and base match.' },
@@ -168,6 +168,24 @@ test('queue drain retries transient failures until the third failed attempt', ()
   for (const code of terminal) {
     assert.equal(shouldRetryQueueDrain(code, 0), false, `${code} should not retry`);
   }
+});
+
+test('saved scan banner copy reflects the count and discard confirmation', () => {
+  assert.equal(savedScanBannerMessage(0, false), null);
+  assert.equal(savedScanBannerMessage(1, false), '1 saved scan ready to review.');
+  assert.equal(savedScanBannerMessage(3, false), '3 saved scans ready to review.');
+  assert.equal(savedScanBannerMessage(3, true), 'Discard 3 saved scans?');
+});
+
+test('saved scan review picks the oldest scan regardless of input order', () => {
+  const scans = [
+    { localId: 'middle', photos: ['middle.jpg'], hasBaseShot: false, createdAt: '2026-08-13T02:00:00Z', attempts: 0 },
+    { localId: 'oldest', photos: ['oldest.jpg'], hasBaseShot: true, createdAt: '2026-08-13T01:00:00Z', attempts: 1 },
+    { localId: 'newest', photos: ['newest.jpg'], hasBaseShot: false, createdAt: '2026-08-13T03:00:00Z', attempts: 0 },
+  ];
+
+  assert.strictEqual(oldestSavedScan(scans), scans[1]);
+  assert.equal(oldestSavedScan([]), null);
 });
 
 test('bulk photo progress is one-based for collectors', () => {

@@ -1,6 +1,6 @@
 import NetInfo from '@react-native-community/netinfo';
 import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
@@ -8,7 +8,6 @@ import { useColorScheme } from 'react-native';
 import { API_URL } from '@/api';
 import { bootstrap } from '@/bootstrap';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
 import { FontAssets } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -23,7 +22,7 @@ NetInfo.configure({
   reachabilityRequestTimeout: 5_000,
 });
 
-export default function TabLayout() {
+export default function RootLayout() {
   const colorScheme = useColorScheme();
   // Rubik now sets every role, not just the display ones, so a slow load degrades the
   // whole screen to the platform face rather than blanking it, render either way, and
@@ -44,7 +43,10 @@ export default function TabLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
-      <AppTabs />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="item/[slug]" />
+      </Stack>
     </ThemeProvider>
   );
 }

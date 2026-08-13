@@ -91,6 +91,12 @@ const GUIDE_GLYPH = '000';
 
 // ------------------------------------------------------------------ shared
 
+export interface ScanBannerAction {
+  label: string;
+  accessibilityLabel: string;
+  onPress: () => void;
+}
+
 /**
  * The one banner the scan flow uses for anything it needs to say: queued scans, a
  * failed sync, a camera error. Spice ground with a gold dot, which is the treatment the
@@ -102,9 +108,11 @@ const GUIDE_GLYPH = '000';
 export function ScanBanner({
   message,
   tone = 'note',
+  actions,
 }: {
   message: string | null;
   tone?: 'note' | 'problem';
+  actions?: readonly ScanBannerAction[];
 }) {
   const colors = useColors();
   if (!message) return null;
@@ -117,8 +125,25 @@ export function ScanBanner({
         styles.banner,
         { backgroundColor: tone === 'problem' ? colors.danger : colors.spice },
       ]}>
-      <View style={[styles.bannerDot, { backgroundColor: colors.want }]} />
-      <Text style={styles.bannerText}>{message}</Text>
+      <View style={styles.bannerCopy}>
+        <View style={[styles.bannerDot, { backgroundColor: colors.want }]} />
+        <Text style={styles.bannerText}>{message}</Text>
+      </View>
+      {actions && actions.length > 0 && (
+        <View style={styles.bannerActions}>
+          {actions.map((action) => (
+            <PressButton
+              key={action.label}
+              tone="translucent"
+              onPress={action.onPress}
+              accessibilityLabel={action.accessibilityLabel}
+              style={styles.bannerAction}
+              textStyle={styles.bannerActionText}>
+              {action.label}
+            </PressButton>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -251,6 +276,7 @@ export function ViewfinderScreen({
   pendingImportCount,
   step,
   banner,
+  bannerActions,
   problem,
   busy,
   cameraRef,
@@ -269,6 +295,7 @@ export function ViewfinderScreen({
   pendingImportCount: number;
   step: 1 | 2;
   banner: string | null;
+  bannerActions?: readonly ScanBannerAction[];
   problem: string | null;
   busy: boolean;
   cameraRef: React.RefObject<CameraView | null>;
@@ -340,7 +367,7 @@ export function ViewfinderScreen({
             </Pressable>
           </View>
         )}
-        <ScanBanner message={banner} />
+        <ScanBanner message={banner} actions={bannerActions} />
         <ScanBanner message={problem} tone="problem" />
       </View>
 
@@ -529,15 +556,26 @@ const styles = StyleSheet.create({
   inert: { pointerEvents: 'none' },
 
   banner: {
-    alignItems: 'center',
     borderRadius: Radius.md,
-    flexDirection: 'row',
-    gap: Spacing.two + Spacing.half,
+    gap: Spacing.two,
     paddingHorizontal: Spacing.three - Spacing.half,
     paddingVertical: Spacing.three - Spacing.one,
   },
+  bannerCopy: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: Spacing.two + Spacing.half,
+  },
   bannerDot: { borderRadius: Radius.pill, height: 10, width: 10 },
   bannerText: { ...Type.caption, color: OnAccent.text, flex: 1 },
+  bannerActions: { flexDirection: 'row', gap: Spacing.two },
+  bannerAction: {
+    borderRadius: Radius.sm,
+    flex: 1,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.two,
+  },
+  bannerActionText: { ...Type.caption, color: OnAccent.text },
 
   footer: {
     gap: Spacing.two + Spacing.half,
