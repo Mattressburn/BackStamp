@@ -255,7 +255,10 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
     const request: IdentifyRequest = { photos, hasBaseShot: input.hasBaseShot };
     try {
       return c.json(success(await identifier.identify(request, options.db.getCatalog())));
-    } catch {
+    } catch (error) {
+      // The client message stays generic; the log keeps the real reason. A fully
+      // swallowed error here cost an hour of blind debugging on 2026-08-12.
+      console.error('identify failed:', error instanceof Error ? error.message : error);
       throw new ApiRouteError('upstream_failed', 502, 'Identification is unavailable');
     }
   });
@@ -273,6 +276,11 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
       throw new ApiRouteError('upstream_failed', 502, 'Identification is unavailable');
     }
   });
+
+  // The app's NetInfo reachability probe. What "online" means to a collector in a
+  // thrift store is "can I reach this backend", not "can I reach Google"; NetInfo's
+  // default probe false-negatived on device while the LAN was fine.
+  app.get('/health', (c) => c.body(null, 204));
 
   app.get('/catalog', (c) => {
     const sinceText = c.req.query('since') ?? '0';

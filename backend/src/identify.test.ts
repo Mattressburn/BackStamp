@@ -9,9 +9,11 @@ const catalog = {
   items: [
     { slug: 'butterprint-444', patternId: 'butterprint', formId: '444-cinderella', rarity: 'rare' as const, ebayQuery: '', provenance: 'published-reference' as const, userSubmitted: false },
     { slug: 'butterprint-501', patternId: 'butterprint', formId: '501-fridge', rarity: 'common' as const, ebayQuery: '', provenance: 'collector-attested' as const, userSubmitted: false },
+    { slug: 'spring-blossom-green-444', patternId: 'spring-blossom-green', formId: '444-cinderella', rarity: 'uncommon' as const, ebayQuery: '', provenance: 'published-reference' as const, userSubmitted: false },
   ],
   patterns: [
     { id: 'butterprint', name: 'Butterprint', yearsStart: 1957, yearsEnd: 1968, colorway: 'turquoise on white', rarity: 'rare' as const, notes: null },
+    { id: 'spring-blossom-green', name: 'Spring Blossom Green', yearsStart: 1972, yearsEnd: 1979, colorway: 'green and white', rarity: 'uncommon' as const, notes: null },
   ],
   forms: [
     { id: '444-cinderella', modelNo: '444', family: 'cinderella-bowl' as const, shape: 'Cinderella bowl', capacityQt: 4, dimensions: '13 x 10 in' },
@@ -116,11 +118,11 @@ test('set detection resolution validates rows, rejects color contradictions, and
   });
 });
 
-test('the Gemini request pins itemSlug to the catalog and sends the photos as inline JPEG data', async () => {
+test('the Gemini request pins patternId and modelNo to the catalog and sends the photos as inline JPEG data', async () => {
   let sent: any;
   const identifier = new Identifier('gemini-test-key', undefined, async (_url, init) => {
     sent = JSON.parse(String(init?.body));
-    return geminiReply([{ itemSlug: 'butterprint-444', confidence: 0.9, reasoning: 'turquoise farm print' }]);
+    return geminiReply([{ patternId: 'butterprint', modelNo: '444', confidence: 0.9, reasoning: 'turquoise farm print' }]);
   });
 
   const result = await identifier.identify({ photos: ['aGVsbG8='], hasBaseShot: true }, catalog);
@@ -129,10 +131,18 @@ test('the Gemini request pins itemSlug to the catalog and sends the photos as in
     guesses: [{ itemSlug: 'butterprint-444', confidence: 0.9, reasoning: 'turquoise farm print' }],
     lowConfidence: false,
   });
+  // patternId is deliberately NOT enum-pinned: Gemini rejects this catalog's full
+  // pattern-id list (measured 2026-08-12), so the prompt's catalog block plus
+  // resolveGuesses carry that constraint instead.
   assert.deepEqual(
-    sent.generationConfig.responseSchema.properties.guesses.items.properties.itemSlug,
-    { type: 'STRING', enum: ['butterprint-444', 'butterprint-501'] },
+    sent.generationConfig.responseSchema.properties.guesses.items.properties.patternId,
+    { type: 'STRING' },
   );
+  assert.deepEqual(
+    sent.generationConfig.responseSchema.properties.guesses.items.properties.modelNo,
+    { type: 'STRING', enum: ['444', '501'] },
+  );
+  assert.equal(sent.generationConfig.responseSchema.properties.guesses.items.properties.itemSlug, undefined);
   assert.deepEqual(sent.contents[0].parts[1], { inlineData: { mimeType: 'image/jpeg', data: 'aGVsbG8=' } });
   assert.match(sent.contents[0].parts[0].text, /A base photo is present/);
 });
@@ -168,13 +178,15 @@ test('set identification sends a stable catalog prompt and resolves the Gemini d
     sent.push(JSON.parse(String(init?.body)));
     return geminiSetReply([
       {
-        itemSlug: 'butterprint-444',
+        patternId: 'butterprint',
+        modelNo: '444',
         confidence: 0.9,
         location: ' top bowl ',
         visibleEvidence: ' turquoise print and blue rim ',
       },
       {
-        itemSlug: 'butterprint-501',
+        patternId: 'butterprint',
+        modelNo: '501',
         confidence: 0.8,
         location: 'bottom dish',
         visibleEvidence: 'solid orange',
@@ -198,7 +210,9 @@ test('set identification sends a stable catalog prompt and resolves the Gemini d
     lowConfidence: false,
   });
   const schema = sent[0].generationConfig.responseSchema.properties.detections;
-  assert.deepEqual(schema.items.properties.itemSlug.enum, ['butterprint-444', 'butterprint-501']);
+  assert.deepEqual(schema.items.properties.patternId, { type: 'STRING' });
+  assert.deepEqual(schema.items.properties.modelNo.enum, ['444', '501']);
+  assert.equal(schema.items.properties.itemSlug, undefined);
   assert.equal(schema.maxItems, 8);
   assert.equal(sent[0].generationConfig.maxOutputTokens, 8192);
   assert.deepEqual(sent[0].contents[0].parts[1], {
@@ -228,9 +242,9 @@ test('set identification short-circuits an empty catalog and otherwise requires 
   );
 });
 
-test('a slug outside the catalog never reaches the caller even if the model emits one', async () => {
+test('a pattern and model number combination outside the catalog never reaches the caller', async () => {
   const identifier = new Identifier('gemini-test-key', undefined, async () =>
-    geminiReply([{ itemSlug: 'millennium-falcon-9999', confidence: 1, reasoning: 'invented' }]),
+    geminiReply([{ patternId: 'spring-blossom-green', modelNo: '501', confidence: 1, reasoning: 'invented combination' }]),
   );
 
   assert.deepEqual(await identifier.identify({ photos: ['aGVsbG8='], hasBaseShot: false }, catalog), {

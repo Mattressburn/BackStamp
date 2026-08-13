@@ -39,6 +39,9 @@ interface GeminiResponse {
   candidates?: Array<{ content?: { parts?: Array<{ text?: unknown }> } }>;
 }
 
+type GeminiGuess = Omit<ScanGuess, 'itemSlug'> & { patternId: string; modelNo: string };
+type GeminiSetDetection = Omit<SetDetection, 'itemSlug'> & { patternId: string; modelNo: string };
+
 export function resolveGuesses(guesses: ScanGuess[], knownSlugs: ReadonlySet<string>): ScanGuess[] {
   const seen = new Set<string>();
   return guesses
@@ -90,7 +93,7 @@ export function resolveSetDetections(
     if (detection.confidence < CONFIDENCE_FLOOR) continue;
 
     // Fifth honest-output enforcer, alongside PriceFigure, the swatch mark, the AI badge,
-    // and the slug enum plus resolveGuesses.
+    // and the pattern/model enums plus resolveGuesses.
     if (colorsContradict(detection.visibleEvidence, colorwayBySlug.get(detection.itemSlug))) {
       contradicted += 1;
       continue;
@@ -126,7 +129,7 @@ function identifyPrompt(
   return [
     'Identify this vintage ovenware item using only the supplied catalog.',
     'The embossed base model number outranks pattern appearance. Curved glass, glare, fading, and partial pattern views make appearance less reliable.',
-    'Return at most three catalog slugs. Never invent a slug and never return a free-text item name.',
+    'Return at most three catalog pattern ID and model number pairs. Never invent either and never return a free-text item name.',
     `Catalog:\n${JSON.stringify(choices)}`,
     request.hasBaseShot
       ? 'A base photo is present. Read its embossed model number first and give it the highest evidentiary weight.'
@@ -155,7 +158,7 @@ function identifySetPrompt(catalog: { items: Item[]; patterns: Pattern[]; forms:
     'The photo shows one nested set or one small group of vintage Pyrex filling the frame. Identify each visible piece using only the supplied catalog.',
     'A catalog item is pattern AND form. Match both. Relative size within a nested stack is legitimate form evidence, and visibleEvidence must say when it is used.',
     'Do not assume a complete nesting set is present. A stack may hold any subset of a set, and duplicates exist. The pieces in one stack are not necessarily the same pattern; judge each piece on its own print. Report one detection per piece whose rim or body is actually visible, and no others. Never infer hidden pieces.',
-    'Abstention outranks recall. Emit a row only when visible evidence supports both the pattern and the form. Emit nothing for non-Pyrex objects. Never invent a slug.',
+    'Abstention outranks recall. Emit a row only when visible evidence supports both the pattern and the form. Emit nothing for non-Pyrex objects. Never invent a pattern ID or model number.',
     'For location, describe where a person finds the piece in the frame. For visibleEvidence, state only what is visible in this photo, including the piece\'s actual colors. Describe what a printed design actually depicts in plain words, such as balloons, a band of eight pointed stars, or trees in framed panels. Never write a catalog pattern name inside visibleEvidence.',
     `Catalog:\n${JSON.stringify(choices)}`,
     'One photo follows. No base photo is present and no model number is visible. Never claim a base mark as evidence.',
@@ -185,12 +188,15 @@ export class Identifier {
     // both are. Escalating a low-confidence Gemini scan to Anthropic would slot in here; it was
     // proposed and not approved, so it does not exist yet.
     let raw: ScanGuess[];
-    if (this.geminiKey) raw = await this.geminiGuesses(prompt, request.photos, slugs, this.geminiKey);
-    else if (this.anthropic) raw = await this.anthropicGuesses(prompt, request.photos, slugs);
+    if (this.geminiKey) {
+      const patternIds = [...new Set(catalog.patterns.map((pattern) => pattern.id))];
+      const modelNos = [...new Set(catalog.forms.map((form) => form.modelNo))];
+      raw = await this.geminiGuesses(prompt, request.photos, patternIds, modelNos, this.geminiKey);
+    } else if (this.anthropic) raw = await this.anthropicGuesses(prompt, request.photos, slugs);
     else throw new Error('No vision provider configured: set GEMINI_API_KEY or ANTHROPIC_API_KEY');
 
-    // Second layer. The schema enum already makes an unknown slug unreachable, but this is the
-    // guarantee that does not depend on a provider honouring its own structured-output contract.
+    // Second layer. The schema enums constrain each component; this drops invented combinations
+    // without depending on a provider honouring its own structured-output contract.
     const guesses = resolveGuesses(raw, new Set(slugs));
     return { guesses, lowConfidence: guesses.length === 0 };
   }
@@ -206,10 +212,13 @@ export class Identifier {
     if (!this.geminiKey) throw new Error('Set scanning requires GEMINI_API_KEY');
 
     const slugs = catalog.items.map((item) => item.slug);
+    const patternIds = [...new Set(catalog.patterns.map((pattern) => pattern.id))];
+    const modelNos = [...new Set(catalog.forms.map((form) => form.modelNo))];
     const raw = await this.geminiSetDetections(
       identifySetPrompt(catalog),
       request.photo,
-      slugs,
+      patternIds,
+      modelNos,
       this.geminiKey,
     );
     const patterns = new Map(catalog.patterns.map((pattern) => [pattern.id, pattern]));
@@ -223,7 +232,8 @@ export class Identifier {
   private async geminiGuesses(
     prompt: string,
     photos: string[],
-    slugs: string[],
+    patternIds: string[],
+    modelNos: string[],
     apiKey: string,
   ): Promise<ScanGuess[]> {
     const response = await this.fetcher(GEMINI_URL, {
@@ -241,12 +251,9 @@ export class Identifier {
         ],
         generationConfig: {
           responseMimeType: 'application/json',
-          // Measured 2026-08-10, two separate runs. Reachability: with the slug list absent from
-          // the prompt, naming only a pattern and form returned the right slug for catalog
-          // indexes 378 (the last), 377, 300, 200 and 101, so all 379 values are live and the
-          // list is not silently truncated. Enforcement: a prompt ordering an off-catalog slug
-          // still produced a catalog one, and produced the invented slug once the enum was
-          // removed. So an invented slug is unreachable here, and resolveGuesses is layer two.
+          // Measured 2026-08-12: Gemini accepts 560 enum values but rejects 580. Pattern IDs and
+          // model numbers stay in separate enums; resolveGuesses remains layer two and rejects
+          // invented pattern/model combinations.
           responseSchema: {
             type: 'OBJECT',
             properties: {
@@ -256,11 +263,17 @@ export class Identifier {
                 items: {
                   type: 'OBJECT',
                   properties: {
-                    itemSlug: { type: 'STRING', enum: slugs },
+                    // Free-form on purpose: Gemini 400s on this catalog's full pattern-id list in an
+                    // enum (measured 2026-08-12: halves pass, the union fails; count, bytes, and
+                    // duplicates all ruled out). The catalog block in the prompt names every valid
+                    // id and resolveGuesses drops inventions, the same second layer that always
+                    // backed the slug enum. modelNo keeps its enum; 87 values never tripped it.
+                    patternId: { type: 'STRING' },
+                    modelNo: { type: 'STRING', enum: modelNos },
                     confidence: { type: 'NUMBER' },
                     reasoning: { type: 'STRING' },
                   },
-                  required: ['itemSlug', 'confidence', 'reasoning'],
+                  required: ['patternId', 'modelNo', 'confidence', 'reasoning'],
                 },
               },
             },
@@ -276,13 +289,16 @@ export class Identifier {
     const body = (await response.json()) as GeminiResponse;
     const text = body.candidates?.[0]?.content?.parts?.find((part) => typeof part.text === 'string')?.text;
     if (typeof text !== 'string') throw new Error('Vision model returned no text');
-    return (JSON.parse(text) as Pick<IdentifyResponse, 'guesses'>).guesses;
+    return (JSON.parse(text) as { guesses: GeminiGuess[] }).guesses.map(
+      ({ patternId, modelNo, ...guess }) => ({ ...guess, itemSlug: `${patternId}-${modelNo}` }),
+    );
   }
 
   private async geminiSetDetections(
     prompt: string,
     photo: string,
-    slugs: string[],
+    patternIds: string[],
+    modelNos: string[],
     apiKey: string,
   ): Promise<SetDetection[]> {
     const response = await this.fetcher(GEMINI_URL, {
@@ -309,12 +325,18 @@ export class Identifier {
                 items: {
                   type: 'OBJECT',
                   properties: {
-                    itemSlug: { type: 'STRING', enum: slugs },
+                    // Free-form on purpose: Gemini 400s on this catalog's full pattern-id list in an
+                    // enum (measured 2026-08-12: halves pass, the union fails; count, bytes, and
+                    // duplicates all ruled out). The catalog block in the prompt names every valid
+                    // id and resolveGuesses drops inventions, the same second layer that always
+                    // backed the slug enum. modelNo keeps its enum; 87 values never tripped it.
+                    patternId: { type: 'STRING' },
+                    modelNo: { type: 'STRING', enum: modelNos },
                     confidence: { type: 'NUMBER' },
                     location: { type: 'STRING' },
                     visibleEvidence: { type: 'STRING' },
                   },
-                  required: ['itemSlug', 'confidence', 'location', 'visibleEvidence'],
+                  required: ['patternId', 'modelNo', 'confidence', 'location', 'visibleEvidence'],
                 },
               },
             },
@@ -330,7 +352,12 @@ export class Identifier {
     const body = (await response.json()) as GeminiResponse;
     const text = body.candidates?.[0]?.content?.parts?.find((part) => typeof part.text === 'string')?.text;
     if (typeof text !== 'string') throw new Error('Vision model returned no text');
-    return (JSON.parse(text) as Pick<IdentifySetResponse, 'detections'>).detections;
+    return (JSON.parse(text) as { detections: GeminiSetDetection[] }).detections.map(
+      ({ patternId, modelNo, ...detection }) => ({
+        ...detection,
+        itemSlug: `${patternId}-${modelNo}`,
+      }),
+    );
   }
 
   private async anthropicGuesses(prompt: string, photos: string[], slugs: string[]): Promise<ScanGuess[]> {

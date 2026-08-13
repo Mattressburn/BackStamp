@@ -624,6 +624,8 @@ const styles = StyleSheet.create({
 
   frame: {
     aspectRatio: VIEWFINDER_ASPECT,
+    flexShrink: 1,
+    minHeight: 220,
     backgroundColor: CameraChrome.frameFill,
     borderColor: CameraChrome.frameEdge,
     borderRadius: Radius.xxl,
@@ -651,7 +653,12 @@ const styles = StyleSheet.create({
   guideGlyph: { ...Type.display, color: CameraChrome.ghost, fontSize: 40, lineHeight: 44 },
 
   viewfinderCopy: {
-    flex: 1,
+    // Content-sized and unshrinkable: when the queue banner appears above the
+    // frame, the FRAME yields (flexShrink below), never the instructions. Plain
+    // flex: 1 has a zero basis, so a tight column collapsed the title to a sliver.
+    flexBasis: 'auto',
+    flexGrow: 1,
+    flexShrink: 0,
     paddingHorizontal: Spacing.four + Spacing.one,
     paddingTop: Spacing.four + Spacing.half,
   },
