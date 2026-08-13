@@ -66,6 +66,39 @@ via report action suffices at launch scale).
 - store-6 Verify production Gemini key is paid tier and record the evidence
   [ready]
 
+## EPIC biz: The app pays for itself without a marketplace
+
+Source: docs/2026-08-13-pricing-model.md (the decision and arithmetic) and
+docs/2026-08-12-unit-economics.md (the cost model it stands on).
+
+**Goal:** Backstamp covers its API and fixed costs at launch scale through scan
+credits and affiliate revenue, with no consumer subscription.
+
+**Acceptance:** free tier caps at 25 scans/month; credit packs purchasable in
+app; one photo consumes one credit regardless of pieces identified; errored
+calls consume nothing; the remaining-scans count is visible before every scan;
+eBay link-outs carry Partner Network tags.
+
+**Out of scope:** consumer Pro subscription (shelved, revisit trigger in the
+pricing doc); marketplace; dealer tier (its own epic when its gates ship).
+
+**Stories:**
+- biz-1 Scan metering: 25/month free, per-photo consumption, error rule
+  [ready]
+- biz-2 Credit packs as consumable IAP: $1.99/50 and $4.99/200, never expire
+  [ready]
+- biz-3 Meter UI and pricing copy: remaining scans visible, "one photo = one
+  credit" [ready]
+- biz-4 eBay Partner Network: apply, verify in-app link rules, tag link-outs
+  [blocked: application not yet submitted; network work is the orchestrator's]
+
+## EPIC dealer (later): The business tier
+
+Not started, deliberately. $49 to $99/yr subscription for dealers and
+estate-sale companies. Gates that must ship first: bulk import (exists), CSV
+export, sold-comps history. Subscriptions return here, priced against a
+business need. See docs/2026-08-13-pricing-model.md.
+
 ## Field reports awaiting reproduction
 
 - Scan tab "will not stay selected" (2026-08-12, on device). Full navigation
