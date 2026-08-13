@@ -26,3 +26,4 @@ scripts/extracted*.json
 # CMoG page cache: raw fetched text is their copyrighted prose, never committed.
 # Restated facts derived from it live in data/catalog.json, which is.
 data/cmog-cache/
+data/pyrexlove-cache/
