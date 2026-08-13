@@ -3,13 +3,21 @@ import test from 'node:test';
 
 import catalog from '../data/catalog.json' with { type: 'json' };
 
-test('only patterns backed by items carry rarity claims', () => {
+// Rarity is a claim, and claims need evidence. Evidence for existence (an item
+// row) is not evidence for a rank, so null rarity is legal anywhere. The
+// direction that must never appear: a rank on a pattern no item backs at all.
+test('rarity ranks only appear where at least one item exists', () => {
   const itemPatternIds = new Set(catalog.items.map((item) => item.patternId));
-  const rated = catalog.patterns.filter((pattern) => itemPatternIds.has(pattern.id));
-  const unrated = catalog.patterns.filter((pattern) => !itemPatternIds.has(pattern.id));
+  const rankedWithoutItems = catalog.patterns.filter(
+    (pattern) => pattern.rarity !== null && !itemPatternIds.has(pattern.id),
+  );
+  assert.deepEqual(rankedWithoutItems.map((pattern) => pattern.id), []);
+});
 
-  assert.equal(rated.length, 33);
-  assert.equal(unrated.length, 151);
-  assert.deepEqual(rated.filter((pattern) => pattern.rarity === null), []);
-  assert.deepEqual(unrated.filter((pattern) => pattern.rarity !== null), []);
+test('every rarity value is null or a known rank', () => {
+  const ranks = new Set(['common', 'uncommon', 'hard-to-find', 'rare', 'grail']);
+  const invalid = [...catalog.patterns, ...catalog.items].filter(
+    (row) => row.rarity !== null && !ranks.has(row.rarity),
+  );
+  assert.deepEqual(invalid.map((row) => ('id' in row ? row.id : row.slug)), []);
 });

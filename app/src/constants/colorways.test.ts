@@ -53,9 +53,12 @@ test('light and dark produce different values for the same colorway', () => {
   );
 });
 
-test('every pattern shipped in the catalog parses to a real swatch', () => {
+// A null colorway is an honest "not documented" and takes the designed neutral
+// fallback; only a DOCUMENTED colorway that fails to parse would render the
+// grey-box lie this guard exists to catch.
+test('every documented colorway in the catalog parses to a real swatch', () => {
   const unparsed = catalog.patterns.filter(
-    (pattern) => parseColorway(pattern.colorway, 'light') === null,
+    (pattern) => pattern.colorway !== null && parseColorway(pattern.colorway, 'light') === null,
   );
   assert.deepEqual(
     unparsed.map((pattern) => `${pattern.id}: ${pattern.colorway}`),

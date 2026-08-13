@@ -80,6 +80,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 const VISIBILITIES: PhotoVisibility[] = ['attributed', 'anonymous', 'private'];
 const CMOG_PATTERN_LIBRARY_URL = 'https://pyrex.cmog.org/pattern-library';
+const PYREX_LOVE_URL = 'https://www.pyrexlove.com/';
 
 /** The shared curve, as an easing function. Every motion on this screen uses it. */
 const EASING = Easing.bezier(...Motion.easing);
@@ -474,6 +475,14 @@ export default function SettingsScreen() {
             onPress={() => void Linking.openURL(CMOG_PATTERN_LIBRARY_URL)}
             accessibilityRole="link"
             accessibilityLabel="Open the Corning Museum of Glass Pyrex Pattern Library"
+          />
+          <Row
+            title="Pyrex Love"
+            caption="Piece model numbers, promotional details, and pattern facts from Pyrex Love."
+            value="Visit"
+            onPress={() => void Linking.openURL(PYREX_LOVE_URL)}
+            accessibilityRole="link"
+            accessibilityLabel="Open Pyrex Love"
           />
         </Group>
 

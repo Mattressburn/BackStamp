@@ -1655,6 +1655,474 @@
       "colorway": "blue on white",
       "rarity": null,
       "notes": "This treatment alternated with white-on-blue pieces in sets coordinated to matching dinnerware."
+    },
+    {
+      "id": "blowing-leaves",
+      "name": "Blowing Leaves",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "blue-dianthus",
+      "name": "Blue Dianthus",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "bronze",
+      "name": "Bronze",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "polynesian",
+      "name": "Polynesian",
+      "yearsStart": 1970,
+      "yearsEnd": 1979,
+      "colorway": null,
+      "rarity": null,
+      "notes": "Documented from 1970 through 1979 on model 664."
+    },
+    {
+      "id": "ponderosa-hat",
+      "name": "Ponderosa (Hat)",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "ponderosa-logo",
+      "name": "Ponderosa (Logo)",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "trailing-flowers",
+      "name": "Trailing Flowers",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "burgundy",
+      "name": "Burgundy",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "copper-filigree",
+      "name": "Copper Filigree",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "harvest-home",
+      "name": "Harvest Home",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "holly-days",
+      "name": "Holly Days",
+      "yearsStart": 1985,
+      "yearsEnd": 1986,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "morning-blue",
+      "name": "Morning Blue",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "ribbon-bouquet",
+      "name": "Ribbon Bouquet",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "square-flowers",
+      "name": "Square Flowers",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "summer-impressions",
+      "name": "Summer Impressions",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "flamingo-pink",
+      "name": "Flamingo Pink",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "lime-green",
+      "name": "Lime Green",
+      "yearsStart": 1952,
+      "yearsEnd": 1969,
+      "colorway": null,
+      "rarity": null,
+      "notes": "Documented from 1952 through 1969 on models 231 and 232."
+    },
+    {
+      "id": "turquoise",
+      "name": "Turquoise",
+      "yearsStart": 1950,
+      "yearsEnd": 1959,
+      "colorway": null,
+      "rarity": null,
+      "notes": "Documented from 1950 through 1959 on models 501, 502, and 503."
+    },
+    {
+      "id": "delphite-bluebelle",
+      "name": "Delphite Bluebelle",
+      "yearsStart": 1960,
+      "yearsEnd": 1962,
+      "colorway": null,
+      "rarity": null,
+      "notes": "Documented from 1960 through 1962 on models 401, 402, and 403."
+    },
+    {
+      "id": "opal-white",
+      "name": "Opal White",
+      "yearsStart": 1950,
+      "yearsEnd": 1959,
+      "colorway": null,
+      "rarity": null,
+      "notes": "Documented for 1954 on models 401, 402, 403, and 404."
+    },
+    {
+      "id": "pink",
+      "name": "Pink",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "yellow",
+      "name": "Yellow",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "compass-star",
+      "name": "Compass Star",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "flower-power",
+      "name": "Flower Power",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "blue-chip-week",
+      "name": "Blue Chip Week",
+      "yearsStart": 1963,
+      "yearsEnd": 1963,
+      "colorway": null,
+      "rarity": null,
+      "notes": "Documented for 1963 on model 473."
+    },
+    {
+      "id": "charleroi-plant",
+      "name": "Charleroi Plant",
+      "yearsStart": 1970,
+      "yearsEnd": 1970,
+      "colorway": null,
+      "rarity": null,
+      "notes": "Documented for 1970 on model 700."
+    },
+    {
+      "id": "chartreuse-honeysuckle",
+      "name": "Chartreuse Honeysuckle",
+      "yearsStart": 1960,
+      "yearsEnd": 1960,
+      "colorway": null,
+      "rarity": null,
+      "notes": "Documented for 1960 on model 043."
+    },
+    {
+      "id": "lincoln-center",
+      "name": "Lincoln Center",
+      "yearsStart": 1962,
+      "yearsEnd": 1962,
+      "colorway": null,
+      "rarity": null,
+      "notes": "Documented for 1962 on model 475."
+    },
+    {
+      "id": "red-hostess",
+      "name": "Red Hostess",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "red-white-and-yellow",
+      "name": "Red, White, and Yellow",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "rose-pink",
+      "name": "Rose Pink",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "blue-trains",
+      "name": "Blue Trains",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "cross-stitch",
+      "name": "Cross-Stitch",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "american-bicentennial",
+      "name": "American Bicentennial",
+      "yearsStart": 1976,
+      "yearsEnd": 1976,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "black",
+      "name": "Black",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "burnt-orange",
+      "name": "Burnt Orange",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "charleroi-total-quality",
+      "name": "Charleroi Total Quality",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "charleroi",
+      "name": "Charleroi",
+      "yearsStart": 1972,
+      "yearsEnd": 1972,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "charleroi-family-day",
+      "name": "Charleroi Family Day",
+      "yearsStart": 1984,
+      "yearsEnd": 1984,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "citrus-orange",
+      "name": "Citrus Orange",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "ellsworth-pennsylvania",
+      "name": "Ellsworth Pennsylvania",
+      "yearsStart": 1976,
+      "yearsEnd": 1976,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "at-home-in-your-lab",
+      "name": "At Home in Your Lab",
+      "yearsStart": 1977,
+      "yearsEnd": 1977,
+      "colorway": null,
+      "rarity": null,
+      "notes": "Documented for 1977 on model 1410."
+    },
+    {
+      "id": "pyrex-labware",
+      "name": "Pyrex Labware",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "safety-and-health",
+      "name": "Safety and Health",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "seasons-greetings",
+      "name": "Season's Greetings",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "steel-blue",
+      "name": "Steel Blue",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "vintage-bicycles",
+      "name": "Vintage Bicycles",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "whiskey-rebellion",
+      "name": "Whiskey Rebellion",
+      "yearsStart": 1976,
+      "yearsEnd": 1976,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "clear",
+      "name": "Clear",
+      "yearsStart": 1915,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": "Documented from 1950 onward on models 501 and 502."
+    },
+    {
+      "id": "gold-band",
+      "name": "Gold Band",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "green-blue",
+      "name": "Green Blue",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
+    },
+    {
+      "id": "flameware",
+      "name": "Flameware",
+      "yearsStart": null,
+      "yearsEnd": null,
+      "colorway": null,
+      "rarity": null,
+      "notes": null
     }
   ],
   "forms": [
@@ -1896,6 +2364,462 @@
       "family": "mug",
       "shape": "Opalware mug",
       "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "963-oval-divided-serving-dish",
+      "modelNo": "963",
+      "family": "divided-dish",
+      "shape": "Oval divided serving dish",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "711-small-plate",
+      "modelNo": "711",
+      "family": "other",
+      "shape": "Small plate",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "945-oval-covered-casserole",
+      "modelNo": "945",
+      "family": "casserole",
+      "shape": "Oval covered casserole",
+      "capacityQt": 2.5,
+      "dimensions": null
+    },
+    {
+      "id": "943-oval-covered-casserole",
+      "modelNo": "943",
+      "family": "casserole",
+      "shape": "Oval covered casserole",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "709-tableware-mug",
+      "modelNo": "709",
+      "family": "mug",
+      "shape": "Tableware mug",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "708-tableware-bowl",
+      "modelNo": "708",
+      "family": "other",
+      "shape": "Tableware bowl",
+      "capacityQt": 0.3125,
+      "dimensions": null
+    },
+    {
+      "id": "478-round-mixing-bowl",
+      "modelNo": "478",
+      "family": "mixing-bowl",
+      "shape": "Round mixing bowl",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "479-round-mixing-bowl",
+      "modelNo": "479",
+      "family": "mixing-bowl",
+      "shape": "Round mixing bowl",
+      "capacityQt": 3,
+      "dimensions": null
+    },
+    {
+      "id": "489-hearth-mug",
+      "modelNo": "489",
+      "family": "mug",
+      "shape": "Hearth mug",
+      "capacityQt": 0.3125,
+      "dimensions": null
+    },
+    {
+      "id": "483-round-casserole",
+      "modelNo": "483",
+      "family": "casserole",
+      "shape": "Round casserole",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "485-round-casserole",
+      "modelNo": "485",
+      "family": "casserole",
+      "shape": "Round casserole",
+      "capacityQt": 3,
+      "dimensions": null
+    },
+    {
+      "id": "484-round-tart-pan",
+      "modelNo": "484",
+      "family": "baking-dish",
+      "shape": "Round tart pan",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "486-round-tart-pan",
+      "modelNo": "486",
+      "family": "baking-dish",
+      "shape": "Round tart pan",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "72-butter-dish",
+      "modelNo": "72",
+      "family": "other",
+      "shape": "Butter dish",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "32-butter-dish",
+      "modelNo": "32",
+      "family": "other",
+      "shape": "Butter dish",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "326-round-mixing-bowl",
+      "modelNo": "326",
+      "family": "mixing-bowl",
+      "shape": "Round mixing bowl",
+      "capacityQt": 4.2268,
+      "dimensions": null
+    },
+    {
+      "id": "706-sauce-dish",
+      "modelNo": "706",
+      "family": "other",
+      "shape": "Sauce dish",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "222-square-baking-dish",
+      "modelNo": "222",
+      "family": "baking-dish",
+      "shape": "Square baking dish",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "221-round-cake-dish",
+      "modelNo": "221",
+      "family": "baking-dish",
+      "shape": "Round cake dish",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "213-loaf-pan",
+      "modelNo": "213",
+      "family": "baking-dish",
+      "shape": "Loaf pan",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "209-pie-plate",
+      "modelNo": "209",
+      "family": "baking-dish",
+      "shape": "Pie plate",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "231-oblong-baking-dish",
+      "modelNo": "231",
+      "family": "baking-dish",
+      "shape": "Oblong baking dish",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "232-oblong-baking-dish",
+      "modelNo": "232",
+      "family": "baking-dish",
+      "shape": "Oblong baking dish",
+      "capacityQt": 2,
+      "dimensions": null
+    },
+    {
+      "id": "343-round-casserole",
+      "modelNo": "343",
+      "family": "casserole",
+      "shape": "Round casserole",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "344-round-casserole",
+      "modelNo": "344",
+      "family": "casserole",
+      "shape": "Round casserole",
+      "capacityQt": 3,
+      "dimensions": null
+    },
+    {
+      "id": "795-dinner-plate",
+      "modelNo": "795",
+      "family": "other",
+      "shape": "Dinner plate",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "033-oblong-casserole",
+      "modelNo": "033",
+      "family": "casserole",
+      "shape": "Oblong casserole",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "058-oblong-casserole",
+      "modelNo": "058",
+      "family": "casserole",
+      "shape": "Oblong casserole",
+      "capacityQt": 4,
+      "dimensions": null
+    },
+    {
+      "id": "035-oblong-casserole",
+      "modelNo": "035",
+      "family": "casserole",
+      "shape": "Oblong casserole",
+      "capacityQt": 2.5,
+      "dimensions": null
+    },
+    {
+      "id": "055-oblong-casserole",
+      "modelNo": "055",
+      "family": "casserole",
+      "shape": "Oblong casserole",
+      "capacityQt": 2.5,
+      "dimensions": null
+    },
+    {
+      "id": "722-creamer",
+      "modelNo": "722",
+      "family": "other",
+      "shape": "Creamer",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "1063-oval-divided-serving-dish",
+      "modelNo": "1063",
+      "family": "divided-dish",
+      "shape": "Oval divided serving dish",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "357-dinner-plate",
+      "modelNo": "357",
+      "family": "other",
+      "shape": "Dinner plate",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "080-individual-round-casserole",
+      "modelNo": "080",
+      "family": "casserole",
+      "shape": "Individual round casserole",
+      "capacityQt": 0.25,
+      "dimensions": null
+    },
+    {
+      "id": "515-hostess-casserole",
+      "modelNo": "515",
+      "family": "casserole",
+      "shape": "Hostess casserole",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "407-hostess-serving-bowl",
+      "modelNo": "407",
+      "family": "other",
+      "shape": "Hostess serving bowl",
+      "capacityQt": 0.21875,
+      "dimensions": null
+    },
+    {
+      "id": "025-square-serving-bowl",
+      "modelNo": "025",
+      "family": "other",
+      "shape": "Square serving bowl",
+      "capacityQt": 2.5,
+      "dimensions": null
+    },
+    {
+      "id": "410-square-serving-bowl",
+      "modelNo": "410",
+      "family": "other",
+      "shape": "Square serving bowl",
+      "capacityQt": 0.375,
+      "dimensions": null
+    },
+    {
+      "id": "1416-cereal-bowl",
+      "modelNo": "1416",
+      "family": "other",
+      "shape": "Cereal bowl",
+      "capacityQt": 0.5,
+      "dimensions": null
+    },
+    {
+      "id": "525-hostess-casserole",
+      "modelNo": "525",
+      "family": "casserole",
+      "shape": "Hostess casserole",
+      "capacityQt": 2.5,
+      "dimensions": null
+    },
+    {
+      "id": "723-tableware-mug",
+      "modelNo": "723",
+      "family": "mug",
+      "shape": "Tableware mug",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "507-oblong-baking-dish",
+      "modelNo": "507",
+      "family": "baking-dish",
+      "shape": "Oblong baking dish",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "426-custard-cup",
+      "modelNo": "426",
+      "family": "other",
+      "shape": "Custard cup",
+      "capacityQt": 0.1875,
+      "dimensions": null
+    },
+    {
+      "id": "464-custard-cup",
+      "modelNo": "464",
+      "family": "other",
+      "shape": "Custard cup",
+      "capacityQt": 0.3125,
+      "dimensions": null
+    },
+    {
+      "id": "508-measuring-cup",
+      "modelNo": "508",
+      "family": "other",
+      "shape": "Measuring cup",
+      "capacityQt": 0.25,
+      "dimensions": null
+    },
+    {
+      "id": "516-measuring-cup",
+      "modelNo": "516",
+      "family": "other",
+      "shape": "Measuring cup",
+      "capacityQt": 0.5,
+      "dimensions": null
+    },
+    {
+      "id": "532-measuring-cup",
+      "modelNo": "532",
+      "family": "other",
+      "shape": "Measuring cup",
+      "capacityQt": 1,
+      "dimensions": null
+    },
+    {
+      "id": "206-pie-plate",
+      "modelNo": "206",
+      "family": "baking-dish",
+      "shape": "Pie plate",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "201-pie-plate",
+      "modelNo": "201",
+      "family": "baking-dish",
+      "shape": "Pie plate",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "205-pie-plate",
+      "modelNo": "205",
+      "family": "baking-dish",
+      "shape": "Pie plate",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "207-pie-plate",
+      "modelNo": "207",
+      "family": "baking-dish",
+      "shape": "Pie plate",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "208-pie-plate",
+      "modelNo": "208",
+      "family": "baking-dish",
+      "shape": "Pie plate",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "210-pie-plate",
+      "modelNo": "210",
+      "family": "baking-dish",
+      "shape": "Pie plate",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "211-pie-plate",
+      "modelNo": "211",
+      "family": "baking-dish",
+      "shape": "Pie plate",
+      "capacityQt": null,
+      "dimensions": null
+    },
+    {
+      "id": "7754-coffee-percolator",
+      "modelNo": "7754",
+      "family": "carafe",
+      "shape": "Coffee percolator",
+      "capacityQt": 1,
+      "dimensions": null
+    },
+    {
+      "id": "7756-coffee-percolator",
+      "modelNo": "7756",
+      "family": "carafe",
+      "shape": "Coffee percolator",
+      "capacityQt": 1.5,
+      "dimensions": null
+    },
+    {
+      "id": "7759-coffee-percolator",
+      "modelNo": "7759",
+      "family": "carafe",
+      "shape": "Coffee percolator",
+      "capacityQt": 2.25,
       "dimensions": null
     }
   ],
@@ -5310,7 +6234,2392 @@
       "ebayQuery": "Vintage Pyrex Colonial Mist 475 Cinderella Casserole",
       "userSubmitted": false,
       "provenance": "published-reference"
+    },
+    {
+      "slug": "black-tulip-043",
+      "patternId": "black-tulip",
+      "formId": "043-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Black Tulip 043 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "blowing-leaves-024",
+      "patternId": "blowing-leaves",
+      "formId": "024-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Blowing Leaves 024 Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "blue-stripe-barcode-471",
+      "patternId": "blue-stripe-barcode",
+      "formId": "471-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Blue Stripe Barcode 471 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "blue-stripe-barcode-472",
+      "patternId": "blue-stripe-barcode",
+      "formId": "472-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Blue Stripe Barcode 472 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "blue-stripe-barcode-473",
+      "patternId": "blue-stripe-barcode",
+      "formId": "473-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Blue Stripe Barcode 473 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "blue-stripe-barcode-474",
+      "patternId": "blue-stripe-barcode",
+      "formId": "474-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Blue Stripe Barcode 474 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "blue-stripe-barcode-475",
+      "patternId": "blue-stripe-barcode",
+      "formId": "475-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Blue Stripe Barcode 475 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "bluebird-casserole-043",
+      "patternId": "bluebird-casserole",
+      "formId": "043-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Bluebird Casserole 043 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "blue-dianthus-441",
+      "patternId": "blue-dianthus",
+      "formId": "441-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Blue Dianthus 441 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "blue-dianthus-442",
+      "patternId": "blue-dianthus",
+      "formId": "442-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Blue Dianthus 442 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "blue-dianthus-443",
+      "patternId": "blue-dianthus",
+      "formId": "443-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Blue Dianthus 443 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "willow-or-blue-floral-473",
+      "patternId": "willow-or-blue-floral",
+      "formId": "473-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Willow or Blue Floral 473 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "blue-ivy-963",
+      "patternId": "blue-ivy",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Blue Ivy 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "bramble-043",
+      "patternId": "bramble",
+      "formId": "043-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Bramble 043 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "brides-casserole-474",
+      "patternId": "brides-casserole",
+      "formId": "474-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Bride's Casserole 474 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "bronze-711",
+      "patternId": "bronze",
+      "formId": "711-small-plate",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Bronze 711 Small Plate",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "raffia-or-brown-onion-475",
+      "patternId": "raffia-or-brown-onion",
+      "formId": "475-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Raffia or Brown Onion 475 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "cinderella-buffet-twins-473",
+      "patternId": "cinderella-buffet-twins",
+      "formId": "473-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Cinderella Buffet Twins 473 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "cinderella-divided-casserole-or-constellation-963",
+      "patternId": "cinderella-divided-casserole-or-constellation",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Cinderella Divided Casserole or Constellation 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "dandelion-duet-963",
+      "patternId": "dandelion-duet",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Dandelion Duet 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "empire-scroll-or-filigree-945",
+      "patternId": "empire-scroll-or-filigree",
+      "formId": "945-oval-covered-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Empire Scroll or Filigree 945 Oval Covered Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "floral-bubbles-945",
+      "patternId": "floral-bubbles",
+      "formId": "945-oval-covered-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Floral Bubbles 945 Oval Covered Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "floral-0-963",
+      "patternId": "floral-0",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Floral 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "garden-medley-475",
+      "patternId": "garden-medley",
+      "formId": "475-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Garden Medley 475 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-branch-024",
+      "patternId": "golden-branch",
+      "formId": "024-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Branch 024 Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-grapes-441",
+      "patternId": "golden-grapes",
+      "formId": "441-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Grapes 441 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-grapes-444",
+      "patternId": "golden-grapes",
+      "formId": "444-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Grapes 444 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "deluxe-cinderella-casserole-or-golden-hearts-045",
+      "patternId": "deluxe-cinderella-casserole-or-golden-hearts",
+      "formId": "045-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Deluxe Cinderella Casserole or Golden Hearts 045 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-leaf-404",
+      "patternId": "golden-leaf",
+      "formId": "404-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Leaf 404 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-pine-575",
+      "patternId": "golden-pine",
+      "formId": "575-space-saver-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Pine 575 Space Saver Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "deluxe-chip-and-dip-set-gold-ivory-or-golden-scroll-441",
+      "patternId": "deluxe-chip-and-dip-set-gold-ivory-or-golden-scroll",
+      "formId": "441-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Deluxe Chip and Dip Set Gold on Ivory or Golden Scroll 441 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "deluxe-chip-and-dip-set-gold-ivory-or-golden-scroll-444",
+      "patternId": "deluxe-chip-and-dip-set-gold-ivory-or-golden-scroll",
+      "formId": "444-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Deluxe Chip and Dip Set Gold on Ivory or Golden Scroll 444 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-tulip-casserole-023",
+      "patternId": "golden-tulip-casserole",
+      "formId": "023-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Tulip Casserole 023 Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-tulip-casserole-024",
+      "patternId": "golden-tulip-casserole",
+      "formId": "024-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Tulip Casserole 024 Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "gourmet-black-475",
+      "patternId": "gourmet-black",
+      "formId": "475-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Gourmet Black 475 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "gourmet-gold-475",
+      "patternId": "gourmet-gold",
+      "formId": "475-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Gourmet Gold 475 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "green-wheat-575",
+      "patternId": "green-wheat",
+      "formId": "575-space-saver-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Green Wheat 575 Space Saver Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "green-salad-or-green-dot-squares-444",
+      "patternId": "green-salad-or-green-dot-squares",
+      "formId": "444-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Green Salad or Green Dot-Squares 444 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "hex-signs-404",
+      "patternId": "hex-signs",
+      "formId": "404-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Hex Signs 404 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "hex-signs-045",
+      "patternId": "hex-signs",
+      "formId": "045-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Hex Signs 045 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "holiday-024",
+      "patternId": "holiday",
+      "formId": "024-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Holiday 024 Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "ivy-441",
+      "patternId": "ivy",
+      "formId": "441-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Ivy 441 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "ivy-444",
+      "patternId": "ivy",
+      "formId": "444-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Ivy 444 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "kim-chee-043",
+      "patternId": "kim-chee",
+      "formId": "043-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Kim Chee 043 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "meadow-043",
+      "patternId": "meadow",
+      "formId": "043-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Meadow 043 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "meadow-045",
+      "patternId": "meadow",
+      "formId": "045-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Meadow 045 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "medallion-casserole-443",
+      "patternId": "medallion-casserole",
+      "formId": "443-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Medallion Casserole 443 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "midnight-bloom-or-floral-943",
+      "patternId": "midnight-bloom-or-floral",
+      "formId": "943-oval-covered-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Midnight Bloom or Floral 943 Oval Covered Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "moon-deco-475",
+      "patternId": "moon-deco",
+      "formId": "475-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Moon Deco 475 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "dots-yellow-402",
+      "patternId": "dots-yellow",
+      "formId": "402-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Dots Yellow 402 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "dots-blue-403",
+      "patternId": "dots-blue",
+      "formId": "403-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Dots Blue 403 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "dots-green-404",
+      "patternId": "dots-green",
+      "formId": "404-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Dots Green 404 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "new-holland-043",
+      "patternId": "new-holland",
+      "formId": "043-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex New Holland 043 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "new-holland-045",
+      "patternId": "new-holland",
+      "formId": "045-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex New Holland 045 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "nouveau-floral-475",
+      "patternId": "nouveau-floral",
+      "formId": "475-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Nouveau Floral 475 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "polynesian-664",
+      "patternId": "polynesian",
+      "formId": "664-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Polynesian 664 Large Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "ponderosa-hat-709",
+      "patternId": "ponderosa-hat",
+      "formId": "709-tableware-mug",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Ponderosa Hat 709 Tableware Mug",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "ponderosa-logo-709",
+      "patternId": "ponderosa-logo",
+      "formId": "709-tableware-mug",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Ponderosa Logo 709 Tableware Mug",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "pueblo-475",
+      "patternId": "pueblo",
+      "formId": "475-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Pueblo 475 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "rooster-black-575",
+      "patternId": "rooster-black",
+      "formId": "575-space-saver-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Rooster Black 575 Space Saver Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "royal-963",
+      "patternId": "royal",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Royal 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "royal-wheat-963",
+      "patternId": "royal-wheat",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Royal Wheat 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "salad-bowl-444",
+      "patternId": "salad-bowl",
+      "formId": "444-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Salad Bowl 444 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "saxony-475",
+      "patternId": "saxony",
+      "formId": "475-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Saxony 475 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "seville-045",
+      "patternId": "seville",
+      "formId": "045-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Seville 045 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "snack-server-or-compass-963",
+      "patternId": "snack-server-or-compass",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Snack Server or Compass 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "sol-flower-473",
+      "patternId": "sol-flower",
+      "formId": "473-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Sol Flower 473 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "stack-n-snack-or-speckled-lines-708",
+      "patternId": "stack-n-snack-or-speckled-lines",
+      "formId": "708-tableware-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Stack N' Snack or Speckled Lines 708 Tableware Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "stack-n-snack-or-speckled-lines-404",
+      "patternId": "stack-n-snack-or-speckled-lines",
+      "formId": "404-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Stack N' Snack or Speckled Lines 404 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "spices-designer-collection-043",
+      "patternId": "spices-designer-collection",
+      "formId": "043-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Spices from the Designer Collection 043 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "spirograph-475",
+      "patternId": "spirograph",
+      "formId": "475-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Spirograph 475 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "cinderella-serving-casserole-or-starburst-575",
+      "patternId": "cinderella-serving-casserole-or-starburst",
+      "formId": "575-space-saver-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Cinderella Serving Casserole or Starburst 575 Space Saver Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "trailing-flowers-473",
+      "patternId": "trailing-flowers",
+      "formId": "473-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Trailing Flowers 473 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "trailing-flowers-or-sprig-hospitality-collection-474",
+      "patternId": "trailing-flowers-or-sprig-hospitality-collection",
+      "formId": "474-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Trailing Flowers or Sprig from the Hospitality Collection 474 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "sprig-or-trailing-flowers-hospitality-collection-475",
+      "patternId": "sprig-or-trailing-flowers-hospitality-collection",
+      "formId": "475-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Sprig or Trailing Flowers from the Hospitality Collection 475 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "cinderella-twin-server-set-472",
+      "patternId": "cinderella-twin-server-set",
+      "formId": "472-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Cinderella Twin Server Set 472 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "vintage-or-vintage-grapes-473",
+      "patternId": "vintage-or-vintage-grapes",
+      "formId": "473-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Vintage or Vintage Grapes 473 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "wicker-or-basket-weave-043",
+      "patternId": "wicker-or-basket-weave",
+      "formId": "043-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Wicker or Basket Weave 043 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "zodiac-475",
+      "patternId": "zodiac",
+      "formId": "475-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Zodiac 475 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "americana-blue-or-multitone-blue-401",
+      "patternId": "americana-blue-or-multitone-blue",
+      "formId": "401-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Americana Blue or Multitone Blue 401 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "americana-blue-or-multitone-blue-402",
+      "patternId": "americana-blue-or-multitone-blue",
+      "formId": "402-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Americana Blue or Multitone Blue 402 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "americana-blue-or-multitone-blue-403",
+      "patternId": "americana-blue-or-multitone-blue",
+      "formId": "403-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Americana Blue or Multitone Blue 403 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "americana-blue-or-multitone-blue-404",
+      "patternId": "americana-blue-or-multitone-blue",
+      "formId": "404-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Americana Blue or Multitone Blue 404 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "americana-brown-401",
+      "patternId": "americana-brown",
+      "formId": "401-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Americana Brown 401 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "americana-brown-402",
+      "patternId": "americana-brown",
+      "formId": "402-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Americana Brown 402 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "americana-brown-403",
+      "patternId": "americana-brown",
+      "formId": "403-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Americana Brown 403 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "americana-brown-404",
+      "patternId": "americana-brown",
+      "formId": "404-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Americana Brown 404 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "autumn-harvest-1410",
+      "patternId": "autumn-harvest",
+      "formId": "1410-mug",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Autumn Harvest 1410 Opalware Mug",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "brittany-blue-478",
+      "patternId": "brittany-blue",
+      "formId": "478-round-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Brittany Blue 478 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "brittany-blue-479",
+      "patternId": "brittany-blue",
+      "formId": "479-round-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Brittany Blue 479 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "brittany-blue-489",
+      "patternId": "brittany-blue",
+      "formId": "489-hearth-mug",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Brittany Blue 489 Hearth Mug",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "brittany-blue-483",
+      "patternId": "brittany-blue",
+      "formId": "483-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Brittany Blue 483 Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "brittany-blue-485",
+      "patternId": "brittany-blue",
+      "formId": "485-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Brittany Blue 485 Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "brittany-blue-484",
+      "patternId": "brittany-blue",
+      "formId": "484-round-tart-pan",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Brittany Blue 484 Round Tart Pan",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "brittany-blue-486",
+      "patternId": "brittany-blue",
+      "formId": "486-round-tart-pan",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Brittany Blue 486 Round Tart Pan",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterfly-gold-922",
+      "patternId": "butterfly-gold",
+      "formId": "922-square-baking-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 922 Square Baking Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterfly-gold-72",
+      "patternId": "butterfly-gold",
+      "formId": "72-butter-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 72 Butter Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterfly-gold-943",
+      "patternId": "butterfly-gold",
+      "formId": "943-oval-covered-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 943 Oval Covered Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterfly-gold-945",
+      "patternId": "butterfly-gold",
+      "formId": "945-oval-covered-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 945 Oval Covered Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterfly-gold-963",
+      "patternId": "butterfly-gold",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterfly-gold-913",
+      "patternId": "butterfly-gold",
+      "formId": "913-loaf-pan",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 913 Loaf Pan",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterfly-gold-933",
+      "patternId": "butterfly-gold",
+      "formId": "933-rectangular-baking-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterfly Gold 933 Rectangular Baking Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterprint-orange-441",
+      "patternId": "butterprint-orange",
+      "formId": "441-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterprint Orange 441 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterprint-orange-442",
+      "patternId": "butterprint-orange",
+      "formId": "442-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterprint Orange 442 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterprint-orange-443",
+      "patternId": "butterprint-orange",
+      "formId": "443-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterprint Orange 443 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterprint-orange-444",
+      "patternId": "butterprint-orange",
+      "formId": "444-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterprint Orange 444 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterprint-pink-471",
+      "patternId": "butterprint-pink",
+      "formId": "471-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterprint Pink 471 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterprint-pink-472",
+      "patternId": "butterprint-pink",
+      "formId": "472-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterprint Pink 472 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterprint-pink-473",
+      "patternId": "butterprint-pink",
+      "formId": "473-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterprint Pink 473 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterprint-32",
+      "patternId": "butterprint",
+      "formId": "32-butter-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterprint 32 Butter Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterprint-white-turquoise-471",
+      "patternId": "butterprint-white-turquoise",
+      "formId": "471-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterprint White on Turquoise 471 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterprint-turquoise-white-471",
+      "patternId": "butterprint-turquoise-white",
+      "formId": "471-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterprint Turquoise on White 471 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterprint-white-turquoise-472",
+      "patternId": "butterprint-white-turquoise",
+      "formId": "472-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterprint White on Turquoise 472 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterprint-white-turquoise-473",
+      "patternId": "butterprint-white-turquoise",
+      "formId": "473-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterprint White on Turquoise 473 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "butterprint-turquoise-white-473",
+      "patternId": "butterprint-turquoise-white",
+      "formId": "473-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Butterprint Turquoise on White 473 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "colonial-mist-326",
+      "patternId": "colonial-mist",
+      "formId": "326-round-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Colonial Mist 326 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "copper-filigree-706",
+      "patternId": "copper-filigree",
+      "formId": "706-sauce-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Copper Filigree 706 Sauce Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "daisy-963",
+      "patternId": "daisy",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Daisy 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "desert-dawn-yellow-024",
+      "patternId": "desert-dawn-yellow",
+      "formId": "024-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Desert Dawn Yellow 024 Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "desert-dawn-pink-024",
+      "patternId": "desert-dawn-pink",
+      "formId": "024-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Desert Dawn Pink 024 Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "desert-dawn-yellow-222",
+      "patternId": "desert-dawn-yellow",
+      "formId": "222-square-baking-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Desert Dawn Yellow 222 Square Baking Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "desert-dawn-pink-222",
+      "patternId": "desert-dawn-pink",
+      "formId": "222-square-baking-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Desert Dawn Pink 222 Square Baking Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "desert-dawn-yellow-221",
+      "patternId": "desert-dawn-yellow",
+      "formId": "221-round-cake-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Desert Dawn Yellow 221 Round Cake Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "desert-dawn-pink-221",
+      "patternId": "desert-dawn-pink",
+      "formId": "221-round-cake-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Desert Dawn Pink 221 Round Cake Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "desert-dawn-yellow-213",
+      "patternId": "desert-dawn-yellow",
+      "formId": "213-loaf-pan",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Desert Dawn Yellow 213 Loaf Pan",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "desert-dawn-pink-213",
+      "patternId": "desert-dawn-pink",
+      "formId": "213-loaf-pan",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Desert Dawn Pink 213 Loaf Pan",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "desert-dawn-yellow-209",
+      "patternId": "desert-dawn-yellow",
+      "formId": "209-pie-plate",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Desert Dawn Yellow 209 Pie Plate",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "desert-dawn-pink-209",
+      "patternId": "desert-dawn-pink",
+      "formId": "209-pie-plate",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Desert Dawn Pink 209 Pie Plate",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "desert-dawn-yellow-231",
+      "patternId": "desert-dawn-yellow",
+      "formId": "231-oblong-baking-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Desert Dawn Yellow 231 Oblong Baking Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "desert-dawn-pink-231",
+      "patternId": "desert-dawn-pink",
+      "formId": "231-oblong-baking-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Desert Dawn Pink 231 Oblong Baking Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "desert-dawn-yellow-232",
+      "patternId": "desert-dawn-yellow",
+      "formId": "232-oblong-baking-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Desert Dawn Yellow 232 Oblong Baking Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "desert-dawn-pink-232",
+      "patternId": "desert-dawn-pink",
+      "formId": "232-oblong-baking-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Desert Dawn Pink 232 Oblong Baking Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "arches-or-designs-mixer-set-343",
+      "patternId": "arches-or-designs-mixer-set",
+      "formId": "343-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Arches or Designs Mixer Set 343 Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "arches-or-designs-mixer-set-344",
+      "patternId": "arches-or-designs-mixer-set",
+      "formId": "344-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Arches or Designs Mixer Set 344 Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "early-american-963",
+      "patternId": "early-american",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Early American 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "federal-eagle-489",
+      "patternId": "federal-eagle",
+      "formId": "489-hearth-mug",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Federal Eagle 489 Hearth Mug",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "federal-eagle-1410",
+      "patternId": "federal-eagle",
+      "formId": "1410-mug",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Federal Eagle 1410 Opalware Mug",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "federal-eagle-478",
+      "patternId": "federal-eagle",
+      "formId": "478-round-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Federal Eagle 478 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "federal-eagle-479",
+      "patternId": "federal-eagle",
+      "formId": "479-round-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Federal Eagle 479 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "friendship-963",
+      "patternId": "friendship",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Friendship 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "friendship-795",
+      "patternId": "friendship",
+      "formId": "795-dinner-plate",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Friendship 795 Dinner Plate",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-acorn-043",
+      "patternId": "golden-acorn",
+      "formId": "043-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Acorn 043 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-acorn-045",
+      "patternId": "golden-acorn",
+      "formId": "045-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Acorn 045 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-acorn-963",
+      "patternId": "golden-acorn",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Acorn 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-acorn-053",
+      "patternId": "golden-acorn",
+      "formId": "053-oval-open-baker",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Acorn 053 Oval Open Baker",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-acorn-548",
+      "patternId": "golden-acorn",
+      "formId": "548-space-saver-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Acorn 548 Space Saver Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-acorn-575",
+      "patternId": "golden-acorn",
+      "formId": "575-space-saver-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Acorn 575 Space Saver Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-honeysuckle-033",
+      "patternId": "golden-honeysuckle",
+      "formId": "033-oblong-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Honeysuckle 033 Oblong Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-honeysuckle-058",
+      "patternId": "golden-honeysuckle",
+      "formId": "058-oblong-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Honeysuckle 058 Oblong Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-honeysuckle-035",
+      "patternId": "golden-honeysuckle",
+      "formId": "035-oblong-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Honeysuckle 035 Oblong Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "golden-honeysuckle-055",
+      "patternId": "golden-honeysuckle",
+      "formId": "055-oblong-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Golden Honeysuckle 055 Oblong Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "gooseberry-pink-white-441",
+      "patternId": "gooseberry-pink-white",
+      "formId": "441-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Gooseberry Pink on White 441 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "gooseberry-pink-white-443",
+      "patternId": "gooseberry-pink-white",
+      "formId": "443-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Gooseberry Pink on White 443 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "gooseberry-black-white-441",
+      "patternId": "gooseberry-black-white",
+      "formId": "441-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Gooseberry Black on White 441 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "gooseberry-black-yellow-442",
+      "patternId": "gooseberry-black-yellow",
+      "formId": "442-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Gooseberry Black on Yellow 442 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "gooseberry-black-white-443",
+      "patternId": "gooseberry-black-white",
+      "formId": "443-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Gooseberry Black on White 443 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "gooseberry-black-yellow-444",
+      "patternId": "gooseberry-black-yellow",
+      "formId": "444-cinderella-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Gooseberry Black on Yellow 444 Cinderella Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "homestead-blue-043",
+      "patternId": "homestead-blue",
+      "formId": "043-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Homestead 043 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "homestead-blue-045",
+      "patternId": "homestead-blue",
+      "formId": "045-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Homestead 045 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "pink-daisy-963",
+      "patternId": "pink-daisy",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Pink Daisy 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "snowflake-turquoise-white-963",
+      "patternId": "snowflake-turquoise-white",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Snowflake Turquoise on White 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "snowflake-black-548",
+      "patternId": "snowflake-black",
+      "formId": "548-space-saver-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Snowflake Black 548 Space Saver Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "snowflake-black-575",
+      "patternId": "snowflake-black",
+      "formId": "575-space-saver-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Snowflake Black 575 Space Saver Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "spring-blossom-green-72",
+      "patternId": "spring-blossom-green",
+      "formId": "72-butter-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green 72 Butter Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "spring-blossom-green-722",
+      "patternId": "spring-blossom-green",
+      "formId": "722-creamer",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Spring Blossom Green 722 Creamer",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "square-flowers-471",
+      "patternId": "square-flowers",
+      "formId": "471-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Square Flowers 471 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "square-flowers-472",
+      "patternId": "square-flowers",
+      "formId": "472-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Square Flowers 472 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "square-flowers-473",
+      "patternId": "square-flowers",
+      "formId": "473-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Square Flowers 473 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "square-flowers-474",
+      "patternId": "square-flowers",
+      "formId": "474-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Square Flowers 474 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "square-flowers-475",
+      "patternId": "square-flowers",
+      "formId": "475-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Square Flowers 475 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "autumn-floral-verde-963",
+      "patternId": "autumn-floral-verde",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Autumn Floral Verde 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "autumn-floral-verde-1063",
+      "patternId": "autumn-floral-verde",
+      "formId": "1063-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Autumn Floral Verde 1063 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "autumn-floral-verde-473",
+      "patternId": "autumn-floral-verde",
+      "formId": "473-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Autumn Floral Verde 473 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "autumn-floral-verde-474",
+      "patternId": "autumn-floral-verde",
+      "formId": "474-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Autumn Floral Verde 474 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "autumn-floral-verde-475",
+      "patternId": "autumn-floral-verde",
+      "formId": "475-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Autumn Floral Verde 475 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "summer-impressions-1410",
+      "patternId": "summer-impressions",
+      "formId": "1410-mug",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Summer Impressions 1410 Opalware Mug",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "terra-357",
+      "patternId": "terra",
+      "formId": "357-dinner-plate",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Terra 357 Dinner Plate",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "terra-708",
+      "patternId": "terra",
+      "formId": "708-tableware-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Terra 708 Tableware Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "town-and-country-963",
+      "patternId": "town-and-country",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Town and Country 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "verde-963",
+      "patternId": "verde",
+      "formId": "963-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Verde 963 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "flamingo-pink-222",
+      "patternId": "flamingo-pink",
+      "formId": "222-square-baking-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Flamingo Pink 222 Square Baking Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "lime-green-222",
+      "patternId": "lime-green",
+      "formId": "222-square-baking-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Lime Green 222 Square Baking Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "lime-green-231",
+      "patternId": "lime-green",
+      "formId": "231-oblong-baking-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Lime Green 231 Oblong Baking Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "lime-green-232",
+      "patternId": "lime-green",
+      "formId": "232-oblong-baking-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Lime Green 232 Oblong Baking Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "snowflake-blue-922",
+      "patternId": "snowflake-blue",
+      "formId": "922-square-baking-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Snowflake Blue 922 Square Baking Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "turquoise-222",
+      "patternId": "turquoise",
+      "formId": "222-square-baking-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Turquoise 222 Square Baking Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "delphite-bluebelle-401",
+      "patternId": "delphite-bluebelle",
+      "formId": "401-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Delphite Bluebelle 401 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "delphite-bluebelle-402",
+      "patternId": "delphite-bluebelle",
+      "formId": "402-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Delphite Bluebelle 402 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "delphite-bluebelle-403",
+      "patternId": "delphite-bluebelle",
+      "formId": "403-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Delphite Bluebelle 403 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "opal-white-401",
+      "patternId": "opal-white",
+      "formId": "401-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Opal White 401 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "opal-white-402",
+      "patternId": "opal-white",
+      "formId": "402-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Opal White 402 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "opal-white-403",
+      "patternId": "opal-white",
+      "formId": "403-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Opal White 403 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "opal-white-404",
+      "patternId": "opal-white",
+      "formId": "404-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Opal White 404 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "pink-401",
+      "patternId": "pink",
+      "formId": "401-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Pink 401 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "pink-402",
+      "patternId": "pink",
+      "formId": "402-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Pink 402 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "pink-403",
+      "patternId": "pink",
+      "formId": "403-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Pink 403 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "pink-404",
+      "patternId": "pink",
+      "formId": "404-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Pink 404 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "turquoise-401",
+      "patternId": "turquoise",
+      "formId": "401-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Turquoise 401 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "turquoise-402",
+      "patternId": "turquoise",
+      "formId": "402-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Turquoise 402 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "turquoise-403",
+      "patternId": "turquoise",
+      "formId": "403-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Turquoise 403 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "turquoise-404",
+      "patternId": "turquoise",
+      "formId": "404-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Turquoise 404 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "yellow-401",
+      "patternId": "yellow",
+      "formId": "401-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Yellow 401 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "yellow-402",
+      "patternId": "yellow",
+      "formId": "402-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Yellow 402 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "yellow-403",
+      "patternId": "yellow",
+      "formId": "403-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Yellow 403 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "yellow-404",
+      "patternId": "yellow",
+      "formId": "404-mixing-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Yellow 404 Round Mixing Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "opal-white-209",
+      "patternId": "opal-white",
+      "formId": "209-pie-plate",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Opal White 209 Pie Plate",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "blue-chip-week-473",
+      "patternId": "blue-chip-week",
+      "formId": "473-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Blue Chip Week 473 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "celtic-floral-or-hearts-scroll-473",
+      "patternId": "celtic-floral-or-hearts-scroll",
+      "formId": "473-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Celtic Floral or Hearts Scroll 473 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "charleroi-plant-700",
+      "patternId": "charleroi-plant",
+      "formId": "700-pixie-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Charleroi Plant 700 Pixie Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "chartreuse-honeysuckle-043",
+      "patternId": "chartreuse-honeysuckle",
+      "formId": "043-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Chartreuse Honeysuckle 043 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "crazy-quilt-473",
+      "patternId": "crazy-quilt",
+      "formId": "473-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Crazy Quilt 473 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "flamingo-pink-024",
+      "patternId": "flamingo-pink",
+      "formId": "024-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Flamingo Pink 024 Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "flamingo-pink-080",
+      "patternId": "flamingo-pink",
+      "formId": "080-individual-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Flamingo Pink 080 Individual Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "lime-green-024",
+      "patternId": "lime-green",
+      "formId": "024-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Lime Green 024 Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "lincoln-center-475",
+      "patternId": "lincoln-center",
+      "formId": "475-cinderella-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Lincoln Center 475 Cinderella Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "mod-kitchen-943",
+      "patternId": "mod-kitchen",
+      "formId": "943-oval-covered-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Mod Kitchen 943 Oval Covered Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "mod-kitchen-043",
+      "patternId": "mod-kitchen",
+      "formId": "043-oval-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Mod Kitchen 043 Oval Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "red-hostess-515",
+      "patternId": "red-hostess",
+      "formId": "515-hostess-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Red Hostess 515 Hostess Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "red-hostess-407",
+      "patternId": "red-hostess",
+      "formId": "407-hostess-serving-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Red Hostess 407 Hostess Serving Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "yellow-024",
+      "patternId": "yellow",
+      "formId": "024-round-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Yellow 024 Round Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "rose-pink-025",
+      "patternId": "rose-pink",
+      "formId": "025-square-serving-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Rose Pink 025 Square Serving Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "rose-pink-410",
+      "patternId": "rose-pink",
+      "formId": "410-square-serving-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Rose Pink 410 Square Serving Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "turquoise-025",
+      "patternId": "turquoise",
+      "formId": "025-square-serving-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Turquoise 025 Square Serving Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "turquoise-410",
+      "patternId": "turquoise",
+      "formId": "410-square-serving-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Turquoise 410 Square Serving Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "blue-trains-1410",
+      "patternId": "blue-trains",
+      "formId": "1410-mug",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Blue Trains 1410 Opalware Mug",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "blue-trains-1416",
+      "patternId": "blue-trains",
+      "formId": "1416-cereal-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Blue Trains 1416 Cereal Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "cross-stitch-1410",
+      "patternId": "cross-stitch",
+      "formId": "1410-mug",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Cross-Stitch 1410 Opalware Mug",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "cross-stitch-1416",
+      "patternId": "cross-stitch",
+      "formId": "1416-cereal-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Cross-Stitch 1416 Cereal Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "delphite-bluebelle-1063",
+      "patternId": "delphite-bluebelle",
+      "formId": "1063-oval-divided-serving-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Delphite Bluebelle 1063 Oval Divided Serving Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "red-hostess-525",
+      "patternId": "red-hostess",
+      "formId": "525-hostess-casserole",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Red Hostess 525 Hostess Casserole",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "red-hostess-410",
+      "patternId": "red-hostess",
+      "formId": "410-square-serving-bowl",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Red Hostess 410 Square Serving Bowl",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "opal-white-213",
+      "patternId": "opal-white",
+      "formId": "213-loaf-pan",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Opal White 213 Loaf Pan",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "at-home-in-your-lab-1410",
+      "patternId": "at-home-in-your-lab",
+      "formId": "1410-mug",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex At Home in Your Lab 1410 Opalware Mug",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "safety-and-health-723",
+      "patternId": "safety-and-health",
+      "formId": "723-tableware-mug",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Safety and Health 723 Tableware Mug",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "vintage-bicycles-1410",
+      "patternId": "vintage-bicycles",
+      "formId": "1410-mug",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Vintage Bicycles 1410 Opalware Mug",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "clear-501",
+      "patternId": "clear",
+      "formId": "501-refrigerator-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Clear 501 Refrigerator Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "clear-502",
+      "patternId": "clear",
+      "formId": "502-refrigerator-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Clear 502 Refrigerator Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "delphite-bluebelle-501",
+      "patternId": "delphite-bluebelle",
+      "formId": "501-refrigerator-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Delphite Bluebelle 501 Refrigerator Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "delphite-bluebelle-502",
+      "patternId": "delphite-bluebelle",
+      "formId": "502-refrigerator-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Delphite Bluebelle 502 Refrigerator Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "opal-white-501",
+      "patternId": "opal-white",
+      "formId": "501-refrigerator-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Opal White 501 Refrigerator Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "opal-white-502",
+      "patternId": "opal-white",
+      "formId": "502-refrigerator-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Opal White 502 Refrigerator Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "opal-white-503",
+      "patternId": "opal-white",
+      "formId": "503-refrigerator-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Opal White 503 Refrigerator Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "primary-colors-501",
+      "patternId": "primary-colors",
+      "formId": "501-refrigerator-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Primary Colors 501 Refrigerator Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "primary-colors-502",
+      "patternId": "primary-colors",
+      "formId": "502-refrigerator-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Primary Colors 502 Refrigerator Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "primary-colors-503",
+      "patternId": "primary-colors",
+      "formId": "503-refrigerator-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Primary Colors 503 Refrigerator Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "turquoise-501",
+      "patternId": "turquoise",
+      "formId": "501-refrigerator-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Turquoise 501 Refrigerator Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "turquoise-502",
+      "patternId": "turquoise",
+      "formId": "502-refrigerator-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Turquoise 502 Refrigerator Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "turquoise-503",
+      "patternId": "turquoise",
+      "formId": "503-refrigerator-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Turquoise 503 Refrigerator Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "green-blue-507",
+      "patternId": "green-blue",
+      "formId": "507-oblong-baking-dish",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Green Blue 507 Oblong Baking Dish",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "clear-426",
+      "patternId": "clear",
+      "formId": "426-custard-cup",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Clear 426 Custard Cup",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "clear-464",
+      "patternId": "clear",
+      "formId": "464-custard-cup",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Clear 464 Custard Cup",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "clear-508",
+      "patternId": "clear",
+      "formId": "508-measuring-cup",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Clear 508 Measuring Cup",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "clear-516",
+      "patternId": "clear",
+      "formId": "516-measuring-cup",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Clear 516 Measuring Cup",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "clear-532",
+      "patternId": "clear",
+      "formId": "532-measuring-cup",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Clear 532 Measuring Cup",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "clear-206",
+      "patternId": "clear",
+      "formId": "206-pie-plate",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Clear 206 Pie Plate",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "clear-201",
+      "patternId": "clear",
+      "formId": "201-pie-plate",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Clear 201 Pie Plate",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "clear-205",
+      "patternId": "clear",
+      "formId": "205-pie-plate",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Clear 205 Pie Plate",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "clear-207",
+      "patternId": "clear",
+      "formId": "207-pie-plate",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Clear 207 Pie Plate",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "clear-208",
+      "patternId": "clear",
+      "formId": "208-pie-plate",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Clear 208 Pie Plate",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "clear-209",
+      "patternId": "clear",
+      "formId": "209-pie-plate",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Clear 209 Pie Plate",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "clear-210",
+      "patternId": "clear",
+      "formId": "210-pie-plate",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Clear 210 Pie Plate",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "clear-211",
+      "patternId": "clear",
+      "formId": "211-pie-plate",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Clear 211 Pie Plate",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "flameware-7754",
+      "patternId": "flameware",
+      "formId": "7754-coffee-percolator",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Flameware 7754 Coffee Percolator",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "flameware-7756",
+      "patternId": "flameware",
+      "formId": "7756-coffee-percolator",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Flameware 7756 Coffee Percolator",
+      "userSubmitted": false,
+      "provenance": "published-reference"
+    },
+    {
+      "slug": "flameware-7759",
+      "patternId": "flameware",
+      "formId": "7759-coffee-percolator",
+      "rarity": null,
+      "ebayQuery": "Vintage Pyrex Flameware 7759 Coffee Percolator",
+      "userSubmitted": false,
+      "provenance": "published-reference"
     }
   ],
-  "version": 5
+  "version": 6
 }
