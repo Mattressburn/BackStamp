@@ -74,6 +74,10 @@ interface VersionRow {
   value: string;
 }
 
+interface CountRow {
+  count: number;
+}
+
 interface TrainingScanPhotoRow {
   id: string;
   file_ref: string;
@@ -208,6 +212,13 @@ export class BackendDatabase {
         status TEXT NOT NULL CHECK (status IN ('have', 'want')),
         quantity INTEGER NOT NULL CHECK (quantity >= 0),
         PRIMARY KEY (user_id, item_slug)
+      ) STRICT;
+
+      CREATE TABLE IF NOT EXISTS scan_usage (
+        key TEXT NOT NULL,
+        month TEXT NOT NULL,
+        count INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (key, month)
       ) STRICT;
 
       CREATE TABLE IF NOT EXISTS price_cache (
@@ -600,6 +611,50 @@ export class BackendDatabase {
       for (const item of items) insert.run(userId, item.itemSlug, item.status, item.quantity);
     });
     return this.getCollection(userId);
+  }
+
+  scanUsage(key: string, month: string): number {
+    const row = this.sqlite
+      .prepare('SELECT count FROM scan_usage WHERE key = ? AND month = ?')
+      .get(key, month) as unknown as CountRow | undefined;
+    return row?.count ?? 0;
+  }
+
+  incrementScanUsage(key: string, month: string): number {
+    return (
+      this.sqlite
+        .prepare(`
+          INSERT INTO scan_usage(key, month, count) VALUES (?, ?, 1)
+          ON CONFLICT(key, month) DO UPDATE SET count = count + 1
+          RETURNING count
+        `)
+        .get(key, month) as unknown as CountRow
+    ).count;
+  }
+
+  deleteAccount(userId: string): string[] {
+    return this.transaction(() => {
+      const rows = this.sqlite
+        .prepare(`
+          SELECT file_ref FROM photos WHERE uploader_id = ?
+          UNION
+          SELECT p.file_ref FROM scan_photos p
+          JOIN scans s ON s.id = p.scan_id
+          WHERE s.user_id = ?
+          UNION
+          SELECT photo_ref AS file_ref FROM scans
+          WHERE user_id = ? AND photo_ref IS NOT NULL
+        `)
+        .all(userId, userId, userId) as unknown as { file_ref: string }[];
+      this.sqlite.prepare('DELETE FROM collection WHERE user_id = ?').run(userId);
+      this.sqlite
+        .prepare('DELETE FROM scan_photos WHERE scan_id IN (SELECT id FROM scans WHERE user_id = ?)')
+        .run(userId);
+      this.sqlite.prepare('DELETE FROM scans WHERE user_id = ?').run(userId);
+      this.sqlite.prepare('DELETE FROM photos WHERE uploader_id = ?').run(userId);
+      this.sqlite.prepare('DELETE FROM scan_usage WHERE key = ?').run(userId);
+      return rows.map((row) => row.file_ref);
+    });
   }
 
   addScan(input: {

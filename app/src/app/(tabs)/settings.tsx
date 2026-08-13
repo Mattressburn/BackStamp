@@ -20,6 +20,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Children, Fragment, useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Linking,
   Platform,
   Pressable,
@@ -42,7 +43,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { fetchCatalog, getToken, pullCollection, pushCollection, signIn, signOut } from '@/api';
+import { deleteAccount, fetchCatalog, getToken, pullCollection, pushCollection, signIn, signOut } from '@/api';
 import {
   BottomTabInset,
   HitTarget,
@@ -206,15 +207,54 @@ export default function SettingsScreen() {
     }
   }
 
-  async function handleSignOut() {
+  async function handleSignOut(
+    successMessage = 'Signed out. Your local collection stays on this device.',
+  ) {
     setBusy(true);
     setError(null);
     try {
       await signOut();
       setSignedIn(false);
-      setMessage('Signed out. Your local collection stays on this device.');
+      setMessage(successMessage);
     } catch (signOutError) {
       setError(signOutError instanceof Error ? signOutError.message : 'Could not sign out.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function confirmAccountDeletion() {
+    Alert.alert(
+      'Delete account?',
+      'This permanently deletes your collection sync, scans, and any shared photos from the server. It cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: () => void handleAccountDeletion(),
+        },
+      ],
+    );
+  }
+
+  async function handleAccountDeletion() {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const result = await deleteAccount();
+      if (!result.ok) {
+        setError(`Account deletion failed: ${result.error}`);
+        return;
+      }
+      await handleSignOut('Account deleted. Your local collection stays on this device.');
+    } catch (deletionError) {
+      setError(
+        deletionError instanceof Error
+          ? `Account deletion failed: ${deletionError.message}`
+          : 'Account deletion failed. Please try again.',
+      );
     } finally {
       setBusy(false);
     }
@@ -325,6 +365,17 @@ export default function SettingsScreen() {
             valueTone="spice"
             caption="Which catalogued pieces you have or want, and how many. Condition and notes never leave this device."
           />
+          {signedIn && (
+            <Row
+              title="Delete account"
+              caption="Permanently remove your server data."
+              value="Delete"
+              valueTone="danger"
+              onPress={confirmAccountDeletion}
+              disabled={busy}
+              accessibilityLabel="Delete account"
+            />
+          )}
           {!signedIn && !googleClientId && (
             <Row
               title="Google sign-in"
@@ -551,7 +602,7 @@ function Group({
   );
 }
 
-type ValueTone = 'accent' | 'spice' | 'quiet';
+type ValueTone = 'accent' | 'spice' | 'quiet' | 'danger';
 
 /** One line of a group card: optional lead, a title over its caption, a value or control. */
 function Row({
@@ -582,9 +633,12 @@ function Row({
   accessibilityLabel?: string;
 }) {
   const colors = useColors();
-  const valueColor = { accent: colors.accent, spice: colors.spice, quiet: colors.textTertiary }[
-    valueTone
-  ];
+  const valueColor = {
+    accent: colors.accent,
+    spice: colors.spice,
+    quiet: colors.textTertiary,
+    danger: colors.danger,
+  }[valueTone];
 
   const body = (
     <>

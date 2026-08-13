@@ -263,6 +263,44 @@ export function PermissionScreen({
   );
 }
 
+export function QuotaExhaustedScreen({
+  message,
+  onBrowse,
+}: {
+  message: string;
+  onBrowse: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={styles.ground}>
+      <View
+        accessibilityLiveRegion="polite"
+        style={[styles.permissionBody, { paddingTop: insets.top + Spacing.six + Spacing.four }]}>
+        <View style={styles.permissionTile}>
+          <View style={styles.permissionRing} />
+        </View>
+        <Text accessibilityRole="header" style={styles.permissionTitle}>
+          Free scans used for this month
+        </Text>
+        <Text style={styles.permissionBlurb}>{message}</Text>
+      </View>
+      <View
+        style={[
+          styles.footer,
+          { paddingBottom: insets.bottom + TAB_BAR_CLEARANCE + Spacing.four + Spacing.two },
+        ]}>
+        <PressButton
+          tone="gold"
+          onPress={onBrowse}
+          accessibilityLabel="Browse the catalog">
+          Browse the catalog
+        </PressButton>
+      </View>
+    </View>
+  );
+}
+
 // ------------------------------------------------------------------ 0 / 1 · viewfinder
 
 /**
@@ -277,6 +315,7 @@ export function ViewfinderScreen({
   step,
   banner,
   bannerActions,
+  quotaLabel,
   problem,
   busy,
   cameraRef,
@@ -296,6 +335,7 @@ export function ViewfinderScreen({
   step: 1 | 2;
   banner: string | null;
   bannerActions?: readonly ScanBannerAction[];
+  quotaLabel: string | null;
   problem: string | null;
   busy: boolean;
   cameraRef: React.RefObject<CameraView | null>;
@@ -327,6 +367,11 @@ export function ViewfinderScreen({
               style={styles.headCount}>{`${step} / 2`}</Text>
           )}
         </View>
+        {quotaLabel && (
+          <Text accessibilityLiveRegion="polite" style={styles.quotaMeter}>
+            {quotaLabel}
+          </Text>
+        )}
         {showModeToggle && (
           <View style={styles.modeControls}>
             <View accessibilityRole="radiogroup" style={styles.modeToggle}>
@@ -400,7 +445,7 @@ export function ViewfinderScreen({
               style={styles.importConfirmTitle}>
               Identify {pendingImportCount} {pendingImportCount === 1 ? 'photo' : 'photos'}?
             </Text>
-            <Text style={styles.importConfirmCopy}>Each one costs a model call.</Text>
+            <Text style={styles.importConfirmCopy}>Each photo uses one free scan.</Text>
             <View style={styles.importConfirmActions}>
               <Pressable
                 accessibilityLabel={`Identify ${pendingImportCount} ${pendingImportCount === 1 ? 'photo' : 'photos'}`}
@@ -627,6 +672,7 @@ const styles = StyleSheet.create({
   headRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
   headLabel: { ...Type.label, color: CameraChrome.guide, letterSpacing: 1.6 },
   headCount: { ...Type.caption, color: CameraChrome.textFaint, fontSize: 11 },
+  quotaMeter: { ...Type.caption, color: CameraChrome.textFaint },
   modeControls: { flexDirection: 'row', gap: Spacing.two },
   modeToggle: {
     backgroundColor: CameraChrome.fill,

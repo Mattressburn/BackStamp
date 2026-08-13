@@ -3,10 +3,70 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import type { ApiErrorCode, ApiResult, ItemDetail, PriceQuote, SetDetection } from '@shared/types';
+import type { ApiErrorCode, ApiResult, IdentifyResponse, ItemDetail, PriceQuote, ScanQuota, SetDetection } from '@shared/types';
 
 // @ts-expect-error Node's TypeScript test runner requires the explicit extension.
-import { adjustSetGroupCount, advanceBulkQueue, bulkPhotoProgress, photoInvitesFor, browseDetailFacts, deriveHuntingChips, deriveLlmWasRight, groupDetections, knownCombinationOptions, oldestSavedScan, ordinal, ordinalWord, rankHuntingRows, replaceOrMergeDetectionGroup, savedScanBannerMessage, setFilingPieces, setScanLogInputs, shouldPresentBrowseDetail, shouldRetryQueueDrain, summarizeFiledPrices, type GroupedDetection } from './logic.ts';
+import { adjustSetGroupCount, advanceBulkQueue, applyQuotaResult, bulkPhotoProgress, photoInvitesFor, browseDetailFacts, deriveHuntingChips, deriveLlmWasRight, getOrCreateInstallId, groupDetections, knownCombinationOptions, oldestSavedScan, ordinal, ordinalWord, quotaExhaustedText, quotaRemainingText, rankHuntingRows, replaceOrMergeDetectionGroup, savedScanBannerMessage, setFilingPieces, setScanLogInputs, shouldPresentBrowseDetail, shouldRetryQueueDrain, summarizeFiledPrices, type GroupedDetection, type ScanQuotaState } from './logic.ts';
+
+const availableQuota: ScanQuotaState = {
+  quota: { remaining: 18, allowance: 25, resetsOn: '2026-09-01' },
+  exhaustedResetsOn: null,
+};
+
+test('quota meter displays the remaining free scans', () => {
+  assert.equal(quotaRemainingText(availableQuota.quota), '18 free scans left this month');
+  assert.equal(
+    quotaRemainingText({ remaining: 1, allowance: 25, resetsOn: '2026-09-01' }),
+    '1 free scan left this month',
+  );
+});
+
+test('identify response quota replaces the displayed meter', () => {
+  const response = {
+    ok: true,
+    data: {
+      guesses: [],
+      lowConfidence: true,
+      quota: { remaining: 17, allowance: 25, resetsOn: '2026-09-01' },
+    },
+  } satisfies ApiResult<IdentifyResponse>;
+
+  assert.deepEqual(applyQuotaResult(availableQuota, response), {
+    quota: { remaining: 17, allowance: 25, resetsOn: '2026-09-01' },
+    exhaustedResetsOn: null,
+  });
+});
+
+test('quota exhausted failure becomes a friendly state with a human reset date', () => {
+  const response = {
+    ok: false,
+    error: 'No free scans remain',
+    code: 'quota_exhausted',
+    resetsOn: '2026-09-01',
+  } as unknown as ApiResult<ScanQuota>;
+  const state = applyQuotaResult(availableQuota, response);
+
+  assert.deepEqual(state, {
+    quota: availableQuota.quota,
+    exhaustedResetsOn: '2026-09-01',
+  });
+  assert.equal(
+    quotaExhaustedText(state),
+    'You have used your 25 free scans this month. They come back on September 1, 2026.',
+  );
+});
+
+test('install id is generated once and then read from persistent storage', async () => {
+  let stored: string | null = null;
+  let generations = 0;
+  const read = async () => stored;
+  const write = async (value: string) => { stored = value; };
+  const generate = () => `install-${++generations}`;
+
+  assert.equal(await getOrCreateInstallId(read, write, generate), 'install-1');
+  assert.equal(await getOrCreateInstallId(read, write, generate), 'install-1');
+  assert.equal(generations, 1);
+});
 
 const guesses = [
   { itemSlug: 'butterprint-444', confidence: 0.86, reasoning: 'Pattern and base match.' },

@@ -132,6 +132,16 @@ export interface IdentifyResponse {
   guesses: ScanGuess[];    // up to 3, descending confidence
   /** True when nothing cleared the confidence floor. App goes straight to catalog browse. */
   lowConfidence: boolean;
+  /** Free-tier scan meter after this call. Always set by current servers; optional for old fixtures. */
+  quota?: ScanQuota;
+}
+
+/** The free-tier scan meter (docs/2026-08-13-pricing-model.md). One completed identify call
+ *  consumes one scan, however many photos or pieces it carries. Errored calls consume nothing. */
+export interface ScanQuota {
+  remaining: number;  // free scans left this calendar month, never below 0
+  allowance: number;  // currently 25
+  resetsOn: string;   // 'YYYY-MM-DD', first day of the next month, UTC
 }
 
 export interface Scan {
@@ -175,6 +185,8 @@ export interface IdentifySetResponse {
   contradicted: number;
   /** True when nothing survived. App falls back to single-piece scan or browse. */
   lowConfidence: boolean;
+  /** Free-tier scan meter after this call. Always set by current servers; optional for old fixtures. */
+  quota?: ScanQuota;
 }
 
 // ---------------------------------------------------------------- photos
@@ -212,12 +224,13 @@ export interface Session {
 
 export type ApiResult<T> =
   | { ok: true; data: T }
-  | { ok: false; error: string; code: ApiErrorCode };
+  | { ok: false; error: string; code: ApiErrorCode; resetsOn?: string };
 
 export type ApiErrorCode =
   | 'unauthorized'
   | 'not_found'
   | 'rate_limited'
+  | 'quota_exhausted'
   | 'upstream_failed'
   | 'bad_request'
   | 'internal';

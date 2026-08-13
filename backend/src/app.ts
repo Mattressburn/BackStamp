@@ -14,6 +14,7 @@ import type {
   IdentifySetRequest,
   ItemDetail,
   PhotoVisibility,
+  ScanQuota,
   ScanGuess,
   Session,
   UserItem,
@@ -37,6 +38,7 @@ export interface AppOptions {
   identifier?: Identifier;
   imageGenerator?: ImageGenerator;
   prices?: PriceService;
+  now?: () => Date;
   rateLimit?: {
     clientAddress?: RateLimitOptions['clientAddress'];
     limits?: Partial<Record<'identify' | 'scans' | 'unknownPattern', number>>;
@@ -115,6 +117,7 @@ function guess(value: unknown): ScanGuess {
 const MAX_JPEG_BYTES = 15 * 1024 * 1024;
 const MAX_JPEG_BASE64_CHARS = Math.ceil((MAX_JPEG_BYTES * 4) / 3) + 4;
 const PRICE_BATCH_CONCURRENCY = 4;
+const FREE_SCANS_PER_MONTH = 25;
 const jsonLimit = (maxSize: number) =>
   bodyLimit({
     maxSize,
@@ -183,6 +186,8 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
   const prices = options.prices ?? new PriceService(options.db);
   const sessionSecret = options.sessionSecret ?? process.env.SESSION_SECRET ?? '';
   const sessionConfigured = Buffer.byteLength(sessionSecret) >= 32;
+  // ponytail: In-process queues fit this single Node deployment; use a database lease before adding backend processes.
+  const scanQueues = new Map<string, Promise<void>>();
   // Only TRUST_PROXY_HEADER=true enables forwarded identity. Direct exposure or a proxy
   // that does not sanitize X-Forwarded-For lets callers spoof fresh addresses and bypass us.
   const rateLimitOptions = {
@@ -231,6 +236,71 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
     await next();
   };
 
+  const scanIdentity = (c: Context<BackendEnv>): string => {
+    const userId = sessionFrom(c)?.userId;
+    if (userId) return userId;
+    const installId = c.req.header('X-Install-Id')?.trim().slice(0, 64);
+    if (installId) return `install:${installId}`;
+    // ponytail: Stale clients share one fallback bucket until supported builds all send an install id.
+    return 'install:unknown';
+  };
+
+  const quotaContext = (c: Context<BackendEnv>) => {
+    const now = options.now?.() ?? new Date();
+    const month = now.toISOString().slice(0, 7);
+    const resetsOn = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1))
+      .toISOString()
+      .slice(0, 10);
+    const key = scanIdentity(c);
+    return { key, month, resetsOn };
+  };
+
+  const scanQuota = (count: number, resetsOn: string): ScanQuota => ({
+    remaining: Math.max(0, FREE_SCANS_PER_MONTH - count),
+    allowance: FREE_SCANS_PER_MONTH,
+    resetsOn,
+  });
+
+  const exhausted = (resetsOn: string) => {
+    return {
+      ok: false as const,
+      error: 'Monthly scan quota exhausted',
+      code: 'quota_exhausted' as const,
+      resetsOn,
+    };
+  };
+
+  const serializeScan = async <T>(key: string, operation: () => Promise<T>): Promise<T> => {
+    const previous = scanQueues.get(key) ?? Promise.resolve();
+    let release = () => {};
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const tail = previous.then(() => pending);
+    scanQueues.set(key, tail);
+    await previous;
+    try {
+      return await operation();
+    } finally {
+      release();
+      if (scanQueues.get(key) === tail) scanQueues.delete(key);
+    }
+  };
+
+  const identifyWithQuota = async <T extends object>(
+    c: Context<BackendEnv>,
+    identify: () => Promise<T>,
+  ) => {
+    const quota = quotaContext(c);
+    return serializeScan(JSON.stringify([quota.key, quota.month]), async () => {
+      const used = options.db.scanUsage(quota.key, quota.month);
+      if (used >= FREE_SCANS_PER_MONTH) return c.json(exhausted(quota.resetsOn), 429);
+      const result = await identify();
+      const count = options.db.incrementScanUsage(quota.key, quota.month);
+      return c.json(success({ ...result, quota: scanQuota(count, quota.resetsOn) }));
+    });
+  };
+
   app.onError((error, c) => {
     if (error instanceof ApiRouteError) return c.json(failure(error.message, error.code), error.status);
     console.error(error instanceof Error ? error.message : 'Unknown backend error');
@@ -253,14 +323,16 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
       throw new ApiRouteError('bad_request', 400, 'Invalid hasBaseShot');
     }
     const request: IdentifyRequest = { photos, hasBaseShot: input.hasBaseShot };
-    try {
-      return c.json(success(await identifier.identify(request, options.db.getCatalog())));
-    } catch (error) {
-      // The client message stays generic; the log keeps the real reason. A fully
-      // swallowed error here cost an hour of blind debugging on 2026-08-12.
-      console.error('identify failed:', error instanceof Error ? error.message : error);
-      throw new ApiRouteError('upstream_failed', 502, 'Identification is unavailable');
-    }
+    return identifyWithQuota(c, async () => {
+      try {
+        return await identifier.identify(request, options.db.getCatalog());
+      } catch (error) {
+        // The client message stays generic; the log keeps the real reason. A fully
+        // swallowed error here cost an hour of blind debugging on 2026-08-12.
+        console.error('identify failed:', error instanceof Error ? error.message : error);
+        throw new ApiRouteError('upstream_failed', 502, 'Identification is unavailable');
+      }
+    });
   });
 
   app.post('/identify/set', identifyRateLimit, jsonLimit(MAX_JPEG_BASE64_CHARS + 10_000), async (c) => {
@@ -270,11 +342,20 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
         requiredString(input.photo, 'photo', MAX_JPEG_BASE64_CHARS),
       ).toString('base64'),
     };
-    try {
-      return c.json(success(await identifier.identifySet(request, options.db.getCatalog())));
-    } catch {
-      throw new ApiRouteError('upstream_failed', 502, 'Identification is unavailable');
-    }
+    return identifyWithQuota(c, async () => {
+      try {
+        return await identifier.identifySet(request, options.db.getCatalog());
+      } catch {
+        throw new ApiRouteError('upstream_failed', 502, 'Identification is unavailable');
+      }
+    });
+  });
+
+  app.get('/quota', (c) => {
+    const quota = quotaContext(c);
+    return c.json(
+      success(scanQuota(options.db.scanUsage(quota.key, quota.month), quota.resetsOn)),
+    );
   });
 
   // The app's NetInfo reachability probe. What "online" means to a collector in a
@@ -455,6 +536,19 @@ export function createApp(options: AppOptions): Hono<BackendEnv> {
       throw new ApiRouteError('bad_request', 400, 'Duplicate collection item');
     }
     return c.json(success(options.db.replaceCollection(c.get('session').userId, items)));
+  });
+
+  app.delete('/account', requireAuth, async (c) => {
+    const userId = c.get('session').userId;
+    const fileRefs = options.db.deleteAccount(userId);
+    await Promise.all(
+      fileRefs.map((fileRef) =>
+        rm(join(options.photoDir, fileRef), { force: true }),
+      ),
+    );
+    // Accepted caveat: sessions are stateless signed claims, so an outstanding token stays
+    // valid until exp and sees an empty account after deletion.
+    return c.body(null, 204);
   });
 
   app.post('/photos', requireAuth, jsonLimit(MAX_JPEG_BASE64_CHARS + 10_000), async (c) => {

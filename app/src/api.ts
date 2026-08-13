@@ -19,9 +19,11 @@ import type {
   ItemDetail,
   PhotoVisibility,
   PriceQuote,
+  ScanQuota,
   Session,
   UserItem,
 } from '@shared/types';
+import { getInstallId } from '@/db';
 
 const TOKEN_KEY = 'backstamp.session.token';
 
@@ -63,17 +65,19 @@ async function request<T>(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const token = await getToken();
+    const [token, installId] = await Promise.all([getToken(), getInstallId()]);
     const res = await fetch(`${API_URL}${path}`, {
       ...init,
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
+        'X-Install-Id': installId,
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...init.headers,
       },
     });
 
+    if (res.status === 204) return { ok: true, data: null as T };
     const body = (await res.json().catch(() => null)) as ApiResult<T> | null;
     if (!body) {
       return { ok: false, error: `Bad response (${res.status})`, code: 'upstream_failed' };
@@ -154,6 +158,10 @@ export async function identifySet(photoUri: string): Promise<ApiResult<IdentifyS
     method: 'POST',
     body: JSON.stringify({ photo }),
   });
+}
+
+export function getQuota(): Promise<ApiResult<ScanQuota>> {
+  return request<ScanQuota>('/quota');
 }
 
 // ---------------------------------------------------------------- catalog
@@ -311,4 +319,8 @@ export async function signIn(
 
 export async function signOut(): Promise<void> {
   await setToken(null);
+}
+
+export function deleteAccount(): Promise<ApiResult<null>> {
+  return request<null>('/account', { method: 'DELETE' });
 }

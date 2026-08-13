@@ -13,6 +13,7 @@
  */
 
 import * as SQLite from 'expo-sqlite';
+import { randomUUID } from 'expo-crypto';
 import type {
   CatalogResponse,
   Condition,
@@ -24,10 +25,13 @@ import type {
   QueuedScan,
   UserItem,
 } from '@shared/types';
+import { getOrCreateInstallId } from '@/features/scan/logic';
 
 const DB_NAME = 'backstamp.db';
+const INSTALL_ID_KEY = 'install_id';
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+let installIdPromise: Promise<string> | null = null;
 
 function connect(): Promise<SQLite.SQLiteDatabase> {
   dbPromise ??= SQLite.openDatabaseAsync(DB_NAME).then(async (db) => {
@@ -428,6 +432,15 @@ export async function setMeta(key: string, value: string): Promise<void> {
   );
 }
 
+export function getInstallId(): Promise<string> {
+  installIdPromise ??= getOrCreateInstallId(
+    () => getMeta(INSTALL_ID_KEY),
+    (value) => setMeta(INSTALL_ID_KEY, value),
+    randomUUID,
+  );
+  return installIdPromise;
+}
+
 /** Test hook. Drops everything and reruns migrations. */
 export async function resetDatabase(): Promise<void> {
   const db = await connect();
@@ -440,4 +453,5 @@ export async function resetDatabase(): Promise<void> {
     DROP TABLE IF EXISTS meta;
   `);
   await migrate(db);
+  installIdPromise = null;
 }

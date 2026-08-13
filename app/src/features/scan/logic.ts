@@ -2,18 +2,84 @@ import type {
   ApiErrorCode,
   ApiResult,
   Form,
+  IdentifyResponse,
+  IdentifySetResponse,
   ItemDetail,
   Pattern,
   PriceQuote,
   PriceSourceKind,
   QueuedScan,
   ScanGuess,
+  ScanQuota,
   SetDetection,
 } from '@shared/types';
 import type { CatalogRow } from '@/db';
 
 const MAX_QUEUE_ATTEMPTS = 3;
 const MAX_SET_GROUP_COUNT = 9;
+
+export interface ScanQuotaState {
+  quota: ScanQuota | null;
+  exhaustedResetsOn: string | null;
+}
+
+type QuotaResult = ApiResult<ScanQuota | IdentifyResponse | IdentifySetResponse>;
+
+export function quotaRemainingText(quota: ScanQuota | null): string | null {
+  if (!quota) return null;
+  return `${quota.remaining} free scan${quota.remaining === 1 ? '' : 's'} left this month`;
+}
+
+export function applyQuotaResult(
+  current: ScanQuotaState,
+  result: QuotaResult,
+): ScanQuotaState {
+  if (result.ok) {
+    const quota = 'remaining' in result.data ? result.data : result.data.quota;
+    return quota
+      ? {
+          quota,
+          exhaustedResetsOn:
+            quota.remaining === 0 ? current.exhaustedResetsOn : null,
+        }
+      : current;
+  }
+
+  const resetsOn =
+    String(result.code) === 'quota_exhausted' &&
+    'resetsOn' in result &&
+    typeof result.resetsOn === 'string'
+      ? result.resetsOn
+      : null;
+  return resetsOn ? { quota: current.quota, exhaustedResetsOn: resetsOn } : current;
+}
+
+export function quotaExhaustedText(state: ScanQuotaState): string | null {
+  if (!state.exhaustedResetsOn) return null;
+  const reset = new Date(`${state.exhaustedResetsOn}T00:00:00Z`);
+  const resetLabel = Number.isNaN(reset.valueOf())
+    ? state.exhaustedResetsOn
+    : new Intl.DateTimeFormat('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'UTC',
+      }).format(reset);
+  const allowance = state.quota?.allowance;
+  return `You have used ${allowance ? `your ${allowance}` : 'all your'} free scans this month. They come back on ${resetLabel}.`;
+}
+
+export async function getOrCreateInstallId(
+  read: () => Promise<string | null>,
+  write: (value: string) => Promise<void>,
+  generate: () => string,
+): Promise<string> {
+  const stored = await read();
+  if (stored !== null) return stored;
+  const created = generate();
+  await write(created);
+  return created;
+}
 
 type HuntingRow = Pick<
   CatalogRow,

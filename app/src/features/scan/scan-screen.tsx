@@ -23,7 +23,7 @@ import { useNetInfo } from '@react-native-community/netinfo';
 import { CameraView, PermissionStatus, useCameraPermissions } from 'expo-camera';
 import { randomUUID } from 'expo-crypto';
 import { Directory, File, Paths } from 'expo-file-system';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Linking, StyleSheet, View } from 'react-native';
 
@@ -31,6 +31,7 @@ import {
   fetchCatalog,
   fetchItem,
   fetchPrices,
+  getQuota,
   identify,
   identifySet,
   logScan,
@@ -56,6 +57,7 @@ import { calculateCollectionValues } from '@/features/collection/collection-tota
 import { priceSourceLabel } from '@/features/collection/collection-ui';
 import type {
   ApiErrorCode,
+  ApiResult,
   IdentifyResponse,
   IdentifySetResponse,
   Form,
@@ -63,10 +65,12 @@ import type {
   Pattern,
   QueuedScan,
   ScanGuess,
+  ScanQuota,
 } from '@shared/types';
 import {
   IdentifyingScreen,
   PermissionScreen,
+  QuotaExhaustedScreen,
   ShutterFlash,
   ViewfinderScreen,
   type ScanBannerAction,
@@ -86,6 +90,7 @@ import {
 import {
   adjustSetGroupCount,
   advanceBulkQueue,
+  applyQuotaResult,
   bulkPhotoProgress,
   deriveHuntingChips,
   photoInvitesFor,
@@ -95,6 +100,8 @@ import {
   oldestSavedScan,
   ordinal,
   ordinalWord,
+  quotaExhaustedText,
+  quotaRemainingText,
   rankHuntingRows,
   replaceOrMergeDetectionGroup,
   savedScanBannerMessage,
@@ -105,6 +112,7 @@ import {
   summarizeFiledPrices,
   type GroupedDetection,
   type HuntingChip,
+  type ScanQuotaState,
 } from './logic';
 
 type Phase =
@@ -115,6 +123,7 @@ type Phase =
   | 'browse'
   | 'browse-detail'
   | 'known-combination'
+  | 'quota-exhausted'
   | 'confirming'
   | 'owned'
   | 'saved';
@@ -252,6 +261,11 @@ export default function ScanScreen() {
   const [photoInvites, setPhotoInvites] = useState<ReturnType<typeof photoInvitesFor>>([]);
   const [bulkPhotoUris, setBulkPhotoUris] = useState<string[]>([]);
   const [bulkIndex, setBulkIndex] = useState<number | null>(null);
+  const [quotaState, setQuotaState] = useState<ScanQuotaState>({
+    quota: null,
+    exhaustedResetsOn: null,
+  });
+  const quotaStateRef = useRef(quotaState);
 
   const isOffline = netInfo.isConnected === false || netInfo.isInternetReachable === false;
   const canReviewSavedScans = netInfo.isConnected === true && netInfo.isInternetReachable !== false;
@@ -260,6 +274,8 @@ export default function ScanScreen() {
   const bulkProgress = bulkIndex === null
     ? null
     : bulkPhotoProgress(bulkIndex, bulkPhotoUris.length);
+  const quotaLabel = quotaRemainingText(quotaState.quota);
+  const quotaExhaustedMessage = quotaExhaustedText(quotaState);
   phaseRef.current = phase;
 
   const savedScanBanner = savedScanBannerMessage(queuedCount, confirmingDiscard);
@@ -284,6 +300,31 @@ export default function ScanScreen() {
     setCatalog(rows);
     return rows;
   }, []);
+
+  const captureQuota = useCallback((
+    result: ApiResult<ScanQuota | IdentifyResponse | IdentifySetResponse>,
+  ): boolean => {
+    const current = quotaStateRef.current;
+    const next = applyQuotaResult(current, result);
+    quotaStateRef.current = next;
+    setQuotaState(next);
+    return !result.ok && next !== current;
+  }, []);
+
+  const showQuotaExhausted = useCallback(() => {
+    phaseRef.current = 'quota-exhausted';
+    setPhase('quota-exhausted');
+    setError(null);
+    setNotice(null);
+  }, []);
+
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    void getQuota().then((result) => {
+      if (active) captureQuota(result);
+    });
+    return () => { active = false; };
+  }, [captureQuota]));
 
   const presentIdentifyResponse = useCallback(async (
     response: IdentifyResponse,
@@ -365,6 +406,10 @@ export default function ScanScreen() {
         result = await identify(scan.photos, scan.hasBaseShot);
       } catch {
         await handleSavedScanFailure(scan, 'internal');
+        return;
+      }
+      if (captureQuota(result)) {
+        showQuotaExhausted();
         return;
       }
       if (!result.ok) {
@@ -670,6 +715,10 @@ export default function ScanScreen() {
     setError(null);
     try {
       const result = await identify(uris, hasBaseShot);
+      if (captureQuota(result)) {
+        showQuotaExhausted();
+        return;
+      }
       if (result.ok) {
         await presentIdentifyResponse(result.data, uris, hasBaseShot);
       } else if (shouldRetryQueueDrain(result.code, 0)) {
@@ -764,6 +813,10 @@ export default function ScanScreen() {
       if (bulk && prefetched?.index === bulkPosition) bulkPrefetchRef.current = null;
       const result = await (canUsePrefetch ? prefetched.request : identifySet(photoUri));
       if (!isCurrent()) return;
+      if (captureQuota(result)) {
+        showQuotaExhausted();
+        return;
+      }
       if (result.ok) {
         const presented = await presentSetResponse(result.data, photoUri, bulk, isCurrent);
         if (!presented || !bulk || !isCurrent()) return;
@@ -1395,6 +1448,18 @@ export default function ScanScreen() {
         />
       ) : null;
 
+    if (phase === 'quota-exhausted' && quotaExhaustedMessage) {
+      return (
+        <QuotaExhaustedScreen
+          message={quotaExhaustedMessage}
+          onBrowse={() => {
+            dropBulkQueue();
+            openBrowse();
+          }}
+        />
+      );
+    }
+
     if (phase === 'set-results') {
       return (
         <SetResultsScreen
@@ -1670,6 +1735,7 @@ export default function ScanScreen() {
         step={needsBaseShot ? 2 : 1}
         banner={banner}
         bannerActions={bannerActions}
+        quotaLabel={quotaLabel}
         problem={error}
         busy={capturing || confirmingDiscard || !cameraReady || bulkPhotoUris.length > 0}
         cameraRef={cameraRef}

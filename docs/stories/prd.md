@@ -58,7 +58,7 @@ via report action suffices at launch scale).
 - store-1 Privacy policy and terms hosted and linked in-app (drafts exist in
   docs/legal/) [ready]
 - store-2 Account deletion end to end: DELETE /account, collection, scans,
-  photos including approved shared rows, on-disk files [ready]
+  photos including approved shared rows, on-disk files [done]
 - store-3 Sign in with Apple token revocation (authorization-code exchange at
   sign-in, revoke at deletion) [ready]
 - store-4 UGC report, block, and published contact [ready]
@@ -84,7 +84,7 @@ pricing doc); marketplace; dealer tier (its own epic when its gates ship).
 
 **Stories:**
 - biz-1 Scan metering: 25/month free, per-photo consumption, error rule
-  [ready]
+  [done]
 - biz-2 Credit packs as consumable IAP: $1.99/50 and $4.99/200, never expire
   [ready]
 - biz-3 Meter UI and pricing copy: remaining scans visible, "one photo = one

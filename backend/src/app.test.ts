@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { DatabaseSync } from 'node:sqlite';
@@ -57,7 +57,7 @@ const catalog: CatalogResponse = {
   ],
 };
 
-function setup(appOptions: Pick<AppOptions, 'identifier' | 'imageGenerator' | 'rateLimit'> = {}) {
+function setup(appOptions: Pick<AppOptions, 'identifier' | 'imageGenerator' | 'rateLimit' | 'now'> = {}) {
   const db = new BackendDatabase(':memory:');
   db.seedCatalog(catalog);
   const photoDir = mkdtempSync(join(tmpdir(), 'backend-photo-test-'));
@@ -161,7 +161,10 @@ test('identify set returns resolved detections and strips EXIF before identifica
       lowConfidence: false,
     };
   };
-  const { app, photoDir } = setup({ identifier });
+  const { app, db, photoDir } = setup({
+    identifier,
+    now: () => new Date('2026-08-13T12:00:00Z'),
+  });
 
   try {
     const response = await app.request('/identify/set', {
@@ -184,9 +187,267 @@ test('identify set returns resolved detections and strips EXIF before identifica
         ],
         contradicted: 0,
         lowConfidence: false,
+        quota: { remaining: 24, allowance: 25, resetsOn: '2026-09-01' },
       },
     });
     assert.equal(Buffer.from(receivedPhoto, 'base64').includes(Buffer.from('Exif')), false);
+    assert.equal(db.scanUsage('install:unknown', '2026-08'), 1);
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('successful identify calls consume one scan regardless of photos or pieces', async () => {
+  const identifier = new Identifier();
+  identifier.identify = async () => ({ guesses: [], lowConfidence: true });
+  const detection = {
+    itemSlug: 'butterprint-444',
+    confidence: 0.9,
+    location: 'stack',
+    visibleEvidence: 'turquoise print',
+  };
+  identifier.identifySet = async () => ({
+    detections: [detection, detection],
+    contradicted: 0,
+    lowConfidence: false,
+  });
+  const { app, db, photoDir } = setup({
+    identifier,
+    now: () => new Date('2026-08-13T12:00:00Z'),
+  });
+  const headers = { 'Content-Type': 'application/json', 'X-Install-Id': 'device-1' };
+
+  try {
+    const single = await app.request('/identify', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        photos: [jpegWithExif(0x11).toString('base64'), jpegWithExif(0x22).toString('base64')],
+        hasBaseShot: true,
+      }),
+    });
+    const set = await app.request('/identify/set', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ photo: jpegWithExif().toString('base64') }),
+    });
+
+    assert.deepEqual((await single.json() as { data: { quota: unknown } }).data.quota, {
+      remaining: 24,
+      allowance: 25,
+      resetsOn: '2026-09-01',
+    });
+    assert.deepEqual((await set.json() as { data: { quota: unknown } }).data.quota, {
+      remaining: 23,
+      allowance: 25,
+      resetsOn: '2026-09-01',
+    });
+    assert.deepEqual(
+      { ...db.sqlite.prepare('SELECT count FROM scan_usage WHERE key = ? AND month = ?').get('install:device-1', '2026-08') },
+      { count: 2 },
+    );
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('upstream identify failure consumes no scan', async () => {
+  const identifier = new Identifier();
+  identifier.identifySet = async () => {
+    throw new Error('offline fake failure');
+  };
+  const { app, db, photoDir } = setup({
+    identifier,
+    now: () => new Date('2026-08-13T12:00:00Z'),
+  });
+  const headers = { 'Content-Type': 'application/json', 'X-Install-Id': 'device-2' };
+
+  try {
+    const failed = await app.request('/identify/set', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ photo: jpegWithExif().toString('base64') }),
+    });
+    const quota = await app.request('/quota', { headers });
+
+    assert.equal(failed.status, 502);
+    assert.deepEqual(await quota.json(), {
+      ok: true,
+      data: { remaining: 25, allowance: 25, resetsOn: '2026-09-01' },
+    });
+    assert.equal(
+      (db.sqlite.prepare('SELECT COUNT(*) AS count FROM scan_usage').get() as unknown as { count: number }).count,
+      0,
+    );
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('exhausted scan quota returns 429 before identification', async () => {
+  const identifier = new Identifier();
+  let calls = 0;
+  identifier.identify = async () => {
+    calls += 1;
+    return { guesses: [], lowConfidence: true };
+  };
+  const { app, db, photoDir } = setup({
+    identifier,
+    now: () => new Date('2026-08-31T23:59:59Z'),
+  });
+  db.sqlite
+    .prepare('INSERT INTO scan_usage(key, month, count) VALUES (?, ?, ?)')
+    .run('install:full-device', '2026-08', 25);
+
+  try {
+    const response = await app.request('/identify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Install-Id': 'full-device' },
+      body: JSON.stringify({ photos: [jpegWithExif().toString('base64')], hasBaseShot: false }),
+    });
+
+    assert.equal(response.status, 429);
+    assert.deepEqual(await response.json(), {
+      ok: false,
+      error: 'Monthly scan quota exhausted',
+      code: 'quota_exhausted',
+      resetsOn: '2026-09-01',
+    });
+    assert.equal(calls, 0);
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('scan quota rolls over by UTC month', async () => {
+  const identifier = new Identifier();
+  identifier.identify = async () => ({ guesses: [], lowConfidence: true });
+  const { app, db, photoDir } = setup({
+    identifier,
+    now: () => new Date('2026-09-01T00:00:00Z'),
+  });
+  db.sqlite
+    .prepare('INSERT INTO scan_usage(key, month, count) VALUES (?, ?, ?)')
+    .run('install:rollover', '2026-08', 25);
+
+  try {
+    const response = await app.request('/identify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Install-Id': 'rollover' },
+      body: JSON.stringify({ photos: [jpegWithExif().toString('base64')], hasBaseShot: false }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.deepEqual((await response.json() as { data: { quota: unknown } }).data.quota, {
+      remaining: 24,
+      allowance: 25,
+      resetsOn: '2026-10-01',
+    });
+    assert.deepEqual(
+      { ...db.sqlite.prepare('SELECT count FROM scan_usage WHERE key = ? AND month = ?').get('install:rollover', '2026-09') },
+      { count: 1 },
+    );
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('GET /quota reports without consuming a scan', async () => {
+  const { app, db, photoDir } = setup({ now: () => new Date('2026-12-15T12:00:00Z') });
+
+  try {
+    for (let request = 0; request < 2; request += 1) {
+      const response = await app.request('/quota', { headers: { 'X-Install-Id': 'quota-only' } });
+      assert.deepEqual(await response.json(), {
+        ok: true,
+        data: { remaining: 25, allowance: 25, resetsOn: '2027-01-01' },
+      });
+    }
+    assert.equal(
+      (db.sqlite.prepare('SELECT COUNT(*) AS count FROM scan_usage').get() as unknown as { count: number }).count,
+      0,
+    );
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('scan quota uses capped install ids unless a valid session is present', async () => {
+  const identifier = new Identifier();
+  identifier.identify = async () => ({ guesses: [], lowConfidence: true });
+  const { app, db, photoDir } = setup({
+    identifier,
+    now: () => new Date('2026-08-13T12:00:00Z'),
+  });
+  const installId = 'x'.repeat(80);
+  const token = createSession('google', 'subject', secret).token;
+  const request = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Install-Id': `  ${installId}  ` },
+    body: JSON.stringify({ photos: [jpegWithExif().toString('base64')], hasBaseShot: false }),
+  };
+
+  try {
+    await app.request('/identify', request);
+    await app.request('/identify', {
+      ...request,
+      headers: { ...request.headers, Authorization: `Bearer ${token}` },
+    });
+
+    assert.deepEqual(
+      (db.sqlite.prepare('SELECT key, count FROM scan_usage ORDER BY key').all() as unknown as { key: string; count: number }[])
+        .map((row) => ({ ...row })),
+      [
+        { key: 'google:subject', count: 1 },
+        { key: `install:${'x'.repeat(64)}`, count: 1 },
+      ],
+    );
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('concurrent identify calls cannot exceed the monthly allowance', async () => {
+  const identifier = new Identifier();
+  let calls = 0;
+  let releaseFirst = () => {};
+  let markStarted = () => {};
+  const firstStarted = new Promise<void>((resolve) => {
+    markStarted = resolve;
+  });
+  const firstRelease = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
+  });
+  identifier.identify = async () => {
+    calls += 1;
+    markStarted();
+    await firstRelease;
+    return { guesses: [], lowConfidence: true };
+  };
+  const { app, db, photoDir } = setup({
+    identifier,
+    now: () => new Date('2026-08-13T12:00:00Z'),
+  });
+  db.sqlite
+    .prepare('INSERT INTO scan_usage(key, month, count) VALUES (?, ?, ?)')
+    .run('install:race', '2026-08', 24);
+  const request = {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Install-Id': 'race' },
+    body: JSON.stringify({ photos: [jpegWithExif().toString('base64')], hasBaseShot: false }),
+  };
+
+  try {
+    const first = app.request('/identify', request);
+    await firstStarted;
+    const second = app.request('/identify', request);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    releaseFirst();
+    const responses = await Promise.all([first, second]);
+
+    assert.deepEqual(responses.map((response) => response.status).sort(), [200, 429]);
+    assert.equal(calls, 1);
+    assert.equal(db.scanUsage('install:race', '2026-08'), 25);
   } finally {
     rmSync(photoDir, { recursive: true, force: true });
   }
@@ -363,6 +624,136 @@ test('want-list entries reject owned quantities', async () => {
       }),
     });
     assert.equal(response.status, 400);
+  } finally {
+    rmSync(photoDir, { recursive: true, force: true });
+  }
+});
+
+test('DELETE /account removes only the authenticated user data and files', async () => {
+  const { app, db, photoDir } = setup();
+  const deletingUser = 'apple:delete-me';
+  const otherUser = 'google:keep-me';
+  const now = '2026-08-13T12:00:00.000Z';
+  const item = {
+    itemSlug: 'butterprint-444',
+    status: 'have' as const,
+    quantity: 1,
+    condition: null,
+    notes: null,
+    updatedAt: now,
+  };
+  db.replaceCollection(deletingUser, [item]);
+  db.replaceCollection(otherUser, [item]);
+  db.addScan({
+    id: 'delete-scan',
+    userId: deletingUser,
+    photoRefs: ['delete-scan-0.jpg', 'delete-scan-1.jpg'],
+    hasBaseShot: true,
+    source: 'single',
+    guessesJson: '[]',
+    confirmedItemSlug: 'butterprint-444',
+    llmWasRight: false,
+    consentedToTraining: true,
+    createdAt: now,
+  });
+  db.addScan({
+    id: 'keep-scan',
+    userId: otherUser,
+    photoRefs: ['keep-scan.jpg'],
+    hasBaseShot: false,
+    source: 'single',
+    guessesJson: '[]',
+    confirmedItemSlug: null,
+    llmWasRight: null,
+    consentedToTraining: true,
+    createdAt: now,
+  });
+  db.sqlite.prepare(`
+    INSERT INTO scans(
+      id, user_id, photo_ref, guesses_json, confirmed_item_slug, llm_was_right,
+      consented_to_training, has_base_shot, source, created_at
+    ) VALUES (?, ?, ?, '[]', NULL, NULL, 1, 0, 'single', ?)
+  `).run('delete-legacy-scan', deletingUser, 'delete-legacy.jpg', now);
+  db.addPhoto({
+    id: 'delete-photo',
+    itemSlug: 'butterprint-444',
+    fileRef: 'delete-photo.jpg',
+    visibility: 'anonymous',
+    approved: true,
+    isAiPlaceholder: false,
+    uploaderId: deletingUser,
+    uploaderHandle: null,
+    createdAt: now,
+  });
+  db.addPhoto({
+    id: 'keep-photo',
+    itemSlug: 'butterprint-444',
+    fileRef: 'keep-photo.jpg',
+    visibility: 'anonymous',
+    approved: true,
+    isAiPlaceholder: false,
+    uploaderId: otherUser,
+    uploaderHandle: null,
+    createdAt: now,
+  });
+  db.sqlite.prepare('INSERT INTO scan_usage(key, month, count) VALUES (?, ?, ?)').run(deletingUser, '2026-08', 5);
+  db.sqlite.prepare('INSERT INTO scan_usage(key, month, count) VALUES (?, ?, ?)').run(otherUser, '2026-08', 7);
+  for (const file of [
+    'delete-scan-0.jpg',
+    'delete-scan-1.jpg',
+    'delete-legacy.jpg',
+    'delete-photo.jpg',
+    'keep-scan.jpg',
+    'keep-photo.jpg',
+  ]) {
+    writeFileSync(join(photoDir, file), file);
+  }
+  const deleteAccount = db.deleteAccount.bind(db);
+  db.deleteAccount = (userId) => {
+    db.addPhoto({
+      id: 'late-photo',
+      itemSlug: 'butterprint-444',
+      fileRef: 'late-photo.jpg',
+      visibility: 'private',
+      approved: false,
+      isAiPlaceholder: false,
+      uploaderId: deletingUser,
+      uploaderHandle: null,
+      createdAt: now,
+    });
+    writeFileSync(join(photoDir, 'late-photo.jpg'), 'late');
+    return deleteAccount(userId);
+  };
+
+  try {
+    const token = createSession('apple', 'delete-me', secret).token;
+    const response = await app.request('/account', {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    assert.equal(response.status, 204);
+    assert.equal(await response.text(), '');
+    for (const [table, key] of [
+      ['collection', 'user_id'],
+      ['scans', 'user_id'],
+      ['photos', 'uploader_id'],
+      ['scan_usage', 'key'],
+    ]) {
+      const deleted = db.sqlite.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE ${key} = ?`).get(deletingUser) as unknown as { count: number };
+      const kept = db.sqlite.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE ${key} = ?`).get(otherUser) as unknown as { count: number };
+      assert.equal(deleted.count, 0, table);
+      assert.equal(kept.count, 1, table);
+    }
+    assert.equal(
+      (db.sqlite.prepare("SELECT COUNT(*) AS count FROM scan_photos WHERE scan_id LIKE 'delete-%'").get() as unknown as { count: number }).count,
+      0,
+    );
+    assert.equal(
+      (db.sqlite.prepare("SELECT COUNT(*) AS count FROM scan_photos WHERE scan_id = 'keep-scan'").get() as unknown as { count: number }).count,
+      1,
+    );
+    assert.deepEqual(readdirSync(photoDir).sort(), ['keep-photo.jpg', 'keep-scan.jpg']);
   } finally {
     rmSync(photoDir, { recursive: true, force: true });
   }
